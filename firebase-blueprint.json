@@ -1,0 +1,90 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "photoURL": { "type": "string", "maxLength": 512 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "email"]
+    },
+    "Exam": {
+      "title": "Exam",
+      "description": "Exam data containing questions and settings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 256 },
+        "title": { "type": "string", "maxLength": 256 },
+        "subject": { "type": "string", "maxLength": 128 },
+        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
+        "timeLimit": { "type": "number" },
+        "passingScore": { "type": "number" },
+        "subjectType": { "type": "string", "enum": ["theory", "calculation"] },
+        "description": { "type": "string", "maxLength": 1000 },
+        "questions": { "type": "array" },
+        "userId": { "type": "string", "maxLength": 128 },
+        "isPublic": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name", "userId", "questions"]
+    },
+    "Result": {
+      "title": "Result",
+      "description": "Exam test attempt outcome and question review",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "examId": { "type": "string", "maxLength": 128 },
+        "examTitle": { "type": "string", "maxLength": 256 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 64 },
+        "score": { "type": "number" },
+        "total": { "type": "number" },
+        "percentage": { "type": "number" },
+        "passingScore": { "type": "number" },
+        "timeSpent": { "type": "number" },
+        "answers": { "type": "array" },
+        "subjectType": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "examId", "userId", "score", "total", "percentage"]
+    },
+    "StudyReminder": {
+      "title": "StudyReminder",
+      "description": "User notification reminder preferences",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "time": { "type": "string", "maxLength": 16 },
+        "enabled": { "type": "boolean" },
+        "days": { "type": "array" }
+      },
+      "required": ["id", "userId", "enabled"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Profile information of registered users"
+    },
+    "/exams/{examId}": {
+      "schema": "Exam",
+      "description": "Exam documents created by users or templates"
+    },
+    "/results/{resultId}": {
+      "schema": "Result",
+      "description": "Exam completion records and question answer histories"
+    },
+    "/reminders/{reminderId}": {
+      "schema": "StudyReminder",
+      "description": "Study notification alerts and schedules"
+    }
+  }
+}
