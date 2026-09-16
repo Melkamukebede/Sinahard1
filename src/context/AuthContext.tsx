@@ -57,6 +57,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           displayName: currentUser.displayName || 'Student',
           photoURL: currentUser.photoURL,
           isAnonymous: currentUser.isAnonymous,
+          metadata: {
+            creationTime: currentUser.metadata.creationTime,
+            lastSignInTime: currentUser.metadata.lastSignInTime,
+          },
         };
         setUser(appUser);
 

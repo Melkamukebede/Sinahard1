@@ -18,6 +18,7 @@ import {
 import { Exam, ExamResult, UserSubscription } from '../types';
 import { PageTab } from './Navbar';
 import { isUserSubscriptionActive } from '../services/db';
+import { UserTierStatus } from '../services/subscriptionLimits';
 
 interface HomeViewProps {
   exams: Exam[];
@@ -28,6 +29,7 @@ interface HomeViewProps {
   onOpenProfessorModal: () => void;
   onOpenSubscriptionModal?: () => void;
   activeSubscription?: UserSubscription | null;
+  userTier?: UserTierStatus;
 }
 
 const containerVariants = {
@@ -56,6 +58,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onNavigate,
   onOpenSubscriptionModal,
   activeSubscription,
+  userTier,
 }) => {
   const totalQuestions = exams.reduce((acc, e) => acc + (e.questions?.length || 0), 0);
   const avgScore = results.length
@@ -64,6 +67,22 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const passedCount = results.filter((r) => r.percentage >= (r.passingScore || 70)).length;
   const recentResults = results.slice(0, 4);
   const isPremiumActive = isUserSubscriptionActive(activeSubscription || null);
+
+  const bannerTitle = isPremiumActive
+    ? 'Premium Student Membership Active'
+    : userTier?.isTrial
+    ? `5-Day Welcome Trial Active (${userTier.trialDaysRemaining}d remaining)`
+    : 'ExamMaster Free Student Tier';
+
+  const bannerDescription = isPremiumActive
+    ? `Valid until ${
+        activeSubscription?.expiresAt
+          ? new Date(activeSubscription.expiresAt).toLocaleDateString()
+          : 'Active'
+      }. Unlimited questions, exports, and step-by-step LaTeX math reasoning.`
+    : userTier?.isTrial
+    ? `You have unrestricted trial access to explore creating and importing up to ${userTier.maxQuestionsPerExam} questions. Upgrade before trial ends to maintain unlimited access.`
+    : `Free student plan (Up to 20 questions/exam). Upgrade starting at 35 ETB for unlimited exams, bulk file imports, and solutions.`;
 
   return (
     <motion.div
@@ -301,20 +320,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-black font-['Syne',sans-serif] text-zinc-900 dark:text-white">
-                {isPremiumActive ? 'Premium Student Membership Active' : 'ExamMaster Premium Access'}
+                {bannerTitle}
               </h2>
               <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
-                ETB
+                {isPremiumActive ? 'Active' : userTier?.isTrial ? 'Trial' : 'Free'}
               </span>
             </div>
             <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-0.5">
-              {isPremiumActive
-                ? `Valid until ${
-                    activeSubscription?.expiresAt
-                      ? new Date(activeSubscription.expiresAt).toLocaleDateString()
-                      : 'Active'
-                  }. Full access to all subjects, grades, and .txt exports.`
-                : '1 Day (35 ETB), 1 Week (120 ETB), 1 Month (350 ETB), or 6 Months. Pay via Telebirr, CBE Birr, or Chapa.'}
+              {bannerDescription}
             </p>
           </div>
         </div>

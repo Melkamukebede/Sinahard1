@@ -253,6 +253,9 @@ export function getLocalExams(): Exam[] {
 export function saveLocalExams(exams: Exam[]) {
   try {
     localStorage.setItem(LOCAL_STORAGE_EXAMS, JSON.stringify(exams));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('exam_master_exams_updated', { detail: exams }));
+    }
   } catch (err) {
     console.warn('Could not save exams to local storage', err);
   }
@@ -271,72 +274,85 @@ export function getLocalResults(): ExamResult[] {
 export function saveLocalResults(results: ExamResult[]) {
   try {
     localStorage.setItem(LOCAL_STORAGE_RESULTS, JSON.stringify(results));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('exam_master_results_updated', { detail: results }));
+    }
   } catch (err) {
     console.warn('Could not save results to local storage', err);
   }
 }
 
-// ----------------- FIRESTORE SYNC SERVICE -----------------
+// ----------------- LOCAL PERSISTENCE & REAL-TIME EVENT SERVICE -----------------
 
 export function subscribeToExams(
-  user: AppUser | null,
+  _user: AppUser | null,
   onUpdate: (exams: Exam[]) => void
 ): () => void {
-  // If user is not authenticated, load local exams
-  if (!user) {
-    const local = getLocalExams();
-    onUpdate(local);
-    return () => {};
-  }
+  // Always load immediately from local storage - do NOT sync exams to Firestore
+  const local = getLocalExams();
+  onUpdate(local);
 
-  // If user is authenticated, listen to real-time updates from Firestore
-  try {
-    const examsRef = collection(db, 'exams');
-    const q = query(examsRef, where('userId', '==', user.uid));
+  if (typeof window === 'undefined') return () => {};
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const firestoreExams: Exam[] = [];
-        snapshot.forEach((docSnap) => {
-          firestoreExams.push({ id: docSnap.id, ...docSnap.data() } as Exam);
-        });
+  const handleExamsUpdated = (e: Event) => {
+    const customEvent = e as CustomEvent<Exam[]>;
+    if (customEvent.detail && Array.isArray(customEvent.detail)) {
+      onUpdate(customEvent.detail);
+    } else {
+      onUpdate(getLocalExams());
+    }
+  };
 
-        // Always merge with public samples if user doesn't have any yet
-        const local = getLocalExams();
-        const mergedMap = new Map<string, Exam>();
-        
-        // Add sample exams
-        INITIAL_SAMPLE_EXAMS.forEach((e) => mergedMap.set(e.id, e));
-        // Add local customized exams
-        local.forEach((e) => mergedMap.set(e.id, e));
-        // Add firestore exams
-        firestoreExams.forEach((e) => mergedMap.set(e.id, e));
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === LOCAL_STORAGE_EXAMS) {
+      onUpdate(getLocalExams());
+    }
+  };
 
-        const finalExams = Array.from(mergedMap.values());
-        saveLocalExams(finalExams);
-        onUpdate(finalExams);
-      },
-      (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'exams');
-      }
-    );
+  window.addEventListener('exam_master_exams_updated', handleExamsUpdated);
+  window.addEventListener('storage', handleStorageChange);
 
-    return unsubscribe;
-  } catch (err) {
-    console.warn('Firestore subscription fallback:', err);
-    onUpdate(getLocalExams());
-    return () => {};
-  }
+  return () => {
+    window.removeEventListener('exam_master_exams_updated', handleExamsUpdated);
+    window.removeEventListener('storage', handleStorageChange);
+  };
 }
 
 export function subscribeToResults(
   user: AppUser | null,
   onUpdate: (results: ExamResult[]) => void
 ): () => void {
-  if (!user) {
-    onUpdate(getLocalResults());
-    return () => {};
+  // Always load immediately from local storage for 0ms initial UI update
+  const local = getLocalResults();
+  onUpdate(local);
+
+  const handleResultsUpdated = (e: Event) => {
+    const customEvent = e as CustomEvent<ExamResult[]>;
+    if (customEvent.detail && Array.isArray(customEvent.detail)) {
+      onUpdate(customEvent.detail);
+    } else {
+      onUpdate(getLocalResults());
+    }
+  };
+
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === LOCAL_STORAGE_RESULTS) {
+      onUpdate(getLocalResults());
+    }
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('exam_master_results_updated', handleResultsUpdated);
+    window.addEventListener('storage', handleStorageChange);
+  }
+
+  if (!user || user.uid === 'guest') {
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('exam_master_results_updated', handleResultsUpdated);
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
   }
 
   try {
@@ -351,25 +367,40 @@ export function subscribeToResults(
           firestoreResults.push({ id: docSnap.id, ...docSnap.data() } as ExamResult);
         });
 
-        // Sort by date descending
-        firestoreResults.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        saveLocalResults(firestoreResults);
-        onUpdate(firestoreResults);
+        // Merge firestore results with local results
+        const currentLocal = getLocalResults();
+        const mergedMap = new Map<string, ExamResult>();
+        currentLocal.forEach((r) => mergedMap.set(String(r.id), r));
+        firestoreResults.forEach((r) => mergedMap.set(String(r.id), r));
+        const mergedList = Array.from(mergedMap.values());
+        mergedList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        saveLocalResults(mergedList);
+        onUpdate(mergedList);
       },
       (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'results');
+        console.warn('Firestore results subscription fallback to local:', error);
       }
     );
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('exam_master_results_updated', handleResultsUpdated);
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
   } catch (err) {
     console.warn('Firestore results subscription fallback:', err);
-    onUpdate(getLocalResults());
-    return () => {};
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('exam_master_results_updated', handleResultsUpdated);
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
   }
 }
 
-export async function saveExamToDb(exam: Exam, user: AppUser | null): Promise<void> {
+export async function saveExamToDb(exam: Exam, _user: AppUser | null): Promise<void> {
   const localExams = getLocalExams();
   const existingIndex = localExams.findIndex((e) => e.id === exam.id);
   if (existingIndex >= 0) {
@@ -378,33 +409,13 @@ export async function saveExamToDb(exam: Exam, user: AppUser | null): Promise<vo
     localExams.unshift(exam);
   }
   saveLocalExams(localExams);
-
-  if (user) {
-    try {
-      const examDocRef = doc(db, 'exams', exam.id);
-      await setDoc(examDocRef, {
-        ...exam,
-        userId: user.uid,
-        updatedAt: new Date().toISOString(),
-      });
-    } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `exams/${exam.id}`);
-    }
-  }
+  // Do NOT sync to Firestore as explicitly requested: purely stored in local storage and updated instantly
 }
 
-export async function deleteExamFromDb(examId: string, user: AppUser | null): Promise<void> {
+export async function deleteExamFromDb(examId: string, _user: AppUser | null): Promise<void> {
   const localExams = getLocalExams().filter((e) => e.id !== examId);
   saveLocalExams(localExams);
-
-  if (user) {
-    try {
-      const examDocRef = doc(db, 'exams', examId);
-      await deleteDoc(examDocRef);
-    } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, `exams/${examId}`);
-    }
-  }
+  // Do NOT sync to Firestore as explicitly requested: purely stored in local storage and updated instantly
 }
 
 export async function saveResultToDb(result: ExamResult, user: AppUser | null): Promise<void> {
@@ -472,6 +483,9 @@ export function getLocalSubscriptions(): UserSubscription[] {
 export function saveLocalSubscriptions(subs: UserSubscription[]) {
   try {
     localStorage.setItem(LOCAL_STORAGE_SUBSCRIPTIONS, JSON.stringify(subs));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('exam_master_subscriptions_updated', { detail: subs }));
+    }
   } catch (err) {
     console.warn('Could not save subscriptions to local storage:', err);
   }
@@ -519,17 +533,70 @@ export function calculateSubscriptionExpiry(duration: SubscriptionDuration): {
 }
 
 /**
- * Real-time listener for current user's active subscription.
+ * Real-time listener for current user's active subscription with 0ms instant local resolution.
  */
 export function subscribeToUserSubscription(
   user: AppUser | null,
   onUpdate: (subscription: UserSubscription | null) => void
 ): () => void {
+  const findActive = (s: UserSubscription) => isUserSubscriptionActive(s);
+
+  const getBestSub = (subs: UserSubscription[]): UserSubscription | null => {
+    if (user && user.uid !== 'guest') {
+      return (
+        subs.find((s) => s.userId === user.uid && findActive(s)) ||
+        subs.find(
+          (s) =>
+            s.userEmail &&
+            user.email &&
+            s.userEmail.toLowerCase() === user.email.toLowerCase() &&
+            findActive(s)
+        ) ||
+        subs.find((s) => s.userId === user.uid) ||
+        subs.find(
+          (s) =>
+            s.userEmail &&
+            user.email &&
+            s.userEmail.toLowerCase() === user.email.toLowerCase()
+        ) ||
+        null
+      );
+    }
+    return (
+      subs.find((s) => s.userId === 'guest' && findActive(s)) ||
+      subs.find((s) => s.userId === 'guest') ||
+      null
+    );
+  };
+
+  // 1. Instant local storage dispatch (0ms delay)
+  const local = getLocalSubscriptions();
+  onUpdate(getBestSub(local));
+
+  const handleSubsUpdated = (e: Event) => {
+    const customEvent = e as CustomEvent<UserSubscription[]>;
+    const subs = customEvent.detail && Array.isArray(customEvent.detail) ? customEvent.detail : getLocalSubscriptions();
+    onUpdate(getBestSub(subs));
+  };
+
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === LOCAL_STORAGE_SUBSCRIPTIONS) {
+      onUpdate(getBestSub(getLocalSubscriptions()));
+    }
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('exam_master_subscriptions_updated', handleSubsUpdated);
+    window.addEventListener('storage', handleStorageChange);
+  }
+
   if (!user || user.uid === 'guest') {
-    const local = getLocalSubscriptions();
-    const latest = local.find((s) => s.userId === 'guest') || null;
-    onUpdate(latest);
-    return () => {};
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('exam_master_subscriptions_updated', handleSubsUpdated);
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
   }
 
   try {
@@ -547,31 +614,37 @@ export function subscribeToUserSubscription(
           userSubs.push({ id: docSnap.id, ...docSnap.data() } as UserSubscription);
         });
 
-        // Find the active verified subscription or latest pending
-        const active = userSubs.find((s) => isUserSubscriptionActive(s));
-        if (active) {
-          onUpdate(active);
-        } else {
-          // Sort by createdAt desc
-          userSubs.sort(
-            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-          onUpdate(userSubs[0] || null);
-        }
+        // Merge with local storage
+        const currentLocal = getLocalSubscriptions();
+        const mergedMap = new Map<string, UserSubscription>();
+        currentLocal.forEach((s) => mergedMap.set(s.id, s));
+        userSubs.forEach((s) => mergedMap.set(s.id, s));
+        const mergedAll = Array.from(mergedMap.values());
+        saveLocalSubscriptions(mergedAll);
+
+        const best = getBestSub(mergedAll);
+        onUpdate(best);
       },
       (error) => {
-        console.warn('Subscription snapshot listener error:', error);
-        const local = getLocalSubscriptions();
-        const fallback = local.find((s) => s.userId === user.uid) || null;
-        onUpdate(fallback);
+        console.warn('Subscription snapshot listener error (using local):', error);
       }
     );
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('exam_master_subscriptions_updated', handleSubsUpdated);
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
   } catch (err) {
     console.warn('Error subscribing to user subscription:', err);
-    onUpdate(null);
-    return () => {};
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('exam_master_subscriptions_updated', handleSubsUpdated);
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
   }
 }
 
@@ -582,9 +655,36 @@ export function subscribeToAllSubscriptions(
   user: AppUser | null,
   onUpdate: (subscriptions: UserSubscription[]) => void
 ): () => void {
+  // Always emit local subscriptions immediately
+  onUpdate(getLocalSubscriptions());
+
+  const handleSubsUpdated = (e: Event) => {
+    const customEvent = e as CustomEvent<UserSubscription[]>;
+    if (customEvent.detail && Array.isArray(customEvent.detail)) {
+      onUpdate(customEvent.detail);
+    } else {
+      onUpdate(getLocalSubscriptions());
+    }
+  };
+
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === LOCAL_STORAGE_SUBSCRIPTIONS) {
+      onUpdate(getLocalSubscriptions());
+    }
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('exam_master_subscriptions_updated', handleSubsUpdated);
+    window.addEventListener('storage', handleStorageChange);
+  }
+
   if (!user || !isUserAdmin(user)) {
-    onUpdate(getLocalSubscriptions());
-    return () => {};
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('exam_master_subscriptions_updated', handleSubsUpdated);
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
   }
 
   try {
@@ -604,11 +704,21 @@ export function subscribeToAllSubscriptions(
         handleFirestoreError(error, OperationType.LIST, 'subscriptions');
       }
     );
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('exam_master_subscriptions_updated', handleSubsUpdated);
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
   } catch (err) {
     console.warn('Error subscribing to all subscriptions:', err);
-    onUpdate(getLocalSubscriptions());
-    return () => {};
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('exam_master_subscriptions_updated', handleSubsUpdated);
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
   }
 }
 

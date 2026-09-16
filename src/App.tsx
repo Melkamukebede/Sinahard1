@@ -36,9 +36,11 @@ import {
   isUserAdmin,
   verifySubscriptionByTxRef,
   INITIAL_SAMPLE_EXAMS,
+  saveLocalExams,
 } from './services/db';
 import { verifyChapaTransaction } from './services/chapa';
 import { verifyTelebirrPayment } from './services/telebirr';
+import { getUserTierStatus } from './services/subscriptionLimits';
 
 function MainApp() {
   const { user, signInWithGoogle } = useAuth();
@@ -49,9 +51,14 @@ function MainApp() {
   const [activeSubscription, setActiveSubscription] = useState<UserSubscription | null>(null);
   const [allSubscriptions, setAllSubscriptions] = useState<UserSubscription[]>([]);
 
+  // User freemium / trial status computation (Option 3: 5-Day Trial then 20 manual / 15 import limit)
+  const userCreatedAt = user?.metadata?.creationTime;
+  const userTier = getUserTierStatus(user, activeSubscription, userCreatedAt);
+
   // Active exam for practice / editing
   const [activePracticeExam, setActivePracticeExam] = useState<Exam | null>(null);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [createExamInitialMode, setCreateExamInitialMode] = useState<'select' | 'manual' | 'paste'>('select');
   const [viewingJsonExam, setViewingJsonExam] = useState<Exam | null>(null);
 
   // Modals
@@ -72,6 +79,15 @@ function MainApp() {
     setTimeout(() => {
       setToastMessage((current) => (current === msg ? null : current));
     }, 3000);
+  };
+
+  const handleOpenQuestionTextEditor = () => {
+    setIsProfessorModalOpen(false);
+    setIsPasteModalOpen(false);
+    setIsDrawerOpen(false);
+    setEditingExam(null);
+    setCreateExamInitialMode('paste');
+    setActiveTab('create');
   };
 
   const handleExportAllData = () => {
@@ -99,9 +115,8 @@ function MainApp() {
 
   const handleResetDefaultExams = async () => {
     try {
-      for (const sample of INITIAL_SAMPLE_EXAMS) {
-        await saveExamToDb(sample, user);
-      }
+      saveLocalExams(INITIAL_SAMPLE_EXAMS);
+      setExams(INITIAL_SAMPLE_EXAMS);
       showToast('Sample curriculum exams restored!');
     } catch {
       showToast('Failed to restore sample exams.');
@@ -196,36 +211,59 @@ function MainApp() {
 
   const handleDeleteExam = async () => {
     if (!examToDelete) return;
+    const id = examToDelete;
+    // Optimistic UI update instantly
+    setExams((prev) => prev.filter((e) => e.id !== id));
+    setExamToDelete(null);
     try {
-      await deleteExamFromDb(examToDelete, user);
+      await deleteExamFromDb(id, user);
       showToast('Exam removed from library');
     } catch {
       showToast('Failed to delete exam');
-    } finally {
-      setExamToDelete(null);
     }
   };
 
   const handleSaveExam = async (exam: Exam) => {
+    // Optimistic UI update instantly
+    setExams((prev) => {
+      const idx = prev.findIndex((e) => e.id === exam.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = exam;
+        return next;
+      }
+      return [exam, ...prev];
+    });
+    setEditingExam(null);
+    setActiveTab('files');
+
     try {
       await saveExamToDb(exam, user);
-      showToast('Exam successfully saved and synced!');
-      setEditingExam(null);
-      setActiveTab('files');
+      showToast('Exam saved to your library!');
     } catch {
-      showToast('Failed to save exam to cloud');
+      showToast('Failed to save exam');
     }
   };
 
   const handleAddQuestionsFromPaste = async (newQuestions: Question[]) => {
+    let questionsToAdd = newQuestions;
+    if (!userTier.isPremium && questionsToAdd.length > userTier.maxImportQuestions) {
+      questionsToAdd = questionsToAdd.slice(0, userTier.maxImportQuestions);
+      showToast(
+        `Imported first ${userTier.maxImportQuestions} questions (${
+          userTier.isTrial ? '5-Day Trial' : 'Free'
+        } limit). Upgrade to Premium for unlimited imports.`
+      );
+    }
+
     if (activeTab === 'create' && editingExam) {
       // Add questions to the currently editing exam
       const updated = {
         ...editingExam,
-        questions: [...editingExam.questions, ...newQuestions],
+        questions: [...editingExam.questions, ...questionsToAdd],
       };
       setEditingExam(updated);
-      showToast(`Added ${newQuestions.length} questions to draft.`);
+      showToast(`Added ${questionsToAdd.length} questions to draft.`);
     } else {
       // Create a brand new exam draft with these questions
       const newDraft: Exam = {
@@ -237,28 +275,39 @@ function MainApp() {
         timeLimit: 25,
         passingScore: 70,
         subjectType: 'theory',
-        questions: newQuestions,
+        questions: questionsToAdd,
         createdAt: new Date().toISOString(),
       };
+      setExams((prev) => [newDraft, ...prev]);
       await saveExamToDb(newDraft, user);
-      showToast(`Imported ${newQuestions.length} questions into new exam!`);
+      showToast(`Imported ${questionsToAdd.length} questions into new exam!`);
       setEditingExam(newDraft);
       setActiveTab('create');
     }
   };
 
   const handleSubmitResult = async (result: ExamResult) => {
+    const resWithId: ExamResult = {
+      ...result,
+      id: result.id || 'res_' + Date.now(),
+      userId: user ? user.uid : 'guest',
+    };
+    // Optimistic UI update instantly
+    setResults((prev) => [resWithId, ...prev]);
+    setActivePracticeExam(null);
+    setActiveTab('results');
+    showToast(`Exam completed! Score: ${result.percentage}%`);
+
     try {
-      await saveResultToDb(result, user);
-      setActivePracticeExam(null);
-      setActiveTab('results');
-      showToast(`Exam completed! Score: ${result.percentage}%`);
+      await saveResultToDb(resWithId, user);
     } catch {
       showToast('Failed to save result record');
     }
   };
 
   const handleDeleteResult = async (resultId: string | number) => {
+    // Optimistic UI update instantly
+    setResults((prev) => prev.filter((r) => String(r.id) !== String(resultId)));
     try {
       await deleteResultFromDb(resultId, user);
       showToast('Result removed from history');
@@ -268,6 +317,8 @@ function MainApp() {
   };
 
   const handleClearAllResults = async () => {
+    // Optimistic UI update instantly
+    setResults([]);
     try {
       await clearAllResultsFromDb(user);
       showToast('Practice history cleared');
@@ -282,7 +333,10 @@ function MainApp() {
       <Navbar
         activeTab={activeTab}
         onTabChange={(tab) => {
-          if (tab !== 'create') setEditingExam(null);
+          if (tab !== 'create') {
+            setEditingExam(null);
+            setCreateExamInitialMode('select');
+          }
           setActiveTab(tab);
         }}
         onOpenNotifications={() => setIsNotificationsModalOpen(true)}
@@ -298,14 +352,18 @@ function MainApp() {
             exams={exams}
             results={results}
             onNavigate={(tab) => {
-              if (tab !== 'create') setEditingExam(null);
+              if (tab !== 'create') {
+                setEditingExam(null);
+                setCreateExamInitialMode('select');
+              }
               setActiveTab(tab);
             }}
             onStartPractice={handleStartPractice}
-            onOpenPasteModal={() => setIsPasteModalOpen(true)}
+            onOpenPasteModal={handleOpenQuestionTextEditor}
             onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
             onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
             activeSubscription={activeSubscription}
+            userTier={userTier}
           />
         )}
 
@@ -318,6 +376,7 @@ function MainApp() {
             onViewJson={(exam) => setViewingJsonExam(exam)}
             onCreateNew={() => {
               setEditingExam(null);
+              setCreateExamInitialMode('select');
               setActiveTab('create');
             }}
           />
@@ -335,24 +394,31 @@ function MainApp() {
         {activeTab === 'create' && (
           <CreateExamWizard
             initialExam={editingExam}
+            initialMode={createExamInitialMode}
             onSaveExam={handleSaveExam}
             onCancel={() => {
               setEditingExam(null);
+              setCreateExamInitialMode('select');
               setActiveTab('files');
             }}
             onOpenPasteModal={() => setIsPasteModalOpen(true)}
             onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
+            userTier={userTier}
+            onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
           />
         )}
 
         {activeTab === 'manual' && (
           <ManualView
             onNavigate={(tab) => {
-              if (tab !== 'create') setEditingExam(null);
+              if (tab !== 'create') {
+                setEditingExam(null);
+                setCreateExamInitialMode('select');
+              }
               setActiveTab(tab);
             }}
             onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
-            onOpenPasteModal={() => setIsPasteModalOpen(true)}
+            onOpenPasteModal={handleOpenQuestionTextEditor}
           />
         )}
 
@@ -371,13 +437,20 @@ function MainApp() {
         onClose={() => setIsDrawerOpen(false)}
         onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
         onOpenPasteModal={() => setIsPasteModalOpen(true)}
+        onOpenQuestionTextEditor={handleOpenQuestionTextEditor}
         onOpenNotificationsModal={() => setIsNotificationsModalOpen(true)}
         onNavigateToManual={() => {
-          if (activeTab !== 'create') setEditingExam(null);
+          if (activeTab !== 'create') {
+            setEditingExam(null);
+            setCreateExamInitialMode('select');
+          }
           setActiveTab('manual');
         }}
         onNavigateToAdminSubs={() => {
-          if (activeTab !== 'create') setEditingExam(null);
+          if (activeTab !== 'create') {
+            setEditingExam(null);
+            setCreateExamInitialMode('select');
+          }
           setActiveTab('admin-subs');
         }}
         onExportAllData={handleExportAllData}
@@ -399,16 +472,16 @@ function MainApp() {
         isOpen={isPasteModalOpen}
         onClose={() => setIsPasteModalOpen(false)}
         onAddQuestions={handleAddQuestionsFromPaste}
+        userTier={userTier}
+        onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
       />
 
       {/* Exam Professor Modal */}
       <ProfessorModal
         isOpen={isProfessorModalOpen}
         onClose={() => setIsProfessorModalOpen(false)}
-        onGoToPaste={() => {
-          setIsProfessorModalOpen(false);
-          setIsPasteModalOpen(true);
-        }}
+        onGoToQuestionTextEditor={handleOpenQuestionTextEditor}
+        onGoToPaste={handleOpenQuestionTextEditor}
       />
 
       {/* Push & Study Notification Settings Modal */}

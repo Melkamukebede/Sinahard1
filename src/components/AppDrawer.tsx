@@ -31,6 +31,7 @@ interface AppDrawerProps {
   onClose: () => void;
   onOpenProfessorModal: () => void;
   onOpenPasteModal: () => void;
+  onOpenQuestionTextEditor?: () => void;
   onOpenNotificationsModal: () => void;
   onNavigateToManual: () => void;
   onNavigateToAdminSubs?: () => void;
@@ -45,6 +46,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   onClose,
   onOpenProfessorModal,
   onOpenPasteModal,
+  onOpenQuestionTextEditor,
   onOpenNotificationsModal,
   onNavigateToManual,
   onNavigateToAdminSubs,
@@ -300,12 +302,16 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors" />
               </button>
 
-              {/* Paste / Import Questions */}
+              {/* Question Text Editor */}
               <button
                 type="button"
                 onClick={() => {
                   onClose();
-                  onOpenPasteModal();
+                  if (onOpenQuestionTextEditor) {
+                    onOpenQuestionTextEditor();
+                  } else {
+                    onOpenPasteModal();
+                  }
                 }}
                 className="w-full flex items-center justify-between p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-800 text-left transition cursor-pointer group"
               >
@@ -315,10 +321,10 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   </div>
                   <div>
                     <div className="text-xs font-bold text-zinc-900 dark:text-white">
-                      Paste as Text File
+                      Question Text Editor
                     </div>
                     <div className="text-[11px] text-zinc-500">
-                      Raw question parser
+                      Type, paste, or import questions
                     </div>
                   </div>
                 </div>

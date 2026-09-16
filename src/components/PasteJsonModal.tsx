@@ -15,13 +15,18 @@ import {
   BookOpen,
   ArrowRight,
   FileCheck,
+  Crown,
+  Lock,
 } from 'lucide-react';
 import { Question } from '../types';
+import { UserTierStatus } from '../services/subscriptionLimits';
 
 interface PasteJsonModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddQuestions: (questions: Question[]) => void;
+  userTier?: UserTierStatus;
+  onOpenSubscriptionModal?: () => void;
 }
 
 type InputFormat = 'text' | 'json';
@@ -52,11 +57,17 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
   isOpen,
   onClose,
   onAddQuestions,
+  userTier,
+  onOpenSubscriptionModal,
 }) => {
   const [activeTab, setActiveTab] = useState<InputFormat>('text');
   const [inputText, setInputText] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [previewQuestions, setPreviewQuestions] = useState<Question[]>([]);
+
+  const maxLimit = userTier?.maxImportQuestions ?? 20;
+  const isPremium = userTier?.isPremium ?? false;
+  const isExceedingLimit = !isPremium && previewQuestions.length > maxLimit;
 
   // Helper: auto-fix unescaped LaTeX backslashes inside JSON strings
   const fixLatexBackslashes = (raw: string): string => {
@@ -255,9 +266,10 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
     setErrorMessage(null);
   };
 
-  const handleApply = () => {
+  const handleApply = (forceLimit: boolean = false) => {
     if (previewQuestions.length === 0) return;
-    onAddQuestions(previewQuestions);
+    const toImport = forceLimit ? previewQuestions.slice(0, maxLimit) : previewQuestions;
+    onAddQuestions(toImport);
     setInputText('');
     setPreviewQuestions([]);
     onClose();
@@ -285,9 +297,28 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
                 <FileText className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-base font-['Syne',sans-serif]">
-                  Paste as Text File / Questions
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-base font-['Syne',sans-serif]">
+                    Paste as Text File / Questions
+                  </h3>
+                  {userTier && (
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        userTier.isPremium
+                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400'
+                          : userTier.isTrial
+                          ? 'bg-blue-500/15 border-blue-500/40 text-blue-600 dark:text-blue-400'
+                          : 'bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'
+                      }`}
+                    >
+                      {userTier.isPremium
+                        ? '👑 Premium'
+                        : userTier.isTrial
+                        ? `🎁 Trial: ${userTier.trialDaysRemaining}d left`
+                        : '🎓 Free (Max 20)'}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   Bulk question importer with plain text & LaTeX support
                 </p>
@@ -410,55 +441,102 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
               </motion.div>
             )}
 
+            {/* Freemium Limit Warning Banner */}
+            {previewQuestions.length > 0 && isExceedingLimit && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs"
+              >
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <Crown className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                    <span>{userTier?.isTrial ? '5-Day Trial Import Limit' : 'Free Account Limit'}: {maxLimit} Questions</span>
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                      Pasted {previewQuestions.length}
+                    </span>
+                  </div>
+                  <p className="text-zinc-600 dark:text-zinc-300 text-[11px] leading-relaxed">
+                    {userTier?.isTrial
+                      ? `During your 5-day welcome trial (${userTier.trialDaysRemaining} days remaining), you can import up to ${maxLimit} questions per exam. You can import the first ${maxLimit} questions now, or upgrade for unlimited bulk questions.`
+                      : `Standard student accounts can import up to ${maxLimit} questions per exam. You can import the first ${maxLimit} questions now, or upgrade to Premium starting at 35 ETB for unlimited imports.`}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
             {/* Questions Preview List */}
             {previewQuestions.length > 0 && (
               <div className="space-y-2.5 pt-2">
-                <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Parsed Questions Preview ({previewQuestions.length})</span>
+                <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Parsed Questions Preview ({previewQuestions.length})</span>
+                  </span>
+                  {isExceedingLimit && (
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold normal-case text-[11px]">
+                      First {maxLimit} will be imported
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-2.5 max-h-52 overflow-y-auto pr-1">
-                  {previewQuestions.map((q, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.04 }}
-                      className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-xs space-y-1.5"
-                    >
-                      <div className="font-semibold text-zinc-900 dark:text-white">
-                        {idx + 1}. {q.text}
-                      </div>
-                      <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-1">
-                        {q.options.map((opt, oIdx) => (
-                          <div
-                            key={oIdx}
-                            className={`px-2 py-1 rounded-lg border ${
-                              oIdx === q.correct
-                                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-bold'
-                                : 'bg-white/60 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/60 text-zinc-600 dark:text-zinc-400'
-                            }`}
-                          >
-                            {String.fromCharCode(65 + oIdx)}) {opt}
-                            {oIdx === q.correct && ' ✓'}
+                  {previewQuestions.map((q, idx) => {
+                    const isBeyondCap = !isPremium && idx >= maxLimit;
+                    return (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.03 }}
+                        className={`p-3.5 rounded-2xl border text-xs space-y-1.5 transition ${
+                          isBeyondCap
+                            ? 'bg-zinc-100/50 dark:bg-zinc-900/40 border-dashed border-zinc-300 dark:border-zinc-800 opacity-60'
+                            : 'bg-zinc-50 dark:bg-zinc-900/80 border-zinc-200 dark:border-zinc-800'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-semibold text-zinc-900 dark:text-white">
+                            {idx + 1}. {q.text}
                           </div>
-                        ))}
-                      </div>
-                      {q.explanation && (
-                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 italic pt-1">
-                          Explanation: {q.explanation}
+                          {isBeyondCap && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-500 shrink-0">
+                              Requires Premium
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </motion.div>
-                  ))}
+                        <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-1">
+                          {q.options.map((opt, oIdx) => (
+                            <div
+                              key={oIdx}
+                              className={`px-2 py-1 rounded-lg border ${
+                                oIdx === q.correct
+                                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-bold'
+                                  : 'bg-white/60 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/60 text-zinc-600 dark:text-zinc-400'
+                              }`}
+                            >
+                              {String.fromCharCode(65 + oIdx)}) {opt}
+                              {oIdx === q.correct && ' ✓'}
+                            </div>
+                          ))}
+                        </div>
+                        {q.explanation && (
+                          <div className="text-[11px] text-zinc-500 dark:text-zinc-400 italic pt-1">
+                            Explanation: {q.explanation}
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/90 dark:bg-[#0c1626]/90 flex items-center justify-between">
+          <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/90 dark:bg-[#0c1626]/90 flex items-center justify-between flex-wrap gap-3">
             <button
               type="button"
               onClick={onClose}
@@ -467,17 +545,48 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
               Cancel
             </button>
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              disabled={previewQuestions.length === 0}
-              onClick={handleApply}
-              className="px-6 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-950 font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-500/20 transition"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Import {previewQuestions.length} Questions</span>
-            </motion.button>
+            <div className="flex items-center gap-2.5">
+              {isExceedingLimit ? (
+                <>
+                  {onOpenSubscriptionModal && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenSubscriptionModal();
+                      }}
+                      className="px-4 py-2.5 rounded-full bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm transition"
+                    >
+                      <Crown className="w-3.5 h-3.5" />
+                      <span>Upgrade for All {previewQuestions.length} Questions</span>
+                    </button>
+                  )}
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="button"
+                    onClick={() => handleApply(true)}
+                    className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/20 transition"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Import First {maxLimit} Questions</span>
+                  </motion.button>
+                </>
+              ) : (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  disabled={previewQuestions.length === 0}
+                  onClick={() => handleApply(false)}
+                  className="px-6 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-950 font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-500/20 transition"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Import {previewQuestions.length} Questions</span>
+                </motion.button>
+              )}
+            </div>
           </div>
         </motion.div>
       </div>

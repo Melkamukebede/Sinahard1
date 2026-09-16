@@ -63,6 +63,10 @@ export interface AppUser {
   displayName: string | null;
   photoURL: string | null;
   isAnonymous?: boolean;
+  metadata?: {
+    creationTime?: string;
+    lastSignInTime?: string;
+  };
 }
 
 export type SubscriptionDuration = '1day' | '1week' | '1month' | '6months';
