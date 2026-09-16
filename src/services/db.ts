@@ -2,17 +2,68 @@ import {
   collection,
   doc,
   setDoc,
+  updateDoc,
   deleteDoc,
   onSnapshot,
   query,
   where,
   getDocs,
+  orderBy,
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Exam, ExamResult, AppUser } from '../types';
+import {
+  Exam,
+  ExamResult,
+  AppUser,
+  UserSubscription,
+  SubscriptionPlan,
+  SubscriptionDuration,
+} from '../types';
 
 const LOCAL_STORAGE_EXAMS = 'exam_master_exams';
 const LOCAL_STORAGE_RESULTS = 'exam_master_results';
+const LOCAL_STORAGE_SUBSCRIPTIONS = 'exam_master_subscriptions';
+
+export const ADMIN_EMAIL = 'melkamukebede11@gmail.com';
+
+export const ETHIOPIAN_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
+  {
+    id: '1day',
+    name: 'Day Pass',
+    durationLabel: '24 Hours',
+    days: 1,
+    priceETB: 35,
+    description: 'Instant 24-hour full access to all premium exams, solutions, and .txt exports.',
+  },
+  {
+    id: '1week',
+    name: 'Weekly Booster',
+    durationLabel: '7 Days',
+    days: 7,
+    priceETB: 120,
+    badge: 'Popular for Tests',
+    description: '7 days of unlimited practice and download privileges across all subjects and grades.',
+  },
+  {
+    id: '1month',
+    name: 'Monthly Scholar',
+    durationLabel: '30 Days',
+    days: 30,
+    priceETB: 350,
+    badge: 'Best Value',
+    popular: true,
+    description: 'Full monthly access, LaTeX step-by-step math explanations, and bulk study downloads.',
+  },
+  {
+    id: '6months',
+    name: 'Semester Master',
+    durationLabel: '6 Months (180 Days)',
+    days: 180,
+    priceETB: 1250,
+    badge: 'Save 40%',
+    description: 'Complete semester exam prep covering all Ethiopian curriculum units and national exams.',
+  },
+];
 
 export const INITIAL_SAMPLE_EXAMS: Exam[] = [
   {
@@ -405,3 +456,338 @@ export async function clearAllResultsFromDb(user: AppUser | null): Promise<void>
     }
   }
 }
+
+// ----------------- SUBSCRIPTION & CHAPA / FIRESTORE PAYMENT SERVICE -----------------
+
+export function getLocalSubscriptions(): UserSubscription[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_SUBSCRIPTIONS);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function saveLocalSubscriptions(subs: UserSubscription[]) {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_SUBSCRIPTIONS, JSON.stringify(subs));
+  } catch (err) {
+    console.warn('Could not save subscriptions to local storage:', err);
+  }
+}
+
+export function isUserAdmin(user: AppUser | null): boolean {
+  if (!user || !user.email) return false;
+  return user.email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase();
+}
+
+/**
+ * Validates if the user currently has an active verified premium subscription.
+ */
+export function isUserSubscriptionActive(subscription: UserSubscription | null): boolean {
+  if (!subscription) return false;
+  if (subscription.paymentStatus !== 'verified') return false;
+  if (!subscription.expiresAt) return false;
+
+  const now = new Date().getTime();
+  const expiry = new Date(subscription.expiresAt).getTime();
+  return expiry > now;
+}
+
+/**
+ * Calculates start and expiry dates given a plan duration.
+ */
+export function calculateSubscriptionExpiry(duration: SubscriptionDuration): {
+  startDate: string;
+  expiresAt: string;
+} {
+  const start = new Date();
+  const daysMap: Record<SubscriptionDuration, number> = {
+    '1day': 1,
+    '1week': 7,
+    '1month': 30,
+    '6months': 180,
+  };
+  const daysToAdd = daysMap[duration] || 1;
+  const expiry = new Date(start.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+
+  return {
+    startDate: start.toISOString(),
+    expiresAt: expiry.toISOString(),
+  };
+}
+
+/**
+ * Real-time listener for current user's active subscription.
+ */
+export function subscribeToUserSubscription(
+  user: AppUser | null,
+  onUpdate: (subscription: UserSubscription | null) => void
+): () => void {
+  if (!user || user.uid === 'guest') {
+    const local = getLocalSubscriptions();
+    const latest = local.find((s) => s.userId === 'guest') || null;
+    onUpdate(latest);
+    return () => {};
+  }
+
+  try {
+    const subsRef = collection(db, 'subscriptions');
+    const q = query(
+      subsRef,
+      where('userId', '==', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const userSubs: UserSubscription[] = [];
+        snapshot.forEach((docSnap) => {
+          userSubs.push({ id: docSnap.id, ...docSnap.data() } as UserSubscription);
+        });
+
+        // Find the active verified subscription or latest pending
+        const active = userSubs.find((s) => isUserSubscriptionActive(s));
+        if (active) {
+          onUpdate(active);
+        } else {
+          // Sort by createdAt desc
+          userSubs.sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          onUpdate(userSubs[0] || null);
+        }
+      },
+      (error) => {
+        console.warn('Subscription snapshot listener error:', error);
+        const local = getLocalSubscriptions();
+        const fallback = local.find((s) => s.userId === user.uid) || null;
+        onUpdate(fallback);
+      }
+    );
+
+    return unsubscribe;
+  } catch (err) {
+    console.warn('Error subscribing to user subscription:', err);
+    onUpdate(null);
+    return () => {};
+  }
+}
+
+/**
+ * Real-time listener for all subscriptions (Admin only).
+ */
+export function subscribeToAllSubscriptions(
+  user: AppUser | null,
+  onUpdate: (subscriptions: UserSubscription[]) => void
+): () => void {
+  if (!user || !isUserAdmin(user)) {
+    onUpdate(getLocalSubscriptions());
+    return () => {};
+  }
+
+  try {
+    const subsRef = collection(db, 'subscriptions');
+    const unsubscribe = onSnapshot(
+      subsRef,
+      (snapshot) => {
+        const all: UserSubscription[] = [];
+        snapshot.forEach((docSnap) => {
+          all.push({ id: docSnap.id, ...docSnap.data() } as UserSubscription);
+        });
+        all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        saveLocalSubscriptions(all);
+        onUpdate(all);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'subscriptions');
+      }
+    );
+    return unsubscribe;
+  } catch (err) {
+    console.warn('Error subscribing to all subscriptions:', err);
+    onUpdate(getLocalSubscriptions());
+    return () => {};
+  }
+}
+
+/**
+ * Submit or record a subscription payment request (Chapa, Telebirr, CBE, etc.)
+ */
+export async function createSubscriptionRecord(
+  subscription: Omit<UserSubscription, 'id'>,
+  user: AppUser | null
+): Promise<UserSubscription> {
+  const id = 'sub_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+  const fullSub: UserSubscription = {
+    ...subscription,
+    id,
+  };
+
+  // Save to local cache
+  const local = getLocalSubscriptions();
+  local.unshift(fullSub);
+  saveLocalSubscriptions(local);
+
+  if (user && user.uid !== 'guest') {
+    try {
+      const docRef = doc(db, 'subscriptions', id);
+      await setDoc(docRef, fullSub);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `subscriptions/${id}`);
+    }
+  }
+
+  return fullSub;
+}
+
+/**
+ * Admin action to verify and activate student subscription.
+ */
+export async function verifySubscriptionInDb(
+  subscriptionId: string,
+  user: AppUser | null
+): Promise<void> {
+  const local = getLocalSubscriptions();
+  const found = local.find((s) => s.id === subscriptionId);
+  const { startDate, expiresAt } = calculateSubscriptionExpiry(found?.planDuration || '1month');
+
+  const updatedFields: Partial<UserSubscription> = {
+    paymentStatus: 'verified',
+    startDate,
+    expiresAt,
+    verifiedAt: new Date().toISOString(),
+    verifiedBy: user?.email || 'admin',
+  };
+
+  if (found) {
+    Object.assign(found, updatedFields);
+    saveLocalSubscriptions(local);
+  }
+
+  if (user) {
+    try {
+      const docRef = doc(db, 'subscriptions', subscriptionId);
+      await updateDoc(docRef, updatedFields);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `subscriptions/${subscriptionId}`);
+    }
+  }
+}
+
+/**
+ * Auto-verifies a subscription document by its unique Chapa transaction reference.
+ */
+export async function verifySubscriptionByTxRef(
+  txRef: string,
+  user: AppUser | null
+): Promise<UserSubscription | null> {
+  const local = getLocalSubscriptions();
+  const found = local.find((s) => s.transactionReference === txRef);
+  let planDuration: SubscriptionDuration = found?.planDuration || '1month';
+
+  try {
+    const subsRef = collection(db, 'subscriptions');
+    const q = query(subsRef, where('transactionReference', '==', txRef));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const docSnap = snap.docs[0];
+      const data = docSnap.data() as UserSubscription;
+      planDuration = data.planDuration || planDuration;
+      const { startDate, expiresAt } = calculateSubscriptionExpiry(planDuration);
+      const updatedFields = {
+        paymentStatus: 'verified' as const,
+        startDate,
+        expiresAt,
+        verifiedAt: new Date().toISOString(),
+        verifiedBy: 'chapa-automated',
+      };
+      await updateDoc(docSnap.ref, updatedFields);
+      const verifiedSub: UserSubscription = {
+        ...data,
+        ...updatedFields,
+        id: docSnap.id,
+      };
+      if (found) {
+        Object.assign(found, updatedFields);
+        saveLocalSubscriptions(local);
+      }
+      return verifiedSub;
+    }
+  } catch (err) {
+    console.warn('Error auto-verifying subscription by tx_ref in Firestore:', err);
+  }
+
+  if (found) {
+    const { startDate, expiresAt } = calculateSubscriptionExpiry(planDuration);
+    Object.assign(found, {
+      paymentStatus: 'verified',
+      startDate,
+      expiresAt,
+      verifiedAt: new Date().toISOString(),
+      verifiedBy: 'chapa-automated',
+    });
+    saveLocalSubscriptions(local);
+    return found;
+  }
+
+  // Fallback if record was not previously stored locally
+  if (user) {
+    const { startDate, expiresAt } = calculateSubscriptionExpiry(planDuration);
+    const newSub: UserSubscription = {
+      id: `sub-${txRef}`,
+      userId: user.uid,
+      userEmail: user.email || '',
+      userName: user.displayName || 'Student',
+      planDuration,
+      amountETB: 199,
+      paymentMethod: 'chapa',
+      transactionReference: txRef,
+      paymentStatus: 'verified',
+      startDate,
+      expiresAt,
+      verifiedAt: new Date().toISOString(),
+      verifiedBy: 'chapa-automated',
+      createdAt: new Date().toISOString(),
+    };
+    local.push(newSub);
+    saveLocalSubscriptions(local);
+    return newSub;
+  }
+
+  return null;
+}
+
+/**
+ * Admin action to reject an invalid subscription reference.
+ */
+export async function rejectSubscriptionInDb(
+  subscriptionId: string,
+  reason: string,
+  user: AppUser | null
+): Promise<void> {
+  const local = getLocalSubscriptions();
+  const found = local.find((s) => s.id === subscriptionId);
+  const updatedFields: Partial<UserSubscription> = {
+    paymentStatus: 'rejected',
+    notes: reason,
+    verifiedAt: new Date().toISOString(),
+    verifiedBy: user?.email || 'admin',
+  };
+
+  if (found) {
+    Object.assign(found, updatedFields);
+    saveLocalSubscriptions(local);
+  }
+
+  if (user) {
+    try {
+      const docRef = doc(db, 'subscriptions', subscriptionId);
+      await updateDoc(docRef, updatedFields);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `subscriptions/${subscriptionId}`);
+    }
+  }
+}
+

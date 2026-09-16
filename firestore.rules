@@ -51,5 +51,25 @@ service cloud.firestore {
       allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
+
+    // Subscriptions Collection (Premium Ethiopian Birr Payment Records)
+    // Students can read their own subscriptions and submit new payment requests.
+    // Admin (or owner) can view and verify subscriptions.
+    match /subscriptions/{subscriptionId} {
+      allow get: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        request.auth.token.email == 'melkamukebede11@gmail.com'
+      );
+      allow list: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        request.auth.token.email == 'melkamukebede11@gmail.com'
+      );
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        request.auth.token.email == 'melkamukebede11@gmail.com'
+      );
+      allow delete: if isSignedIn() && request.auth.token.email == 'melkamukebede11@gmail.com';
+    }
   }
 }

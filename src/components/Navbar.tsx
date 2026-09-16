@@ -15,19 +15,25 @@ import {
   Sparkles,
   Menu,
   HelpCircle,
+  Crown,
+  ShieldCheck,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { AuthNoticeModal } from './AuthNoticeModal';
+import { isUserAdmin, isUserSubscriptionActive } from '../services/db';
+import { UserSubscription } from '../types';
 
-export type PageTab = 'home' | 'files' | 'results' | 'create' | 'manual';
+export type PageTab = 'home' | 'files' | 'results' | 'create' | 'manual' | 'admin-subs';
 
 interface NavbarProps {
   activeTab: PageTab;
   onTabChange: (tab: PageTab) => void;
   onOpenNotifications: () => void;
   onOpenDrawer: () => void;
+  onOpenSubscriptionModal: () => void;
+  activeSubscription: UserSubscription | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,6 +41,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onTabChange,
   onOpenNotifications,
   onOpenDrawer,
+  onOpenSubscriptionModal,
+  activeSubscription,
 }) => {
   const { theme, toggleTheme, isDark } = useTheme();
   const {
@@ -51,6 +59,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [manualNoticeOpen, setManualNoticeOpen] = useState(false);
 
   const isCloudSynced = Boolean(user && user.uid !== 'guest' && !user.isAnonymous);
+  const isAdmin = isUserAdmin(user);
+  const isPremiumActive = isUserSubscriptionActive(activeSubscription);
 
   const handleSignInClick = async () => {
     if (isSigningIn) return;
@@ -132,10 +142,43 @@ export const Navbar: React.FC<NavbarProps> = ({
             <PlusCircle className="w-4 h-4" />
             Create
           </button>
+
+          {/* Admin Verification Panel Link (Melkamu / Admin) */}
+          {isAdmin && (
+            <button
+              id="nav-tab-admin-subs"
+              type="button"
+              onClick={() => onTabChange('admin-subs')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full font-medium transition cursor-pointer text-xs ${
+                activeTab === 'admin-subs'
+                  ? 'bg-amber-500 text-zinc-950 font-bold shadow-sm shadow-amber-500/20'
+                  : 'text-amber-600 dark:text-amber-400 hover:text-amber-700'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Payments</span>
+            </button>
+          )}
         </nav>
 
         {/* Right side controls */}
         <div className="flex items-center gap-2">
+          {/* Ethiopian Birr Premium Upgrade Button */}
+          <button
+            id="premium-upgrade-btn"
+            type="button"
+            onClick={onOpenSubscriptionModal}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer shadow-xs ${
+              isPremiumActive
+                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                : 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-zinc-950 shadow-md shadow-amber-500/20'
+            }`}
+            title="Premium Ethiopian Birr Subscription"
+          >
+            <Crown className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>{isPremiumActive ? 'Premium Active' : 'Premium'}</span>
+          </button>
+
           {/* Light / Dark Mode Toggle Button */}
           <button
             id="theme-toggle-btn"
@@ -372,6 +415,16 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <PlusCircle className="w-4 h-4" />
           <span>Create</span>
+        </button>
+        <button
+          type="button"
+          onClick={onOpenSubscriptionModal}
+          className={`flex flex-col items-center py-1 px-2 rounded-lg ${
+            isPremiumActive ? 'text-amber-500 font-bold' : 'text-zinc-500'
+          }`}
+        >
+          <Crown className="w-4 h-4" />
+          <span>Premium</span>
         </button>
       </div>
     </header>

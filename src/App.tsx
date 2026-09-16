@@ -12,6 +12,8 @@ import { JsonViewerModal } from './components/JsonViewerModal';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { AppDrawer } from './components/AppDrawer';
 import { ManualView } from './components/ManualView';
+import { SubscriptionModal } from './components/SubscriptionModal';
+import { AdminSubscriptionsView } from './components/AdminSubscriptionsView';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -19,6 +21,7 @@ import {
   Exam,
   ExamResult,
   Question,
+  UserSubscription,
 } from './types';
 import {
   subscribeToExams,
@@ -28,15 +31,23 @@ import {
   saveResultToDb,
   deleteResultFromDb,
   clearAllResultsFromDb,
+  subscribeToUserSubscription,
+  subscribeToAllSubscriptions,
+  isUserAdmin,
+  verifySubscriptionByTxRef,
   INITIAL_SAMPLE_EXAMS,
 } from './services/db';
+import { verifyChapaTransaction } from './services/chapa';
+import { verifyTelebirrPayment } from './services/telebirr';
 
 function MainApp() {
-  const { user } = useAuth();
+  const { user, signInWithGoogle } = useAuth();
 
   const [activeTab, setActiveTab] = useState<PageTab>('home');
   const [exams, setExams] = useState<Exam[]>(INITIAL_SAMPLE_EXAMS);
   const [results, setResults] = useState<ExamResult[]>([]);
+  const [activeSubscription, setActiveSubscription] = useState<UserSubscription | null>(null);
+  const [allSubscriptions, setAllSubscriptions] = useState<UserSubscription[]>([]);
 
   // Active exam for practice / editing
   const [activePracticeExam, setActivePracticeExam] = useState<Exam | null>(null);
@@ -47,6 +58,7 @@ function MainApp() {
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
   const [isProfessorModalOpen, setIsProfessorModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Delete confirmations
@@ -110,6 +122,66 @@ function MainApp() {
       setResults(updatedResults);
     });
     return () => unsubResults();
+  }, [user]);
+
+  // Real-time synchronization for current student subscription
+  useEffect(() => {
+    const unsubSub = subscribeToUserSubscription(user, (sub) => {
+      setActiveSubscription(sub);
+    });
+    return () => unsubSub();
+  }, [user]);
+
+  // Real-time synchronization for admin subscriptions panel
+  useEffect(() => {
+    if (isUserAdmin(user)) {
+      const unsubAll = subscribeToAllSubscriptions(user, (all) => {
+        setAllSubscriptions(all);
+      });
+      return () => unsubAll();
+    }
+  }, [user]);
+
+  // Handle return redirect from Chapa hosted checkout (?chapa_verify=TX_REF)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const txRef = params.get('chapa_verify');
+    if (txRef) {
+      verifyChapaTransaction(txRef).then(async (res) => {
+        if (res.verified) {
+          const activated = await verifySubscriptionByTxRef(txRef, user || null);
+          if (activated) {
+            setActiveSubscription(activated);
+          }
+          setIsSubscriptionModalOpen(false);
+          showToast('Payment successfully verified with Chapa! Premium membership active.');
+        } else {
+          showToast(
+            res.message ||
+              `Payment status: ${res.data?.status || 'pending'}. Complete payment on Chapa to activate.`
+          );
+        }
+      });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    // Handle return redirect from Telebirr developer checkout (?telebirr_verify=TRADE_NO)
+    const telebirrTradeNo = params.get('telebirr_verify');
+    if (telebirrTradeNo) {
+      verifyTelebirrPayment(telebirrTradeNo).then(async (res) => {
+        if (res.verified) {
+          const activated = await verifySubscriptionByTxRef(telebirrTradeNo, user || null);
+          if (activated) {
+            setActiveSubscription(activated);
+          }
+          setIsSubscriptionModalOpen(false);
+          showToast('🎉 Telebirr payment successfully verified! Premium membership active.');
+        } else {
+          showToast(res.message || 'Telebirr payment is pending or incomplete.');
+        }
+      });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, [user]);
 
   // Actions
@@ -215,6 +287,8 @@ function MainApp() {
         }}
         onOpenNotifications={() => setIsNotificationsModalOpen(true)}
         onOpenDrawer={() => setIsDrawerOpen(true)}
+        onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+        activeSubscription={activeSubscription}
       />
 
       {/* Main Content Area */}
@@ -230,6 +304,8 @@ function MainApp() {
             onStartPractice={handleStartPractice}
             onOpenPasteModal={() => setIsPasteModalOpen(true)}
             onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
+            onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+            activeSubscription={activeSubscription}
           />
         )}
 
@@ -279,6 +355,14 @@ function MainApp() {
             onOpenPasteModal={() => setIsPasteModalOpen(true)}
           />
         )}
+
+        {activeTab === 'admin-subs' && (
+          <AdminSubscriptionsView
+            user={user}
+            subscriptions={allSubscriptions}
+            onClose={() => setActiveTab('home')}
+          />
+        )}
       </main>
 
       {/* Utilities & Secondary Features Side Drawer */}
@@ -292,8 +376,14 @@ function MainApp() {
           if (activeTab !== 'create') setEditingExam(null);
           setActiveTab('manual');
         }}
+        onNavigateToAdminSubs={() => {
+          if (activeTab !== 'create') setEditingExam(null);
+          setActiveTab('admin-subs');
+        }}
         onExportAllData={handleExportAllData}
         onResetDefaultExams={handleResetDefaultExams}
+        onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+        activeSubscription={activeSubscription}
       />
 
       {/* Practice Modal */}
@@ -343,6 +433,22 @@ function MainApp() {
         isDestructive
         onConfirm={handleDeleteExam}
         onCancel={() => setExamToDelete(null)}
+      />
+
+      {/* Ethiopian Birr Student Subscription & Chapa Checkout Modal */}
+      <SubscriptionModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
+        user={user}
+        activeSubscription={activeSubscription}
+        onSignInRequired={() => {
+          setIsSubscriptionModalOpen(false);
+          signInWithGoogle();
+        }}
+        onOpenSignIn={() => {
+          setIsSubscriptionModalOpen(false);
+          signInWithGoogle();
+        }}
       />
 
       {/* Toast Notification Banner */}

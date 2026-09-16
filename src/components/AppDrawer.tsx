@@ -18,11 +18,13 @@ import {
   GraduationCap,
   ChevronRight,
   ShieldCheck,
+  Crown,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useNotifications } from '../context/NotificationContext';
-import { Exam, ExamResult } from '../types';
+import { Exam, ExamResult, UserSubscription } from '../types';
+import { isUserSubscriptionActive, isUserAdmin } from '../services/db';
 
 interface AppDrawerProps {
   isOpen: boolean;
@@ -31,8 +33,11 @@ interface AppDrawerProps {
   onOpenPasteModal: () => void;
   onOpenNotificationsModal: () => void;
   onNavigateToManual: () => void;
+  onNavigateToAdminSubs?: () => void;
   onExportAllData: () => void;
   onResetDefaultExams: () => void;
+  onOpenSubscriptionModal: () => void;
+  activeSubscription: UserSubscription | null;
 }
 
 export const AppDrawer: React.FC<AppDrawerProps> = ({
@@ -42,8 +47,11 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   onOpenPasteModal,
   onOpenNotificationsModal,
   onNavigateToManual,
+  onNavigateToAdminSubs,
   onExportAllData,
   onResetDefaultExams,
+  onOpenSubscriptionModal,
+  activeSubscription,
 }) => {
   const { user, signInWithGoogle, signOut, isSigningIn } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
@@ -178,6 +186,35 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 Tools & Utilities
               </div>
 
+              {/* Premium Ethiopian Birr Subscription Card */}
+              <button
+                id="drawer-premium-btn"
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenSubscriptionModal();
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-transparent hover:from-amber-500/25 border border-amber-500/30 text-left transition cursor-pointer group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-zinc-950 flex items-center justify-center font-bold shadow-xs">
+                    <Crown className="w-4 h-4 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                      <span>Premium Subscription</span>
+                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                        ETB
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Telebirr, CBE & Chapa day/month plans
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+
               {/* User Manual Documentation - Prominently in Drawer */}
               <button
                 id="drawer-manual-btn"
@@ -206,6 +243,37 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 </div>
                 <ChevronRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
               </button>
+
+              {/* Admin Payment Verification (Melkamu / Admin) */}
+              {isUserAdmin(user) && onNavigateToAdminSubs && (
+                <button
+                  id="drawer-admin-subs-btn"
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onNavigateToAdminSubs();
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-left transition cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center font-bold shadow-xs">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                        <span>Payment Verification</span>
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                          Admin
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                        Verify Telebirr, CBE & BoA references
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              )}
 
               {/* Exam Professor AI */}
               <button

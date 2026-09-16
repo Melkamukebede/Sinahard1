@@ -11,9 +11,13 @@ import {
   Calendar,
   CheckCircle2,
   Layers,
+  Crown,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
-import { Exam, ExamResult } from '../types';
+import { Exam, ExamResult, UserSubscription } from '../types';
 import { PageTab } from './Navbar';
+import { isUserSubscriptionActive } from '../services/db';
 
 interface HomeViewProps {
   exams: Exam[];
@@ -22,6 +26,8 @@ interface HomeViewProps {
   onStartPractice: (exam: Exam) => void;
   onOpenPasteModal: () => void;
   onOpenProfessorModal: () => void;
+  onOpenSubscriptionModal?: () => void;
+  activeSubscription?: UserSubscription | null;
 }
 
 const containerVariants = {
@@ -48,6 +54,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
   exams,
   results,
   onNavigate,
+  onOpenSubscriptionModal,
+  activeSubscription,
 }) => {
   const totalQuestions = exams.reduce((acc, e) => acc + (e.questions?.length || 0), 0);
   const avgScore = results.length
@@ -55,6 +63,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
     : 0;
   const passedCount = results.filter((r) => r.percentage >= (r.passingScore || 70)).length;
   const recentResults = results.slice(0, 4);
+  const isPremiumActive = isUserSubscriptionActive(activeSubscription || null);
 
   return (
     <motion.div
@@ -63,6 +72,47 @@ export const HomeView: React.FC<HomeViewProps> = ({
       animate="visible"
       className="space-y-6 pb-14"
     >
+      {/* Ethiopian Birr Premium Membership Banner */}
+      <motion.div
+        variants={itemVariants}
+        className="relative overflow-hidden p-5 sm:p-6 rounded-[28px] bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-transparent border border-amber-500/30 dark:border-amber-500/20 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-zinc-950 flex items-center justify-center font-black shadow-md shadow-amber-500/20 shrink-0">
+            <Crown className="w-6 h-6 stroke-[2.2]" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-black font-['Syne',sans-serif] text-zinc-900 dark:text-white">
+                {isPremiumActive ? 'Premium Student Membership Active' : 'ExamMaster Premium Access'}
+              </h2>
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                ETB
+              </span>
+            </div>
+            <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-0.5">
+              {isPremiumActive
+                ? `Valid until ${
+                    activeSubscription?.expiresAt
+                      ? new Date(activeSubscription.expiresAt).toLocaleDateString()
+                      : 'Active'
+                  }. Full access to all subjects, grades, and .txt exports.`
+                : '1 Day (35 ETB), 1 Week (120 ETB), 1 Month (350 ETB), or 6 Months. Pay via Telebirr, CBE Birr, or Chapa.'}
+            </p>
+          </div>
+        </div>
+
+        {onOpenSubscriptionModal && (
+          <button
+            type="button"
+            onClick={onOpenSubscriptionModal}
+            className="self-start sm:self-auto px-5 py-2 rounded-full bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-amber-500/20 shrink-0"
+          >
+            <Crown className="w-3.5 h-3.5 fill-current" />
+            <span>{isPremiumActive ? 'View Plan Details' : 'Upgrade in ETB'}</span>
+          </button>
+        )}
+      </motion.div>
       {/* Material Design 3 Hero Surface */}
       <motion.div
         variants={itemVariants}

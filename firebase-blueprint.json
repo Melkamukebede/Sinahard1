@@ -67,6 +67,29 @@
         "days": { "type": "array" }
       },
       "required": ["id", "userId", "enabled"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "Student premium subscription record for Ethiopian Birr payments (Chapa, Telebirr, CBE)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userEmail": { "type": "string", "maxLength": 256 },
+        "userName": { "type": "string", "maxLength": 128 },
+        "planDuration": { "type": "string", "enum": ["1day", "1week", "1month", "6months"] },
+        "amountETB": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["chapa", "telebirr", "cbe", "abyssinia"] },
+        "transactionReference": { "type": "string", "maxLength": 128 },
+        "paymentStatus": { "type": "string", "enum": ["pending", "verified", "rejected", "expired"] },
+        "startDate": { "type": "string", "maxLength": 64 },
+        "expiresAt": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "verifiedAt": { "type": "string", "maxLength": 64 },
+        "verifiedBy": { "type": "string", "maxLength": 128 },
+        "notes": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["id", "userId", "planDuration", "amountETB", "paymentMethod", "transactionReference", "paymentStatus", "createdAt"]
     }
   },
   "firestore": {
@@ -85,6 +108,10 @@
     "/reminders/{reminderId}": {
       "schema": "StudyReminder",
       "description": "Study notification alerts and schedules"
+    },
+    "/subscriptions/{subscriptionId}": {
+      "schema": "Subscription",
+      "description": "Premium student subscription and payment transaction logs"
     }
   }
 }

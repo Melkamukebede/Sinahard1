@@ -64,3 +64,38 @@ export interface AppUser {
   photoURL: string | null;
   isAnonymous?: boolean;
 }
+
+export type SubscriptionDuration = '1day' | '1week' | '1month' | '6months';
+
+export type PaymentMethod = 'chapa' | 'telebirr' | 'cbe' | 'abyssinia';
+
+export type PaymentStatus = 'pending' | 'verified' | 'rejected' | 'expired';
+
+export interface SubscriptionPlan {
+  id: SubscriptionDuration;
+  name: string;
+  durationLabel: string;
+  days: number;
+  priceETB: number;
+  badge?: string;
+  popular?: boolean;
+  description: string;
+}
+
+export interface UserSubscription {
+  id?: string;
+  userId: string;
+  userEmail?: string;
+  userName?: string;
+  planDuration: SubscriptionDuration;
+  amountETB: number;
+  paymentMethod: PaymentMethod;
+  transactionReference: string;
+  paymentStatus: PaymentStatus;
+  startDate?: string;
+  expiresAt?: string;
+  createdAt: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  notes?: string;
+}
