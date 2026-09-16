@@ -121,6 +121,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Popup request was cancelled or replaced by another action.');
       } else if (code === 'auth/popup-closed-by-user') {
         console.info('User closed the sign-in window.');
+      } else if (code === 'auth/unauthorized-domain') {
+        const currentHost = window.location.hostname;
+        console.error(`Firebase Auth Error: Domain "${currentHost}" is not authorized.`);
+        setError(`This domain (${currentHost}) is not authorized in your Firebase project. Please add "${currentHost}" in Firebase Console → Authentication → Settings → Authorized domains.`);
       } else if (msg.includes('INTERNAL ASSERTION FAILED')) {
         console.warn('Handled internal Firebase Auth assertion gracefully.');
         setPopupBlocked(true);

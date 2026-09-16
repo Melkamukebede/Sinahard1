@@ -16,6 +16,7 @@ import {
   Sparkles,
   RefreshCw,
   Sliders,
+  Clock,
 } from 'lucide-react';
 import {
   SubscriptionPlan,
@@ -74,8 +75,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
-  // Telebirr Developer API State
-  const [telebirrMode, setTelebirrMode] = useState<'gateway' | 'manual'>('gateway');
+  // Telebirr Developer API State (set to manual as default while waiting for TIN/Ethio Telecom approval)
+  const [telebirrMode, setTelebirrMode] = useState<'gateway' | 'manual'>('manual');
   const [showTelebirrConfig, setShowTelebirrConfig] = useState(false);
   const [telebirrAppId, setTelebirrAppId] = useState('');
   const [telebirrShortCode, setTelebirrShortCode] = useState('');
@@ -527,8 +528,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {[
-                { id: 'telebirr', name: 'Telebirr (API)', icon: Smartphone, desc: 'Ethio Telecom Gateway' },
-                { id: 'chapa', name: 'Chapa (API)', icon: Zap, desc: 'Online Gateway' },
+                { id: 'telebirr', name: 'Telebirr', icon: Smartphone, desc: 'Mobile Transfer / *127#' },
+                { id: 'chapa', name: 'Chapa (API)', icon: Zap, desc: 'Instant Live Gateway' },
                 { id: 'cbe', name: 'CBE Birr / CBE', icon: Building, desc: 'Commercial Bank' },
                 { id: 'abyssinia', name: 'BoA (Abyssinia)', icon: CreditCard, desc: 'Direct Bank' },
               ].map((m) => {
@@ -573,24 +574,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-3">
             {paymentMethod === 'telebirr' && (
               <div className="space-y-3">
-                {/* Telebirr Mode Switcher */}
+                {/* Telebirr Mode Switcher with Coming Soon for API */}
                 <div className="flex items-center gap-2 p-1 bg-zinc-200/70 dark:bg-zinc-800/80 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTelebirrMode('gateway');
-                      setCheckoutUrl(null);
-                      setActiveTxRef(null);
-                    }}
-                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                      telebirrMode === 'gateway'
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Zap className="w-3.5 h-3.5" />
-                    <span>Telebirr Developer API (Auto-Verify)</span>
-                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -605,87 +590,107 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     }`}
                   >
                     <Smartphone className="w-3.5 h-3.5" />
-                    <span>Manual Transfer (*127#)</span>
+                    <span>Direct Telebirr (*127# / App)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTelebirrMode('gateway');
+                      setCheckoutUrl(null);
+                      setActiveTxRef(null);
+                    }}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                      telebirrMode === 'gateway'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Telebirr Direct API</span>
+                    <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 ml-0.5">
+                      Coming Soon
+                    </span>
                   </button>
                 </div>
 
                 {telebirrMode === 'gateway' ? (
-                  <div className="space-y-2.5">
+                  <div className="space-y-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                        Ethio Telecom Telebirr Developer Gateway
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                        {telebirrStatus?.hasAppId ? 'Live Gateway Configured' : 'Developer Sandbox Active'}
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <span className="text-xs font-bold text-amber-950 dark:text-amber-200">
+                          Telebirr Direct API Gateway — Coming Soon
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                        Pending TIN Approval
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                      Automated checkout via Telebirr Developer API. Click &quot;Proceed to Telebirr Checkout&quot; to authorize the {selectedPlan.priceETB} ETB payment and receive instant Premium access.
+                    <p className="text-[11px] text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                      Direct automated Telebirr checkout integration is currently waiting for merchant Tax Identification Number (TIN) &amp; Ethio Telecom enterprise verification.
                     </p>
 
-                    <div>
-                      <label className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 block mb-1">
-                        Telebirr Customer Phone Number:
-                      </label>
-                      <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="e.g. 0911234567"
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-mono text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                      />
+                    <div className="p-2.5 rounded-lg bg-white/70 dark:bg-zinc-900/70 border border-amber-500/20 space-y-1.5">
+                      <div className="text-[11px] font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Recommended Instant Alternative:</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                        • Switch to <strong>Direct Telebirr (*127#)</strong> above to transfer manually and enter your SMS reference, or<br/>
+                        • Choose <strong>Chapa (API)</strong> to pay instantly using your <strong>Telebirr wallet</strong> via automated checkout!
+                      </p>
                     </div>
 
-                    {/* Collapsible developer credentials */}
+                    {/* Developer Preview & Test Portal (for testing ahead of live launch) */}
                     <div>
                       <button
                         type="button"
                         onClick={() => setShowTelebirrConfig(!showTelebirrConfig)}
-                        className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                        className="text-[11px] text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer font-medium"
                       >
                         <Sliders className="w-3 h-3" />
                         <span>
-                          {showTelebirrConfig ? 'Hide Developer Credentials' : 'Developer API Keys (Optional Override)'}
+                          {showTelebirrConfig ? 'Hide Developer Test Controls' : 'Developer Sandbox Test Controls'}
                         </span>
                       </button>
 
                       {showTelebirrConfig && (
                         <div className="mt-2 p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-2 text-xs">
                           <p className="text-[10px] text-zinc-500">
-                            By default, keys are read from your environment variables (`TELEBIRR_APP_ID`, `TELEBIRR_SHORT_CODE`, `TELEBIRR_APP_KEY`). You can also override them here for testing:
+                            You can test the Telebirr payment simulation flow before your official TIN is activated:
                           </p>
+                          <div>
+                            <span className="text-[10px] text-zinc-500 block mb-0.5">Test Customer Phone:</span>
+                            <input
+                              type="tel"
+                              value={phoneNumber}
+                              onChange={(e) => setPhoneNumber(e.target.value)}
+                              placeholder="0911000000"
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 font-mono text-[11px]"
+                            />
+                          </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div>
-                              <span className="text-[10px] text-zinc-500 block mb-0.5">App ID:</span>
+                              <span className="text-[10px] text-zinc-500 block mb-0.5">App ID (Once issued):</span>
                               <input
                                 type="text"
                                 value={telebirrAppId}
                                 onChange={(e) => setTelebirrAppId(e.target.value)}
-                                placeholder="e.g. telebirr-app-id"
+                                placeholder="telebirr-app-id"
                                 className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 font-mono text-[11px]"
                               />
                             </div>
                             <div>
-                              <span className="text-[10px] text-zinc-500 block mb-0.5">Short Code / Till:</span>
+                              <span className="text-[10px] text-zinc-500 block mb-0.5">Short Code (Till):</span>
                               <input
                                 type="text"
                                 value={telebirrShortCode}
                                 onChange={(e) => setTelebirrShortCode(e.target.value)}
-                                placeholder="e.g. 100234"
+                                placeholder="100234"
                                 className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 font-mono text-[11px]"
                               />
                             </div>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-zinc-500 block mb-0.5">App Key:</span>
-                            <input
-                              type="password"
-                              value={telebirrAppKey}
-                              onChange={(e) => setTelebirrAppKey(e.target.value)}
-                              placeholder="Ethio Telecom App Key"
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 font-mono text-[11px]"
-                            />
                           </div>
                         </div>
                       )}
