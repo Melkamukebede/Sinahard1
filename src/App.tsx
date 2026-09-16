@@ -8,12 +8,12 @@ import { PracticeModal } from './components/PracticeModal';
 import { PasteJsonModal } from './components/PasteJsonModal';
 import { ProfessorModal } from './components/ProfessorModal';
 import { NotificationSettingsModal } from './components/NotificationSettingsModal';
-import { JsonViewerModal } from './components/JsonViewerModal';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { AppDrawer } from './components/AppDrawer';
 import { ManualView } from './components/ManualView';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { AdminSubscriptionsView } from './components/AdminSubscriptionsView';
+import { CuratedExamsModal } from './components/CuratedExamsModal';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -59,13 +59,13 @@ function MainApp() {
   const [activePracticeExam, setActivePracticeExam] = useState<Exam | null>(null);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
   const [createExamInitialMode, setCreateExamInitialMode] = useState<'select' | 'manual' | 'paste'>('select');
-  const [viewingJsonExam, setViewingJsonExam] = useState<Exam | null>(null);
 
   // Modals
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
   const [isProfessorModalOpen, setIsProfessorModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [isCuratedModalOpen, setIsCuratedModalOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Delete confirmations
@@ -206,6 +206,7 @@ function MainApp() {
 
   const handleEditExam = (exam: Exam) => {
     setEditingExam(exam);
+    setCreateExamInitialMode('manual');
     setActiveTab('create');
   };
 
@@ -327,6 +328,27 @@ function MainApp() {
     }
   };
 
+  const handleDownloadCuratedExam = async (catalogExam: Exam) => {
+    const newDownloadedExam: Exam = {
+      ...catalogExam,
+      id: `downloaded_${catalogExam.id}`,
+      catalogId: catalogExam.id,
+      name: catalogExam.name || catalogExam.title || 'Official Curriculum Exam',
+      title: catalogExam.title || catalogExam.name,
+      sourceType: 'curated_catalog',
+      isDownloaded: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await saveExamToDb(newDownloadedExam, user);
+    showToast(`Exam "${catalogExam.title || catalogExam.name}" downloaded to your repository!`);
+  };
+
+  const downloadedCatalogIds = exams
+    .filter((e) => e.isDownloaded || e.sourceType === 'curated_catalog')
+    .map((e) => e.catalogId || e.id);
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#060d18] text-zinc-900 dark:text-zinc-100 transition-colors font-['DM_Sans',sans-serif] selection:bg-emerald-500 selection:text-zinc-950">
       {/* Navigation Bar */}
@@ -373,12 +395,12 @@ function MainApp() {
             onStartPractice={handleStartPractice}
             onEditExam={handleEditExam}
             onDeleteExam={(id) => setExamToDelete(id)}
-            onViewJson={(exam) => setViewingJsonExam(exam)}
             onCreateNew={() => {
               setEditingExam(null);
               setCreateExamInitialMode('select');
               setActiveTab('create');
             }}
+            onOpenCuratedCatalogModal={() => setIsCuratedModalOpen(true)}
           />
         )}
 
@@ -393,8 +415,9 @@ function MainApp() {
 
         {activeTab === 'create' && (
           <CreateExamWizard
+            key={editingExam ? `edit_${editingExam.id}` : `new_${createExamInitialMode}`}
             initialExam={editingExam}
-            initialMode={createExamInitialMode}
+            initialMode={editingExam ? 'manual' : createExamInitialMode}
             onSaveExam={handleSaveExam}
             onCancel={() => {
               setEditingExam(null);
@@ -435,9 +458,6 @@ function MainApp() {
       <AppDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
-        onOpenPasteModal={() => setIsPasteModalOpen(true)}
-        onOpenQuestionTextEditor={handleOpenQuestionTextEditor}
         onOpenNotificationsModal={() => setIsNotificationsModalOpen(true)}
         onNavigateToManual={() => {
           if (activeTab !== 'create') {
@@ -490,13 +510,6 @@ function MainApp() {
         onClose={() => setIsNotificationsModalOpen(false)}
       />
 
-      {/* JSON Viewer Modal */}
-      <JsonViewerModal
-        exam={viewingJsonExam}
-        isOpen={viewingJsonExam !== null}
-        onClose={() => setViewingJsonExam(null)}
-      />
-
       {/* Delete Exam Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={examToDelete !== null}
@@ -506,6 +519,16 @@ function MainApp() {
         isDestructive
         onConfirm={handleDeleteExam}
         onCancel={() => setExamToDelete(null)}
+      />
+
+      {/* Curated Official Exams Download Modal */}
+      <CuratedExamsModal
+        isOpen={isCuratedModalOpen}
+        onClose={() => setIsCuratedModalOpen(false)}
+        onDownloadExam={handleDownloadCuratedExam}
+        downloadedCatalogIds={downloadedCatalogIds}
+        user={user}
+        onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
       />
 
       {/* Ethiopian Birr Student Subscription & Chapa Checkout Modal */}

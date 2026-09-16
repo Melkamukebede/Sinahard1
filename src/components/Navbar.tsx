@@ -163,22 +163,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right side controls */}
         <div className="flex items-center gap-2">
-          {/* Ethiopian Birr Premium Upgrade Button */}
-          <button
-            id="premium-upgrade-btn"
-            type="button"
-            onClick={onOpenSubscriptionModal}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer shadow-xs ${
-              isPremiumActive
-                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
-                : 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-zinc-950 shadow-md shadow-amber-500/20'
-            }`}
-            title="Premium Ethiopian Birr Subscription"
-          >
-            <Crown className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>{isPremiumActive ? 'Premium Active' : 'Premium'}</span>
-          </button>
-
           {/* Light / Dark Mode Toggle Button */}
           <button
             id="theme-toggle-btn"

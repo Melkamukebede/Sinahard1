@@ -14,7 +14,7 @@ export interface Exam {
   name: string;
   title?: string;
   subject: string;
-  difficulty: DifficultyLevel;
+  difficulty: DifficultyLevel | string;
   timeLimit: number; // in minutes
   passingScore: number; // e.g. 70 (%)
   subjectType: SubjectType;
@@ -24,6 +24,15 @@ export interface Exam {
   isPublic?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  // Dual-type exam categorization & curated catalog fields
+  sourceType?: 'user_created' | 'curated_catalog';
+  isDownloaded?: boolean;
+  catalogId?: string;
+  grade?: number | string; // e.g. 9, 10, 11, 12, 'National Exam'
+  unit?: string;
+  curator?: string;
+  rating?: number;
+  downloadCount?: number;
 }
 
 export interface ExamAnswerRecord {
@@ -63,6 +72,8 @@ export interface AppUser {
   displayName: string | null;
   photoURL: string | null;
   isAnonymous?: boolean;
+  grade?: number | string;
+  stream?: 'Natural Science' | 'Social Science' | 'General';
   metadata?: {
     creationTime?: string;
     lastSignInTime?: string;

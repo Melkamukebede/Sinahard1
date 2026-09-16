@@ -1,9 +1,6 @@
 import React, { useEffect } from 'react';
 import {
   X,
-  Sparkles,
-  FileCode,
-  FileText,
   Bell,
   BookOpen,
   Download,
@@ -12,7 +9,6 @@ import {
   Moon,
   LogIn,
   LogOut,
-  UserCheck,
   Cloud,
   CloudOff,
   GraduationCap,
@@ -23,15 +19,12 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useNotifications } from '../context/NotificationContext';
-import { Exam, ExamResult, UserSubscription } from '../types';
-import { isUserSubscriptionActive, isUserAdmin } from '../services/db';
+import { UserSubscription } from '../types';
+import { isUserAdmin } from '../services/db';
 
 interface AppDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenProfessorModal: () => void;
-  onOpenPasteModal: () => void;
-  onOpenQuestionTextEditor?: () => void;
   onOpenNotificationsModal: () => void;
   onNavigateToManual: () => void;
   onNavigateToAdminSubs?: () => void;
@@ -44,16 +37,12 @@ interface AppDrawerProps {
 export const AppDrawer: React.FC<AppDrawerProps> = ({
   isOpen,
   onClose,
-  onOpenProfessorModal,
-  onOpenPasteModal,
-  onOpenQuestionTextEditor,
   onOpenNotificationsModal,
   onNavigateToManual,
   onNavigateToAdminSubs,
   onExportAllData,
   onResetDefaultExams,
   onOpenSubscriptionModal,
-  activeSubscription,
 }) => {
   const { user, signInWithGoogle, signOut, isSigningIn } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
@@ -276,60 +265,6 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               )}
-
-              {/* Exam Professor AI */}
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenProfessorModal();
-                }}
-                className="w-full flex items-center justify-between p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-800 text-left transition cursor-pointer group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-zinc-900 dark:text-white">
-                      Exam Professor
-                    </div>
-                    <div className="text-[11px] text-zinc-500">
-                      Curriculum prompt studio
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors" />
-              </button>
-
-              {/* Question Text Editor */}
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  if (onOpenQuestionTextEditor) {
-                    onOpenQuestionTextEditor();
-                  } else {
-                    onOpenPasteModal();
-                  }
-                }}
-                className="w-full flex items-center justify-between p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-800 text-left transition cursor-pointer group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-zinc-900 dark:text-white">
-                      Question Text Editor
-                    </div>
-                    <div className="text-[11px] text-zinc-500">
-                      Type, paste, or import questions
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors" />
-              </button>
 
               {/* Push & Study Notifications */}
               <button

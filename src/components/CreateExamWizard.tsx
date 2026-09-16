@@ -293,14 +293,8 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
 }) => {
   // If editing an existing exam, start in manual wizard; otherwise prompt selection mode or passed initialMode
   const [creationMode, setCreationMode] = useState<'select' | 'manual' | 'paste'>(
-    initialMode || (initialExam ? 'manual' : 'select')
+    initialExam ? 'manual' : (initialMode || 'select')
   );
-
-  useEffect(() => {
-    if (initialMode) {
-      setCreationMode(initialMode);
-    }
-  }, [initialMode]);
 
   const [currentStep, setCurrentStep] = useState<number>(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -332,6 +326,38 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
   const [expandedIndex, setExpandedIndex] = useState<number>(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Synchronize state whenever initialExam or initialMode changes
+  useEffect(() => {
+    if (initialExam) {
+      setCreationMode('manual');
+      setName(initialExam.name || '');
+      setSubject(initialExam.subject || '');
+      setDifficulty(initialExam.difficulty || 'Medium');
+      setTimeLimit(initialExam.timeLimit || 25);
+      setPassingScore(initialExam.passingScore || 70);
+      setSubjectType(initialExam.subjectType || 'theory');
+      setDescription(initialExam.description || '');
+      if (initialExam.questions && initialExam.questions.length > 0) {
+        setQuestions(JSON.parse(JSON.stringify(initialExam.questions)));
+      } else {
+        setQuestions([
+          {
+            id: 'q_' + Date.now(),
+            text: '',
+            options: ['', '', '', ''],
+            correct: 0,
+            explanation: '',
+          },
+        ]);
+      }
+      setCurrentStep(1);
+      setErrorMsg(null);
+      setSuccessMsg(null);
+    } else if (initialMode) {
+      setCreationMode(initialMode);
+    }
+  }, [initialExam, initialMode]);
 
   // Paste Text view internal state
   const [pasteRawText, setPasteRawText] = useState('');
@@ -599,6 +625,7 @@ Total Questions: 2
   const validateStep1 = () => {
     if (!name.trim()) {
       setErrorMsg('Please specify an Exam Title.');
+      setCurrentStep(1);
       return false;
     }
     setErrorMsg(null);
@@ -608,18 +635,21 @@ Total Questions: 2
   const validateStep2 = () => {
     if (questions.length === 0) {
       setErrorMsg('Please add at least one question.');
+      setCurrentStep(2);
       return false;
     }
     for (let i = 0; i < questions.length; i++) {
       if (!questions[i].text.trim()) {
         setErrorMsg(`Question ${i + 1} text cannot be empty.`);
         setExpandedIndex(i);
+        setCurrentStep(2);
         return false;
       }
       for (let j = 0; j < questions[i].options.length; j++) {
         if (!questions[i].options[j]?.trim()) {
           setErrorMsg(`Question ${i + 1}: Option ${String.fromCharCode(65 + j)} is empty.`);
           setExpandedIndex(i);
+          setCurrentStep(2);
           return false;
         }
       }
@@ -704,14 +734,18 @@ Total Questions: 2
                   {userTier.isPremium
                     ? '👑 Premium Scholar Active'
                     : userTier.isTrial
-                    ? `🎁 5-Day Welcome Trial Active (${userTier.trialDaysRemaining} days remaining)`
-                    : '🎓 Free Student Tier'}
+                    ? `🎁 3-Day Welcome Trial Active (${userTier.trialDaysRemaining} days remaining)`
+                    : userTier.isGuest
+                    ? '👤 Guest Mode (Local Storage)'
+                    : '🎓 Free Student Tier (Cloud Synced)'}
                 </span>
                 <span className="text-[11px] opacity-85">
                   {userTier.isPremium
                     ? 'Create & import unlimited questions with full step-by-step LaTeX math solutions.'
                     : userTier.isTrial
                     ? `Up to ${userTier.maxQuestionsPerExam} questions per exam and full import support.`
+                    : userTier.isGuest
+                    ? `Up to ${userTier.maxQuestionsPerExam} questions per exam. Sign in to activate your 3-Day Welcome Trial (50 questions)!`
                     : `Up to ${userTier.maxQuestionsPerExam} questions per exam. Upgrade for unlimited bulk imports.`}
                 </span>
               </div>
@@ -1081,7 +1115,7 @@ Passing Score: 70%
                   </span>
                 </div>
                 <p className="text-[11px] text-amber-700 dark:text-amber-300">
-                  Your current {userTier?.isTrial ? '5-Day Trial' : 'Free'} plan allows up to {maxImportQuestions} imported questions per exam. Upgrade to Premium in ETB for unlimited questions!
+                  Your current {userTier?.isTrial ? '3-Day Trial' : userTier?.isGuest ? 'Guest' : 'Free'} plan allows up to {maxImportQuestions} imported questions per exam. Upgrade to Premium in ETB for unlimited questions!
                 </p>
               </div>
 
@@ -1296,6 +1330,11 @@ Passing Score: 70%
             <h1 className="text-xl font-extrabold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
               {initialExam ? 'Edit Exam' : 'Create Exam'}
             </h1>
+            {initialExam && (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Updating &ldquo;{name || initialExam.name}&rdquo;
+              </p>
+            )}
           </div>
         </div>
 
@@ -1316,6 +1355,17 @@ Passing Score: 70%
           >
             Cancel
           </button>
+          {initialExam && (
+            <button
+              type="button"
+              onClick={handleSave}
+              className="px-4 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+              title="Save changes to this exam"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>Save Changes</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1458,7 +1508,19 @@ Passing Score: 70%
             />
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div className="flex items-center justify-between pt-2">
+            <div>
+              {initialExam && (
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="px-4 py-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs transition"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Changes</span>
+                </button>
+              )}
+            </div>
             <button
               type="button"
               onClick={handleNext}
@@ -1552,7 +1614,7 @@ Passing Score: 70%
                 <span>
                   {userTier?.isTrial
                     ? `Trial limit reached (${maxManualQuestions} questions). Upgrade to ExamMaster Premium for unlimited questions.`
-                    : `Free plan limit reached (${maxManualQuestions} questions). Upgrade to Premium (starts at 35 ETB) for unlimited questions.`}
+                    : `Free plan limit reached (${maxManualQuestions} questions). Upgrade to Premium (starts at 19.9 ETB) for unlimited questions.`}
                 </span>
               </div>
               {onOpenSubscriptionModal && (
@@ -1707,14 +1769,26 @@ Passing Score: 70%
               <ChevronLeft className="w-4 h-4" />
               <span>Back</span>
             </button>
-            <button
-              type="button"
-              onClick={handleNext}
-              className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
-            >
-              <span>Next: Settings</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              {initialExam && (
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="px-4 py-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs transition"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Changes</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleNext}
+                className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <span>Next: Settings</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1763,14 +1837,26 @@ Passing Score: 70%
               <ChevronLeft className="w-4 h-4" />
               <span>Back</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setCurrentStep(4)}
-              className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
-            >
-              <span>Next: Review</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              {initialExam && (
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="px-4 py-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs transition"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Changes</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setCurrentStep(4)}
+                className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <span>Next: Review</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1845,7 +1931,7 @@ Passing Score: 70%
                 className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Save className="w-4 h-4" />
-                <span>Save Exam</span>
+                <span>{initialExam ? 'Save Changes' : 'Save Exam'}</span>
               </button>
             </div>
           </div>

@@ -17,6 +17,11 @@ import {
   RefreshCw,
   Sliders,
   Clock,
+  ChevronDown,
+  ChevronUp,
+  User,
+  Globe,
+  Info,
 } from 'lucide-react';
 import {
   SubscriptionPlan,
@@ -82,6 +87,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [telebirrShortCode, setTelebirrShortCode] = useState('');
   const [telebirrAppKey, setTelebirrAppKey] = useState('');
   const [telebirrStatus, setTelebirrStatus] = useState<TelebirrConfigStatus | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -946,6 +952,91 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Collapsible Tier Comparison: Guest vs Logged-in vs Premium */}
+          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowComparison(!showComparison)}
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 transition cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <Info className="w-4 h-4 text-emerald-500 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold text-zinc-900 dark:text-white block">
+                    Compare Plans: Guest vs. Logged In vs. Premium
+                  </span>
+                  <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    {showComparison ? 'Click to collapse comparison' : 'Click to expand details of what each tier gets'}
+                  </span>
+                </div>
+              </div>
+              <div className="p-1 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                {showComparison ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
+            </button>
+
+            {showComparison && (
+              <div className="p-4 pt-1 border-t border-zinc-200/80 dark:border-zinc-800/80 space-y-3.5 text-xs animate-in fade-in duration-200">
+                {/* Guest Mode */}
+                <div className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-blue-500" />
+                      Guest Mode (No Account / Local Storage)
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                      Free / Instant
+                    </span>
+                  </div>
+                  <ul className="space-y-1 text-[11px] text-zinc-600 dark:text-zinc-400 list-disc list-inside">
+                    <li>Create or practice exams with up to <strong>20 questions</strong> per exam.</li>
+                    <li>Countdown timer, question flagging, scratchpad & scientific calculator included.</li>
+                    <li>Instant grading, percentage score, and KaTeX math formulas.</li>
+                    <li>Saved in current browser (no cloud sync across phones or laptops).</li>
+                  </ul>
+                </div>
+
+                {/* Logged-In User */}
+                <div className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-emerald-500/30">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-emerald-500" />
+                      Logged-In (Free Google Account)
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                      🎁 3-Day Trial Included
+                    </span>
+                  </div>
+                  <ul className="space-y-1 text-[11px] text-zinc-600 dark:text-zinc-400 list-disc list-inside">
+                    <li><strong>🎁 First 3 Days:</strong> Welcome Trial unlocked with up to <strong>50 questions per exam</strong> & bulk import.</li>
+                    <li><strong>Permanent Cloud Sync:</strong> All exams, test history & scores automatically backed up in Firestore across all devices.</li>
+                    <li>Persistent study reminders, push alert preferences & custom profile.</li>
+                    <li>Standard 20 questions/exam available permanently after trial period ends.</li>
+                  </ul>
+                </div>
+
+                {/* Premium Scholar */}
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                      <Crown className="w-3.5 h-3.5 text-amber-500 fill-current" />
+                      Premium Scholar (ETB Subscription)
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-zinc-950">
+                      From 19.9 ETB
+                    </span>
+                  </div>
+                  <ul className="space-y-1 text-[11px] text-amber-900/90 dark:text-amber-200/90 list-disc list-inside">
+                    <li><strong>Unlimited Questions:</strong> Build, practice, and test with 100, 200, or 500+ questions without any cap.</li>
+                    <li><strong>Unlimited Bulk Imports:</strong> Import full curriculum units, past national exam sheets & lecture notes directly.</li>
+                    <li><strong>Full Worked Solutions:</strong> Complete step-by-step LaTeX formulas, worked math steps, and memory aid tricks.</li>
+                    <li><strong>Priority Payments:</strong> Instant automated Telebirr & Chapa activation, or CBE / BoA manual verification.</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Action Button */}
           <div className="flex items-center justify-between pt-2 border-t border-zinc-200 dark:border-zinc-800">

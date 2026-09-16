@@ -71,7 +71,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const bannerTitle = isPremiumActive
     ? 'Premium Student Membership Active'
     : userTier?.isTrial
-    ? `5-Day Welcome Trial Active (${userTier.trialDaysRemaining}d remaining)`
+    ? `3-Day Welcome Trial Active (${userTier.trialDaysRemaining}d remaining)`
+    : userTier?.isGuest
+    ? 'ExamMaster Guest Mode (20 Qs/Exam)'
     : 'ExamMaster Free Student Tier';
 
   const bannerDescription = isPremiumActive
@@ -82,7 +84,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
       }. Unlimited questions, exports, and step-by-step LaTeX math reasoning.`
     : userTier?.isTrial
     ? `You have unrestricted trial access to explore creating and importing up to ${userTier.maxQuestionsPerExam} questions. Upgrade before trial ends to maintain unlimited access.`
-    : `Free student plan (Up to 20 questions/exam). Upgrade starting at 35 ETB for unlimited exams, bulk file imports, and solutions.`;
+    : userTier?.isGuest
+    ? `Practicing in local guest mode (up to 20 questions/exam). Sign in with Google to unlock a 3-Day Welcome Trial (50 questions) and cloud sync, or upgrade to Premium starting at 19.9 ETB.`
+    : `Free student plan (Up to 20 questions/exam). Upgrade starting at 19.9 ETB for unlimited exams, bulk file imports, and solutions.`;
 
   return (
     <motion.div

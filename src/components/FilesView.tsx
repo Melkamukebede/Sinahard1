@@ -6,7 +6,6 @@ import {
   Play,
   Edit,
   Trash2,
-  FileCode,
   Clock,
   HelpCircle,
   Award,
@@ -19,6 +18,8 @@ import {
   FileDown,
   CheckCircle,
   Layers,
+  CloudDownload,
+  GraduationCap,
 } from 'lucide-react';
 import { Exam } from '../types';
 
@@ -27,27 +28,40 @@ interface FilesViewProps {
   onStartPractice: (exam: Exam) => void;
   onEditExam: (exam: Exam) => void;
   onDeleteExam: (examId: string) => void;
-  onViewJson: (exam: Exam) => void;
   onCreateNew?: () => void;
+  onOpenCuratedCatalogModal?: () => void;
 }
 
 type DurationFilter = 'all' | 'quick' | 'medium' | 'long';
 type SortOption = 'newest' | 'questions' | 'duration' | 'name';
+type SourceFilter = 'all' | 'user_created' | 'downloaded';
 
 export const FilesView: React.FC<FilesViewProps> = ({
   exams,
   onStartPractice,
   onEditExam,
   onDeleteExam,
-  onViewJson,
+  onCreateNew,
+  onOpenCuratedCatalogModal,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('All');
   const [selectedType, setSelectedType] = useState<string>('All');
   const [durationFilter, setDurationFilter] = useState<DurationFilter>('all');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [copiedNotification, setCopiedNotification] = useState<string | null>(null);
+
+  // Counts by source
+  const userCreatedCount = useMemo(
+    () => exams.filter((e) => !(e.isDownloaded || e.sourceType === 'curated_catalog')).length,
+    [exams]
+  );
+  const downloadedCount = useMemo(
+    () => exams.filter((e) => e.isDownloaded || e.sourceType === 'curated_catalog').length,
+    [exams]
+  );
 
   // Dynamically extract subjects and counts from exams
   const subjectCounts = useMemo(() => {
@@ -185,7 +199,13 @@ export const FilesView: React.FC<FilesViewProps> = ({
         (durationFilter === 'medium' && exam.timeLimit > 15 && exam.timeLimit <= 30) ||
         (durationFilter === 'long' && exam.timeLimit > 30);
 
-      return matchSearch && matchSubject && matchDifficulty && matchType && matchDuration;
+      const isCurated = Boolean(exam.isDownloaded || exam.sourceType === 'curated_catalog');
+      const matchSource =
+        sourceFilter === 'all' ||
+        (sourceFilter === 'downloaded' && isCurated) ||
+        (sourceFilter === 'user_created' && !isCurated);
+
+      return matchSearch && matchSubject && matchDifficulty && matchType && matchDuration && matchSource;
     });
 
     return list.sort((a, b) => {
@@ -223,12 +243,12 @@ export const FilesView: React.FC<FilesViewProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
-            <BookOpen className="w-4 h-4" />
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
+            <BookOpen className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-extrabold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
+              <h1 className="text-xl sm:text-2xl font-extrabold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
                 Exams Repository
               </h1>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold">
@@ -236,26 +256,104 @@ export const FilesView: React.FC<FilesViewProps> = ({
               </span>
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Filtered academic modules and question collections
+              Your personal library of user-crafted and official downloaded curriculum exams
             </p>
           </div>
         </div>
 
-        {/* Sort selector */}
-        <div className="flex items-center gap-2 text-xs text-zinc-500 self-start sm:self-auto">
-          <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400" />
-          <span className="font-semibold text-zinc-500 hidden sm:inline">Sort:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#0c1626] border border-zinc-200 dark:border-zinc-700/80 text-xs font-semibold text-zinc-800 dark:text-zinc-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-          >
-            <option value="newest">Newest First</option>
-            <option value="questions">Most Questions</option>
-            <option value="duration">Longest Duration</option>
-            <option value="name">Title (A - Z)</option>
-          </select>
+        {/* Action Controls & Sort */}
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          {onOpenCuratedCatalogModal && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={onOpenCuratedCatalogModal}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm shadow-emerald-600/20 cursor-pointer transition active:scale-95"
+              title="Browse and download quality pre-prepared national and grade exams"
+            >
+              <CloudDownload className="w-4 h-4 text-emerald-100" />
+              <span>Download Exams</span>
+            </motion.button>
+          )}
+
+          {onCreateNew && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={onCreateNew}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs cursor-pointer transition"
+            >
+              <span>+ Create</span>
+            </motion.button>
+          )}
+
+          {/* Sort selector */}
+          <div className="flex items-center gap-1.5 text-xs text-zinc-500 bg-white dark:bg-[#0c1626] px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700/80">
+            <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="bg-transparent text-xs font-semibold text-zinc-800 dark:text-zinc-200 cursor-pointer focus:outline-none"
+            >
+              <option value="newest">Newest First</option>
+              <option value="questions">Most Questions</option>
+              <option value="duration">Longest Duration</option>
+              <option value="name">Title (A - Z)</option>
+            </select>
+          </div>
         </div>
+      </div>
+
+      {/* Dual Exam Architecture Source Tabs */}
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-zinc-100/90 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/60 w-full sm:w-fit overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setSourceFilter('all')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+            sourceFilter === 'all'
+              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
+              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
+          }`}
+        >
+          <span>All Exams</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200 dark:bg-zinc-700 font-semibold">
+            {exams.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSourceFilter('user_created')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+            sourceFilter === 'user_created'
+              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
+              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5 text-blue-500" />
+          <span>User Created</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold">
+            {userCreatedCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSourceFilter('downloaded')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+            sourceFilter === 'downloaded'
+              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
+              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
+          }`}
+        >
+          <CloudDownload className="w-3.5 h-3.5 text-emerald-500" />
+          <span>Downloaded Official</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
+            {downloadedCount}
+          </span>
+        </button>
       </div>
 
       {/* Material Design 3 Dropdown Filter Panel */}
@@ -408,6 +506,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
           <AnimatePresence mode="popLayout">
             {filteredExams.map((exam) => {
               const isCalculation = exam.subjectType === 'calculation';
+              const isCurated = Boolean(exam.isDownloaded || exam.sourceType === 'curated_catalog');
               const diffColor =
                 exam.difficulty === 'Easy'
                   ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
@@ -428,9 +527,26 @@ export const FilesView: React.FC<FilesViewProps> = ({
                   <div>
                     {/* Card Top Badges */}
                     <div className="flex items-center justify-between gap-2 mb-2.5">
-                      <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
-                        {exam.subject || 'General'}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                          {exam.subject || 'General'}
+                        </span>
+                        {isCurated ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                            title="Official Downloaded Curriculum Exam"
+                          >
+                            <CloudDownload className="w-3 h-3 text-emerald-500" />
+                            <span>Official</span>
+                            {exam.grade && <span className="opacity-80">· G{exam.grade}</span>}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                            <Layers className="w-2.5 h-2.5" />
+                            <span>User Created</span>
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${diffColor}`}>
                           {exam.difficulty}
@@ -478,45 +594,48 @@ export const FilesView: React.FC<FilesViewProps> = ({
                   {/* Card Action Toolbar */}
                   <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
                     <div className="flex items-center gap-1">
-                      {/* Edit Exam */}
-                      <button
-                        type="button"
-                        onClick={() => onEditExam(exam)}
-                        className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-                        title="Edit Exam in Wizard"
-                        aria-label="Edit Exam"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
+                      {/* For user-created exams: allow Edit in wizard and Export as .txt */}
+                      {!isCurated && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => onEditExam(exam)}
+                            className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                            title="Edit Exam in Wizard"
+                            aria-label="Edit Exam"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
 
-                      {/* Export as .txt file (Requested feature) */}
-                      <button
-                        type="button"
-                        onClick={(e) => handleExportTxt(exam, e)}
-                        className="p-2 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition cursor-pointer"
-                        title="Export as .txt file"
-                        aria-label="Export as text file"
-                      >
-                        <FileDown className="w-3.5 h-3.5" />
-                      </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleExportTxt(exam, e)}
+                            className="p-2 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition cursor-pointer"
+                            title="Export as .txt file"
+                            aria-label="Export as text file"
+                          >
+                            <FileDown className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
 
-                      {/* Raw JSON */}
-                      <button
-                        type="button"
-                        onClick={() => onViewJson(exam)}
-                        className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-                        title="View Raw JSON"
-                        aria-label="View JSON"
-                      >
-                        <FileCode className="w-3.5 h-3.5" />
-                      </button>
+                      {/* For official downloaded exams: show subtle curated standard badge */}
+                      {isCurated && (
+                        <div
+                          className="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 text-zinc-500 dark:text-zinc-400 text-[10px] font-semibold flex items-center gap-1"
+                          title="Downloaded official curriculum exam (protected source)"
+                        >
+                          <CloudDownload className="w-3 h-3 text-emerald-500" />
+                          <span>Curated Standard</span>
+                        </div>
+                      )}
 
-                      {/* Delete Exam */}
+                      {/* Delete Exam (available for both user-created and downloaded copies) */}
                       <button
                         type="button"
                         onClick={() => onDeleteExam(exam.id)}
                         className="p-2 rounded-xl text-zinc-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
-                        title="Delete Exam"
+                        title={isCurated ? 'Remove from your downloaded exams' : 'Delete Exam'}
                         aria-label="Delete Exam"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

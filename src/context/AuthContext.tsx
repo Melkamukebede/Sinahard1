@@ -21,6 +21,7 @@ interface AuthContextType {
   clearError: () => void;
   dismissPopupBlocked: () => void;
   setGuestDisplayName: (name: string) => void;
+  updateStudentGrade: (grade: number | string, stream?: 'Natural Science' | 'Social Science' | 'General') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,12 +52,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setFirebaseUser(currentUser);
       if (currentUser) {
+        const savedGrade = localStorage.getItem('student_selected_grade') || '12';
+        const savedStream = (localStorage.getItem('student_selected_stream') as any) || 'Natural Science';
+
         const appUser: AppUser = {
           uid: currentUser.uid,
           email: currentUser.email,
           displayName: currentUser.displayName || 'Student',
           photoURL: currentUser.photoURL,
           isAnonymous: currentUser.isAnonymous,
+          grade: savedGrade,
+          stream: savedStream,
           metadata: {
             creationTime: currentUser.metadata.creationTime,
             lastSignInTime: currentUser.metadata.lastSignInTime,
@@ -74,8 +80,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: currentUser.email || '',
               displayName: currentUser.displayName || 'Student',
               photoURL: currentUser.photoURL || '',
+              grade: savedGrade,
+              stream: savedStream,
               createdAt: new Date().toISOString(),
             });
+          } else {
+            const data = userSnap.data();
+            if (data?.grade) {
+              localStorage.setItem('student_selected_grade', String(data.grade));
+              if (data.stream) localStorage.setItem('student_selected_stream', data.stream);
+              setUser((prev) => (prev ? { ...prev, grade: data.grade, stream: data.stream } : prev));
+            }
           }
         } catch (err) {
           console.warn('Could not sync user profile to Firestore:', err);
@@ -162,7 +177,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       uid: 'guest',
       displayName: trimmed,
       isAnonymous: true,
+      grade: localStorage.getItem('student_selected_grade') || '12',
+      stream: (localStorage.getItem('student_selected_stream') as any) || 'Natural Science',
     });
+  };
+
+  const updateStudentGrade = async (grade: number | string, stream?: 'Natural Science' | 'Social Science' | 'General') => {
+    localStorage.setItem('student_selected_grade', String(grade));
+    if (stream) localStorage.setItem('student_selected_stream', stream);
+    
+    setUser((prev) => (prev ? { ...prev, grade, ...(stream ? { stream } : {}) } : prev));
+
+    if (firebaseUser) {
+      try {
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        await setDoc(userRef, { grade, ...(stream ? { stream } : {}) }, { merge: true });
+      } catch (err) {
+        console.warn('Failed to update student grade in Firestore:', err);
+      }
+    }
   };
 
   const clearError = () => setError(null);
@@ -182,6 +215,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearError,
         dismissPopupBlocked,
         setGuestDisplayName,
+        updateStudentGrade,
       }}
     >
       {children}
