@@ -38,6 +38,7 @@ export interface Exam {
   cloudStorageEngine?: 'firestore' | 'supabase';
   cloudUploadedAt?: string;
   authorEmail?: string;
+  adminTag?: string;
 }
 
 export interface SupabaseConfig {

@@ -29,6 +29,7 @@ interface CuratedExamsModalProps {
   downloadedCatalogIds: string[];
   user: AppUser | null;
   onOpenSubscriptionModal?: () => void;
+  officialExams?: Exam[];
 }
 
 export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
@@ -37,6 +38,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
   onDownloadExam,
   downloadedCatalogIds,
   user,
+  officialExams,
 }) => {
   const { updateStudentGrade } = useAuth();
   
@@ -49,20 +51,25 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
   const [previewExamId, setPreviewExamId] = useState<string | null>(null);
   const [downloadingIds, setDownloadingIds] = useState<Record<string, boolean>>({});
 
+  // Active catalog sources (Live Firestore official exams merged with baseline catalog)
+  const catalogExams = useMemo(() => {
+    return officialExams && officialExams.length > 0 ? officialExams : CURATED_EXAMS_CATALOG;
+  }, [officialExams]);
+
   // Dynamic filter lists
   const availableGrades = ['All', '12', '11', '10', '9'];
 
   const availableSubjects = useMemo(() => {
     const subjects = new Set<string>();
-    CURATED_EXAMS_CATALOG.forEach((e) => {
+    catalogExams.forEach((e) => {
       if (e.subject) subjects.add(e.subject);
     });
     return ['All', ...Array.from(subjects).sort()];
-  }, []);
+  }, [catalogExams]);
 
   // Filter curated exams
   const filteredExams = useMemo(() => {
-    return CURATED_EXAMS_CATALOG.filter((exam) => {
+    return catalogExams.filter((exam) => {
       // Grade matching:
       if (selectedGradeFilter !== 'All') {
         const examGradeStr = String(exam.grade || '');
@@ -77,7 +84,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
       // Search query matching:
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesTitle = exam.title.toLowerCase().includes(q);
+        const matchesTitle = exam.title?.toLowerCase().includes(q) || exam.name.toLowerCase().includes(q);
         const matchesSubject = exam.subject.toLowerCase().includes(q);
         const matchesUnit = exam.unit?.toLowerCase().includes(q) || false;
         if (!matchesTitle && !matchesSubject && !matchesUnit) return false;
@@ -85,7 +92,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
 
       return true;
     });
-  }, [selectedGradeFilter, selectedSubjectFilter, searchQuery]);
+  }, [catalogExams, selectedGradeFilter, selectedSubjectFilter, searchQuery]);
 
   // Handle grade change and persist to student profile
   const handleGradeFilterClick = (grade: string) => {
@@ -128,9 +135,13 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
                   Curated Catalog
                 </span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                  Live Firestore Synced
+                </span>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Verified high-quality curriculum exams with KaTeX math steps and instant local storage integration.
+                Verified high-quality curriculum exams ({catalogExams.length} available) with KaTeX math steps and instant real-time synchronization.
               </p>
             </div>
           </div>
@@ -268,6 +279,17 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                         {exam.difficulty && (
                           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
                             {exam.difficulty}
+                          </span>
+                        )}
+                        {exam.isUploadedToCloud && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Official Cloud
+                          </span>
+                        )}
+                        {exam.adminTag && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                            {exam.adminTag}
                           </span>
                         )}
                         {exam.rating && (

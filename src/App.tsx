@@ -42,12 +42,17 @@ import {
 import { verifyChapaTransaction } from './services/chapa';
 import { verifyTelebirrPayment } from './services/telebirr';
 import { getUserTierStatus } from './services/subscriptionLimits';
+import {
+  subscribeToOfficialExams,
+  getCachedOfficialExams,
+} from './services/officialExams';
 
 function MainApp() {
   const { user, signInWithGoogle } = useAuth();
 
   const [activeTab, setActiveTab] = useState<PageTab>('home');
   const [exams, setExams] = useState<Exam[]>(INITIAL_SAMPLE_EXAMS);
+  const [officialExams, setOfficialExams] = useState<Exam[]>(getCachedOfficialExams());
   const [results, setResults] = useState<ExamResult[]>([]);
   const [activeSubscription, setActiveSubscription] = useState<UserSubscription | null>(null);
   const [allSubscriptions, setAllSubscriptions] = useState<UserSubscription[]>([]);
@@ -133,6 +138,14 @@ function MainApp() {
     });
     return () => unsubExams();
   }, [user]);
+
+  // Real-time synchronization for Official / Curated Curriculum Exams
+  useEffect(() => {
+    const unsubOfficial = subscribeToOfficialExams((updatedOfficial) => {
+      setOfficialExams(updatedOfficial);
+    });
+    return () => unsubOfficial();
+  }, []);
 
   // Real-time synchronization for results
   useEffect(() => {
@@ -546,6 +559,7 @@ function MainApp() {
         onDownloadExam={handleDownloadCuratedExam}
         downloadedCatalogIds={downloadedCatalogIds}
         user={user}
+        officialExams={officialExams}
         onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
       />
 
@@ -575,7 +589,7 @@ function MainApp() {
           setExams((prev) =>
             prev.map((e) => (e.id === updatedExam.id ? { ...e, ...updatedExam } : e))
           );
-          showToast(`Questions successfully synced to Cloud Firestore!`);
+          showToast(`Questions successfully synced to Cloud Firestore and Official Exams!`);
         }}
       />
 

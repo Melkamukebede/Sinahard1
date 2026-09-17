@@ -36,6 +36,11 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 }) => {
   const [uploadIndividualQuestions, setUploadIndividualQuestions] = useState<boolean>(true);
   const [isPublic, setIsPublic] = useState<boolean>(true);
+  const [asOfficialExam, setAsOfficialExam] = useState<boolean>(true);
+  const [selectedGrade, setSelectedGrade] = useState<string>(
+    exam?.grade ? String(exam.grade) : '12'
+  );
+  const [unitName, setUnitName] = useState<string>(exam?.unit || '');
   const [adminTag, setAdminTag] = useState<string>('Official Curriculum Exam');
 
   // Status & loading states
@@ -66,6 +71,9 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
       const result = await uploadExamToFirestore(exam, user, {
         uploadIndividualQuestions,
         isPublic,
+        asOfficialExam,
+        grade: selectedGrade,
+        unit: unitName.trim() || exam.unit,
         adminTag: adminTag.trim() || 'Official Curriculum Exam',
         onProgress: (percent, text) => {
           setUploadProgress(percent);
@@ -81,6 +89,9 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
             isUploadedToCloud: true,
             cloudStorageEngine: 'firestore',
             cloudUploadedAt: new Date().toISOString(),
+            grade: selectedGrade,
+            unit: unitName.trim() || exam.unit,
+            sourceType: asOfficialExam ? 'curated_catalog' : exam.sourceType,
           },
           'firestore'
         );
@@ -204,9 +215,67 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
             {/* Upload Options */}
             {isAdmin && (
               <div className="space-y-3 pt-1">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Upload Configurations
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    Upload & Official Sync Configurations
+                  </h4>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                    ⚡ Instant Sync Enabled
+                  </span>
+                </div>
+
+                {/* Instant Official Exams Catalog Sync */}
+                <label className="flex items-start gap-3 p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/30 cursor-pointer hover:border-emerald-500/50 transition">
+                  <input
+                    type="checkbox"
+                    checked={asOfficialExam}
+                    onChange={(e) => setAsOfficialExam(e.target.checked)}
+                    className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-zinc-900 dark:text-white block flex items-center gap-1.5">
+                      Publish to Official Exams Catalog
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-black">LIVE</span>
+                    </span>
+                    <span className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      Instantly syncs this exam and all questions into the Download Official Exams directory so students can access and download it immediately.
+                    </span>
+                  </div>
+                </label>
+
+                {/* Grade and Unit specification */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Academic Grade
+                    </label>
+                    <select
+                      value={selectedGrade}
+                      onChange={(e) => setSelectedGrade(e.target.value)}
+                      className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
+                    >
+                      <option value="12">Grade 12 (National Exam)</option>
+                      <option value="11">Grade 11</option>
+                      <option value="10">Grade 10</option>
+                      <option value="9">Grade 9</option>
+                      <option value="All">All Grades / General</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Curriculum Unit / Chapter
+                    </label>
+                    <input
+                      type="text"
+                      value={unitName}
+                      onChange={(e) => setUnitName(e.target.value)}
+                      placeholder="e.g. Unit 3: Differential Calculus"
+                      className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
+                    >
+                    </input>
+                  </div>
+                </div>
 
                 <label className="flex items-start gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/80 dark:border-zinc-800 cursor-pointer hover:border-amber-500/40 transition">
                   <input
@@ -220,7 +289,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                       Sync to Global Question Bank (/questions)
                     </span>
                     <span className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                      Enables students to search and practice these questions individually across curriculum categories.
+                      Optimized parallel batch commits for modular question queries and individual practice.
                     </span>
                   </div>
                 </label>
