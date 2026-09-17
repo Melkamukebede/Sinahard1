@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ShieldCheck,
   Crown,
+  CloudUpload,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -28,6 +29,7 @@ interface AppDrawerProps {
   onOpenNotificationsModal: () => void;
   onNavigateToManual: () => void;
   onNavigateToAdminSubs?: () => void;
+  onOpenDatabaseUpload?: () => void;
   onExportAllData: () => void;
   onResetDefaultExams: () => void;
   onOpenSubscriptionModal: () => void;
@@ -40,6 +42,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   onOpenNotificationsModal,
   onNavigateToManual,
   onNavigateToAdminSubs,
+  onOpenDatabaseUpload,
   onExportAllData,
   onResetDefaultExams,
   onOpenSubscriptionModal,
@@ -259,6 +262,37 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                       </div>
                       <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
                         Verify Telebirr, CBE & BoA references
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              )}
+
+              {/* Database Storage Uploader (Cloud Firestore - Admin only) */}
+              {isUserAdmin(user) && onOpenDatabaseUpload && (
+                <button
+                  id="drawer-db-upload-btn"
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenDatabaseUpload();
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-left transition cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center font-bold shadow-xs">
+                      <CloudUpload className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                        <span>Cloud Firestore Upload</span>
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                          Admin
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                        Sync questions directly to Firebase Firestore
                       </div>
                     </div>
                   </div>

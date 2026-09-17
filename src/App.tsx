@@ -14,6 +14,7 @@ import { ManualView } from './components/ManualView';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { AdminSubscriptionsView } from './components/AdminSubscriptionsView';
 import { CuratedExamsModal } from './components/CuratedExamsModal';
+import { DatabaseUploadModal } from './components/DatabaseUploadModal';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -54,6 +55,7 @@ function MainApp() {
   // User freemium / trial status computation (Option 3: 5-Day Trial then 20 manual / 15 import limit)
   const userCreatedAt = user?.metadata?.creationTime;
   const userTier = getUserTierStatus(user, activeSubscription, userCreatedAt);
+  const isAdmin = Boolean(user && !user.isAnonymous && user.uid !== 'guest' && isUserAdmin(user));
 
   // Active exam for practice / editing
   const [activePracticeExam, setActivePracticeExam] = useState<Exam | null>(null);
@@ -67,6 +69,7 @@ function MainApp() {
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [isCuratedModalOpen, setIsCuratedModalOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [examForDatabaseUpload, setExamForDatabaseUpload] = useState<Exam | null>(null);
 
   // Delete confirmations
   const [examToDelete, setExamToDelete] = useState<string | null>(null);
@@ -401,6 +404,8 @@ function MainApp() {
               setActiveTab('create');
             }}
             onOpenCuratedCatalogModal={() => setIsCuratedModalOpen(true)}
+            onOpenDatabaseUpload={isAdmin ? (exam) => setExamForDatabaseUpload(exam) : undefined}
+            isAdmin={isAdmin}
           />
         )}
 
@@ -428,6 +433,8 @@ function MainApp() {
             onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
             userTier={userTier}
             onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+            onOpenDatabaseUpload={isAdmin ? (exam) => setExamForDatabaseUpload(exam) : undefined}
+            isAdmin={isAdmin}
           />
         )}
 
@@ -473,6 +480,17 @@ function MainApp() {
           }
           setActiveTab('admin-subs');
         }}
+        onOpenDatabaseUpload={
+          isAdmin
+            ? () => {
+                if (exams.length > 0) {
+                  setExamForDatabaseUpload(exams[0]);
+                } else {
+                  showToast('Please create or download an exam first to upload questions.');
+                }
+              }
+            : undefined
+        }
         onExportAllData={handleExportAllData}
         onResetDefaultExams={handleResetDefaultExams}
         onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
@@ -544,6 +562,20 @@ function MainApp() {
         onOpenSignIn={() => {
           setIsSubscriptionModalOpen(false);
           signInWithGoogle();
+        }}
+      />
+
+      {/* Database Storage Upload Modal (Cloud Firestore - Admin only) */}
+      <DatabaseUploadModal
+        isOpen={isAdmin && examForDatabaseUpload !== null}
+        exam={examForDatabaseUpload}
+        user={user}
+        onClose={() => setExamForDatabaseUpload(null)}
+        onUploadComplete={(updatedExam) => {
+          setExams((prev) =>
+            prev.map((e) => (e.id === updatedExam.id ? { ...e, ...updatedExam } : e))
+          );
+          showToast(`Questions successfully synced to Cloud Firestore!`);
         }}
       />
 

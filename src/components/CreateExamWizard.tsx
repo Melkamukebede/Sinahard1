@@ -27,6 +27,8 @@ import {
   Clipboard,
   X,
   FileCheck2,
+  CloudUpload,
+  Database,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Exam, Question, SubjectType, DifficultyLevel } from '../types';
@@ -42,6 +44,8 @@ interface CreateExamWizardProps {
   onOpenProfessorModal: () => void;
   userTier?: UserTierStatus;
   onOpenSubscriptionModal?: () => void;
+  onOpenDatabaseUpload?: (exam: Exam) => void;
+  isAdmin?: boolean;
 }
 
 export interface ExtractedExamMetadata {
@@ -290,6 +294,8 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
   onOpenProfessorModal,
   userTier,
   onOpenSubscriptionModal,
+  onOpenDatabaseUpload,
+  isAdmin = false,
 }) => {
   // If editing an existing exam, start in manual wizard; otherwise prompt selection mode or passed initialMode
   const [creationMode, setCreationMode] = useState<'select' | 'manual' | 'paste'>(
@@ -1280,6 +1286,34 @@ Passing Score: 70%
                     </button>
                   )}
 
+                  {isAdmin && onOpenDatabaseUpload && previewQuestions.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const meta = extractExamMetadataFromText(pasteRawText);
+                        const examData: Exam = {
+                          id: initialExam?.id || 'exam_' + Date.now(),
+                          name: (meta.name || name).trim() || 'Imported Exam',
+                          subject: (meta.subject || subject).trim() || 'General',
+                          difficulty: meta.difficulty || difficulty,
+                          timeLimit: meta.timeLimit || Number(timeLimit) || 25,
+                          passingScore: meta.passingScore || Number(passingScore) || 70,
+                          subjectType: meta.subjectType || subjectType,
+                          description: (meta.description || description).trim(),
+                          questions: previewQuestions,
+                          createdAt: initialExam?.createdAt || new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                        };
+                        onOpenDatabaseUpload(examData);
+                      }}
+                      className="px-4 py-2.5 rounded-full border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+                      title="Upload questions directly to Cloud Firestore"
+                    >
+                      <CloudUpload className="w-3.5 h-3.5" />
+                      <span>Upload to Firestore</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     disabled={previewQuestions.length === 0}
@@ -1592,6 +1626,34 @@ Passing Score: 70%
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>AI Prompt</span>
               </button>
+
+              {isAdmin && onOpenDatabaseUpload && questions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!validateStep1() || !validateStep2()) return;
+                    const currentExam: Exam = {
+                      id: initialExam?.id || 'exam_' + Date.now(),
+                      name: name.trim(),
+                      subject: subject.trim() || 'General',
+                      difficulty,
+                      timeLimit: Number(timeLimit) || 20,
+                      passingScore: Number(passingScore) || 70,
+                      subjectType,
+                      description: description.trim(),
+                      questions,
+                      createdAt: initialExam?.createdAt || new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                    };
+                    onOpenDatabaseUpload(currentExam);
+                  }}
+                  className="px-3.5 py-1.5 rounded-full border border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold text-xs flex items-center gap-1.5 hover:bg-amber-500/25 cursor-pointer transition shadow-2xs"
+                  title="Upload created questions to Cloud Firestore"
+                >
+                  <CloudUpload className="w-3.5 h-3.5" />
+                  <span>Upload to Firestore</span>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -1924,6 +1986,35 @@ Passing Score: 70%
               >
                 Cancel
               </button>
+
+              {isAdmin && onOpenDatabaseUpload && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!validateStep1() || !validateStep2()) return;
+                    const examData: Exam = {
+                      id: initialExam?.id || 'exam_' + Date.now(),
+                      name: name.trim(),
+                      subject: subject.trim() || 'General',
+                      difficulty,
+                      timeLimit: Number(timeLimit) || 20,
+                      passingScore: Number(passingScore) || 70,
+                      subjectType,
+                      description: description.trim(),
+                      questions,
+                      createdAt: initialExam?.createdAt || new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                    };
+                    onOpenDatabaseUpload(examData);
+                  }}
+                  className="px-4 py-2 rounded-full border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                  title="Upload questions to Cloud Firestore"
+                >
+                  <CloudUpload className="w-4 h-4" />
+                  <span>Upload to Firestore</span>
+                </button>
+              )}
+
               <button
                 id="saveExamBtn"
                 type="button"

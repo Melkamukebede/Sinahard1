@@ -33,6 +33,28 @@ export interface Exam {
   curator?: string;
   rating?: number;
   downloadCount?: number;
+  // Cloud Database Storage tracking
+  isUploadedToCloud?: boolean;
+  cloudStorageEngine?: 'firestore' | 'supabase';
+  cloudUploadedAt?: string;
+  authorEmail?: string;
+}
+
+export interface SupabaseConfig {
+  url: string;
+  anonKey: string;
+  examTable: string;
+  questionTable: string;
+}
+
+export interface CloudUploadProgress {
+  status: 'idle' | 'testing' | 'uploading' | 'success' | 'error';
+  engine: 'firestore' | 'supabase';
+  progressPercent: number;
+  message: string;
+  uploadedExamsCount: number;
+  uploadedQuestionsCount: number;
+  errorDetail?: string;
 }
 
 export interface ExamAnswerRecord {

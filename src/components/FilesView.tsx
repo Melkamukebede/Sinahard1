@@ -20,6 +20,9 @@ import {
   Layers,
   CloudDownload,
   GraduationCap,
+  CloudUpload,
+  Cloud,
+  Database,
 } from 'lucide-react';
 import { Exam } from '../types';
 
@@ -30,6 +33,8 @@ interface FilesViewProps {
   onDeleteExam: (examId: string) => void;
   onCreateNew?: () => void;
   onOpenCuratedCatalogModal?: () => void;
+  onOpenDatabaseUpload?: (exam: Exam) => void;
+  isAdmin?: boolean;
 }
 
 type DurationFilter = 'all' | 'quick' | 'medium' | 'long';
@@ -43,6 +48,8 @@ export const FilesView: React.FC<FilesViewProps> = ({
   onDeleteExam,
   onCreateNew,
   onOpenCuratedCatalogModal,
+  onOpenDatabaseUpload,
+  isAdmin = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
@@ -286,6 +293,20 @@ export const FilesView: React.FC<FilesViewProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs cursor-pointer transition"
             >
               <span>+ Create</span>
+            </motion.button>
+          )}
+
+          {isAdmin && onOpenDatabaseUpload && exams.length > 0 && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={() => onOpenDatabaseUpload(exams[0])}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-bold text-xs cursor-pointer transition shadow-2xs"
+              title="Upload questions to Cloud Firestore"
+            >
+              <CloudUpload className="w-3.5 h-3.5" />
+              <span>Upload to Firestore</span>
             </motion.button>
           )}
 
@@ -546,6 +567,15 @@ export const FilesView: React.FC<FilesViewProps> = ({
                             <span>User Created</span>
                           </span>
                         )}
+                        {exam.isUploadedToCloud && (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                            title={`Uploaded to database storage (${exam.cloudStorageEngine || 'firestore'})`}
+                          >
+                            <Cloud className="w-2.5 h-2.5 text-emerald-500" />
+                            <span>Cloud Stored</span>
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${diffColor}`}>
@@ -606,6 +636,18 @@ export const FilesView: React.FC<FilesViewProps> = ({
                           >
                             <Edit className="w-3.5 h-3.5" />
                           </button>
+
+                          {isAdmin && onOpenDatabaseUpload && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenDatabaseUpload(exam)}
+                              className="p-2 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition cursor-pointer"
+                              title="Upload to Cloud Firestore Database"
+                              aria-label="Upload to Cloud Firestore Database"
+                            >
+                              <CloudUpload className="w-3.5 h-3.5" />
+                            </button>
+                          )}
 
                           <button
                             type="button"
