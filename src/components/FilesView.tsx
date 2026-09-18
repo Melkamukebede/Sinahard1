@@ -24,7 +24,7 @@ import {
   Cloud,
   Database,
 } from 'lucide-react';
-import { Exam } from '../types';
+import { Exam, AppUser } from '../types';
 
 interface FilesViewProps {
   exams: Exam[];
@@ -35,6 +35,7 @@ interface FilesViewProps {
   onOpenCuratedCatalogModal?: () => void;
   onOpenDatabaseUpload?: (exam: Exam) => void;
   isAdmin?: boolean;
+  user?: AppUser | null;
 }
 
 type DurationFilter = 'all' | 'quick' | 'medium' | 'long';
@@ -50,6 +51,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
   onOpenCuratedCatalogModal,
   onOpenDatabaseUpload,
   isAdmin = false,
+  user,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
@@ -277,10 +279,12 @@ export const FilesView: React.FC<FilesViewProps> = ({
               type="button"
               onClick={onOpenCuratedCatalogModal}
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm shadow-emerald-600/20 cursor-pointer transition active:scale-95"
-              title="Browse and download quality pre-prepared national and grade exams"
+              title={user?.grade ? `Download exams filtered for Grade ${user.grade}` : "Browse official curriculum exams"}
             >
               <CloudDownload className="w-4 h-4 text-emerald-100" />
-              <span>Download Exams</span>
+              <span>
+                Download Exams {user?.grade ? `(Grade ${user.grade})` : ''}
+              </span>
             </motion.button>
           )}
 

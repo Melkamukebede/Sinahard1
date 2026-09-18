@@ -97,6 +97,11 @@ export interface AppUser {
   isAnonymous?: boolean;
   grade?: number | string;
   stream?: 'Natural Science' | 'Social Science' | 'General';
+  schoolName?: string;
+  region?: string;
+  targetExamYear?: string | number;
+  phoneNumber?: string;
+  isRegistered?: boolean;
   metadata?: {
     creationTime?: string;
     lastSignInTime?: string;

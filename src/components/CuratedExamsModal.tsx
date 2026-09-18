@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -16,6 +16,8 @@ import {
   GraduationCap,
   SlidersHorizontal,
   CheckCircle2,
+  Edit3,
+  Filter,
 } from 'lucide-react';
 import { Exam, AppUser } from '../types';
 import { CURATED_EXAMS_CATALOG } from '../data/curatedCatalog';
@@ -40,16 +42,26 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
   user,
   officialExams,
 }) => {
-  const { updateStudentGrade } = useAuth();
+  const { updateStudentGrade, openRegistrationModal } = useAuth();
   
   // Student's active registered grade from profile or local storage (default 12)
-  const studentGrade = user?.grade ? String(user.grade) : (localStorage.getItem('student_selected_grade') || '12');
-  
-  const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>(studentGrade);
+  const registeredGrade = user?.grade ? String(user.grade) : (localStorage.getItem('student_selected_grade') || '12');
+  const registeredStream = user?.stream || (localStorage.getItem('student_selected_stream') as any) || 'Natural Science';
+  const isRegistered = Boolean(user?.isRegistered || localStorage.getItem('student_is_registered') === 'true');
+
+  // "only display exams based on grades registered by user"
+  // Strictly default to true
+  const [onlyShowRegisteredGrade, setOnlyShowRegisteredGrade] = useState<boolean>(true);
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>(registeredGrade);
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [previewExamId, setPreviewExamId] = useState<string | null>(null);
   const [downloadingIds, setDownloadingIds] = useState<Record<string, boolean>>({});
+
+  // Sync selectedGradeFilter when user's registered grade changes
+  useEffect(() => {
+    setSelectedGradeFilter(registeredGrade);
+  }, [registeredGrade]);
 
   // Active catalog sources (Live Firestore official exams merged with baseline catalog)
   const catalogExams = useMemo(() => {
@@ -67,12 +79,17 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
     return ['All', ...Array.from(subjects).sort()];
   }, [catalogExams]);
 
-  // Filter curated exams
+  // Filter curated exams strictly based on registered grade
   const filteredExams = useMemo(() => {
     return catalogExams.filter((exam) => {
-      // Grade matching:
-      if (selectedGradeFilter !== 'All') {
-        const examGradeStr = String(exam.grade || '');
+      const examGradeStr = String(exam.grade || '');
+
+      // Strict registered grade filtering as requested
+      if (onlyShowRegisteredGrade) {
+        if (examGradeStr !== registeredGrade && examGradeStr !== 'All') {
+          return false;
+        }
+      } else if (selectedGradeFilter !== 'All') {
         if (examGradeStr !== selectedGradeFilter) return false;
       }
 
@@ -92,7 +109,19 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
 
       return true;
     });
-  }, [catalogExams, selectedGradeFilter, selectedSubjectFilter, searchQuery]);
+  }, [catalogExams, onlyShowRegisteredGrade, registeredGrade, selectedGradeFilter, selectedSubjectFilter, searchQuery]);
+
+  // Check if an exam matches student's stream
+  const doesExamMatchStream = (subject: string) => {
+    const s = subject.toLowerCase();
+    if (registeredStream === 'Natural Science') {
+      return s.includes('math') || s.includes('physic') || s.includes('chem') || s.includes('biol') || s.includes('english') || s.includes('aptitude') || s.includes('ict');
+    }
+    if (registeredStream === 'Social Science') {
+      return s.includes('econ') || s.includes('geog') || s.includes('histor') || s.includes('math') || s.includes('english') || s.includes('aptitude') || s.includes('civic');
+    }
+    return true;
+  };
 
   // Handle grade change and persist to student profile
   const handleGradeFilterClick = (grade: string) => {
@@ -155,44 +184,96 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
           </button>
         </div>
 
-        {/* Grade Matching & Quick Filters Bar */}
-        <div className="px-6 py-3.5 bg-zinc-100/60 dark:bg-zinc-800/40 border-b border-zinc-200/80 dark:border-zinc-800 space-y-3">
-          {/* Grade selection row */}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-              <GraduationCap className="w-4 h-4 text-emerald-500" />
-              <span>Target Grade:</span>
-              <div className="flex items-center gap-1.5">
-                {availableGrades.map((g) => {
-                  const isActive = selectedGradeFilter === g;
-                  const isStudentPrimary = studentGrade === g && g !== 'All';
-                  return (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => handleGradeFilterClick(g)}
-                      className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
-                        isActive
-                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
-                          : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
-                      }`}
-                    >
-                      {g === 'All' ? 'All Grades' : `Grade ${g}`}
-                      {isStudentPrimary && (
-                        <span className="ml-1.5 text-[9px] px-1 py-0.2 rounded-full bg-emerald-400 text-zinc-950 font-extrabold">
-                          You
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+        {/* Student Registered Grade Banner & Control */}
+        <div className="px-6 py-3 bg-emerald-500/10 dark:bg-emerald-950/30 border-b border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <GraduationCap className="w-4 h-4 stroke-[2.2]" />
             </div>
-
-            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
-              Showing <strong className="text-zinc-800 dark:text-zinc-200">{filteredExams.length}</strong> official exams
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold text-zinc-900 dark:text-white">
+                <span>Filtering for Registered Level:</span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-extrabold text-[11px]">
+                  Grade {registeredGrade}
+                </span>
+                <span className="text-zinc-500 dark:text-zinc-400 font-normal">
+                  ({registeredStream})
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
+                {user?.schoolName ? `${user.schoolName} • ${user.region}` : isRegistered ? 'Registered Student Profile' : 'Only official exams for your grade are shown'}
+              </p>
             </div>
           </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Registered grade strict filter toggle */}
+            <button
+              type="button"
+              onClick={() => setOnlyShowRegisteredGrade(!onlyShowRegisteredGrade)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                onlyShowRegisteredGrade
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
+              }`}
+              title="Toggle to strictly show only exams for your registered grade or explore all"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              <span>{onlyShowRegisteredGrade ? `Only Grade ${registeredGrade} (Active)` : 'All Grades View'}</span>
+            </button>
+
+            {/* Change Grade / Register Button */}
+            <button
+              type="button"
+              onClick={openRegistrationModal}
+              className="px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+            >
+              <Edit3 className="w-3.5 h-3.5 text-emerald-500" />
+              <span>{isRegistered ? 'Edit Grade / Profile' : 'Register Profile'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Grade Matching & Quick Filters Bar */}
+        <div className="px-6 py-3.5 bg-zinc-100/60 dark:bg-zinc-800/40 border-b border-zinc-200/80 dark:border-zinc-800 space-y-3">
+          {/* Grade selection row when not restricted to single grade */}
+          {!onlyShowRegisteredGrade && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                <GraduationCap className="w-4 h-4 text-emerald-500" />
+                <span>Select Grade to Browse:</span>
+                <div className="flex items-center gap-1.5">
+                  {availableGrades.map((g) => {
+                    const isActive = selectedGradeFilter === g;
+                    const isStudentPrimary = registeredGrade === g && g !== 'All';
+                    return (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => handleGradeFilterClick(g)}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                          isActive
+                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
+                            : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
+                        }`}
+                      >
+                        {g === 'All' ? 'All Grades' : `Grade ${g}`}
+                        {isStudentPrimary && (
+                          <span className="ml-1.5 text-[9px] px-1 py-0.2 rounded-full bg-emerald-400 text-zinc-950 font-extrabold">
+                            Registered
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                Showing <strong className="text-zinc-800 dark:text-zinc-200">{filteredExams.length}</strong> official exams
+              </div>
+            </div>
+          )}
 
           {/* Search + Subject chips */}
           <div className="flex flex-col sm:flex-row items-center gap-2.5">
@@ -236,28 +317,34 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
             <div className="text-center py-12">
               <BookOpen className="w-10 h-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
               <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                No official exams found matching this filter
+                No official exams found for Grade {registeredGrade}
               </p>
               <p className="text-xs text-zinc-500 mt-1">
-                Try switching grades or selecting "All Subjects".
+                You can browse all grades or update your student grade in registration.
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedGradeFilter('All');
-                  setSelectedSubjectFilter('All');
-                  setSearchQuery('');
-                }}
-                className="mt-3 px-3 py-1.5 text-xs font-semibold rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 cursor-pointer"
-              >
-                Reset Filters
-              </button>
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOnlyShowRegisteredGrade(false)}
+                  className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 cursor-pointer"
+                >
+                  Browse All Grades
+                </button>
+                <button
+                  type="button"
+                  onClick={openRegistrationModal}
+                  className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 cursor-pointer"
+                >
+                  Change Registered Grade
+                </button>
+              </div>
             </div>
           ) : (
             filteredExams.map((exam) => {
               const isDownloaded = downloadedCatalogIds.includes(exam.id);
               const isDownloading = Boolean(downloadingIds[exam.id]);
               const isPreviewing = previewExamId === exam.id;
+              const matchesStream = doesExamMatchStream(exam.subject);
 
               return (
                 <div
@@ -272,8 +359,13 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                           {exam.subject}
                         </span>
                         {exam.grade && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-600 text-white">
                             Grade {exam.grade}
+                          </span>
+                        )}
+                        {matchesStream && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30">
+                            Matches {registeredStream}
                           </span>
                         )}
                         {exam.difficulty && (

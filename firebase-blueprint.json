@@ -9,6 +9,13 @@
         "email": { "type": "string", "maxLength": 256 },
         "displayName": { "type": "string", "maxLength": 128 },
         "photoURL": { "type": "string", "maxLength": 512 },
+        "grade": { "type": "string", "maxLength": 32 },
+        "stream": { "type": "string", "maxLength": 64 },
+        "schoolName": { "type": "string", "maxLength": 128 },
+        "region": { "type": "string", "maxLength": 64 },
+        "targetExamYear": { "type": "string", "maxLength": 32 },
+        "phoneNumber": { "type": "string", "maxLength": 32 },
+        "isRegistered": { "type": "boolean" },
         "createdAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "email"]

@@ -15,6 +15,9 @@ interface AuthContextType {
   loading: boolean;
   isSigningIn: boolean;
   popupBlocked: boolean;
+  isRegistrationModalOpen: boolean;
+  openRegistrationModal: () => void;
+  closeRegistrationModal: () => void;
   signInWithGoogle: () => Promise<boolean>;
   signOut: () => Promise<void>;
   error: string | null;
@@ -22,21 +25,46 @@ interface AuthContextType {
   dismissPopupBlocked: () => void;
   setGuestDisplayName: (name: string) => void;
   updateStudentGrade: (grade: number | string, stream?: 'Natural Science' | 'Social Science' | 'General') => Promise<void>;
+  updateStudentProfile: (profile: Partial<AppUser>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const LOCAL_GUEST_NAME_KEY = 'exam_master_guest_name';
+const LOCAL_STUDENT_GRADE_KEY = 'student_selected_grade';
+const LOCAL_STUDENT_STREAM_KEY = 'student_selected_stream';
+const LOCAL_STUDENT_SCHOOL_KEY = 'student_school_name';
+const LOCAL_STUDENT_REGION_KEY = 'student_region';
+const LOCAL_STUDENT_TARGET_YEAR_KEY = 'student_target_year';
+const LOCAL_STUDENT_PHONE_KEY = 'student_phone';
+const LOCAL_STUDENT_IS_REGISTERED_KEY = 'student_is_registered';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<AppUser | null>(() => {
     const savedGuestName = localStorage.getItem(LOCAL_GUEST_NAME_KEY);
+    const savedGrade = localStorage.getItem(LOCAL_STUDENT_GRADE_KEY) || '12';
+    const savedStream = (localStorage.getItem(LOCAL_STUDENT_STREAM_KEY) as any) || 'Natural Science';
+    const savedSchool = localStorage.getItem(LOCAL_STUDENT_SCHOOL_KEY) || '';
+    const savedRegion = localStorage.getItem(LOCAL_STUDENT_REGION_KEY) || '';
+    const savedTargetYear = localStorage.getItem(LOCAL_STUDENT_TARGET_YEAR_KEY) || '';
+    const savedPhone = localStorage.getItem(LOCAL_STUDENT_PHONE_KEY) || '';
+    const isRegistered = localStorage.getItem(LOCAL_STUDENT_IS_REGISTERED_KEY) === 'true';
+
     if (savedGuestName) {
       return {
         uid: 'guest',
         displayName: savedGuestName,
+        email: null,
+        photoURL: null,
         isAnonymous: true,
+        grade: savedGrade,
+        stream: savedStream,
+        schoolName: savedSchool,
+        region: savedRegion,
+        targetExamYear: savedTargetYear,
+        phoneNumber: savedPhone,
+        isRegistered,
       };
     }
     return null;
@@ -44,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
   const [popupBlocked, setPopupBlocked] = useState<boolean>(false);
+  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const isSigningInRef = useRef<boolean>(false);
@@ -52,10 +81,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setFirebaseUser(currentUser);
       if (currentUser) {
-        const savedGrade = localStorage.getItem('student_selected_grade') || '12';
-        const savedStream = (localStorage.getItem('student_selected_stream') as any) || 'Natural Science';
+        const savedGrade = localStorage.getItem(LOCAL_STUDENT_GRADE_KEY) || '12';
+        const savedStream = (localStorage.getItem(LOCAL_STUDENT_STREAM_KEY) as any) || 'Natural Science';
+        const savedSchool = localStorage.getItem(LOCAL_STUDENT_SCHOOL_KEY) || '';
+        const savedRegion = localStorage.getItem(LOCAL_STUDENT_REGION_KEY) || '';
+        const savedTargetYear = localStorage.getItem(LOCAL_STUDENT_TARGET_YEAR_KEY) || '2026 (2018 E.C.)';
+        const savedPhone = localStorage.getItem(LOCAL_STUDENT_PHONE_KEY) || '';
+        const localRegistered = localStorage.getItem(LOCAL_STUDENT_IS_REGISTERED_KEY) === 'true';
 
-        const appUser: AppUser = {
+        let appUser: AppUser = {
           uid: currentUser.uid,
           email: currentUser.email,
           displayName: currentUser.displayName || 'Student',
@@ -63,6 +97,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isAnonymous: currentUser.isAnonymous,
           grade: savedGrade,
           stream: savedStream,
+          schoolName: savedSchool,
+          region: savedRegion,
+          targetExamYear: savedTargetYear,
+          phoneNumber: savedPhone,
+          isRegistered: localRegistered,
           metadata: {
             creationTime: currentUser.metadata.creationTime,
             lastSignInTime: currentUser.metadata.lastSignInTime,
@@ -70,7 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setUser(appUser);
 
-        // Sync or create user document in Firestore
+        // Sync or retrieve user document from Firestore
         try {
           const userRef = doc(db, 'users', currentUser.uid);
           const userSnap = await getDoc(userRef);
@@ -82,14 +121,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               photoURL: currentUser.photoURL || '',
               grade: savedGrade,
               stream: savedStream,
+              schoolName: savedSchool,
+              region: savedRegion,
+              targetExamYear: savedTargetYear,
+              phoneNumber: savedPhone,
+              isRegistered: localRegistered,
               createdAt: new Date().toISOString(),
             });
+            // If new user and not yet fully registered, open registration modal
+            if (!localRegistered) {
+              setIsRegistrationModalOpen(true);
+            }
           } else {
             const data = userSnap.data();
-            if (data?.grade) {
-              localStorage.setItem('student_selected_grade', String(data.grade));
-              if (data.stream) localStorage.setItem('student_selected_stream', data.stream);
-              setUser((prev) => (prev ? { ...prev, grade: data.grade, stream: data.stream } : prev));
+            const resolvedGrade = data?.grade || savedGrade;
+            const resolvedStream = data?.stream || savedStream;
+            const resolvedSchool = data?.schoolName || savedSchool;
+            const resolvedRegion = data?.region || savedRegion;
+            const resolvedTargetYear = data?.targetExamYear || savedTargetYear;
+            const resolvedPhone = data?.phoneNumber || savedPhone;
+            const resolvedIsRegistered = Boolean(data?.isRegistered || localRegistered);
+
+            localStorage.setItem(LOCAL_STUDENT_GRADE_KEY, String(resolvedGrade));
+            localStorage.setItem(LOCAL_STUDENT_STREAM_KEY, resolvedStream);
+            if (resolvedSchool) localStorage.setItem(LOCAL_STUDENT_SCHOOL_KEY, resolvedSchool);
+            if (resolvedRegion) localStorage.setItem(LOCAL_STUDENT_REGION_KEY, resolvedRegion);
+            if (resolvedTargetYear) localStorage.setItem(LOCAL_STUDENT_TARGET_YEAR_KEY, String(resolvedTargetYear));
+            if (resolvedPhone) localStorage.setItem(LOCAL_STUDENT_PHONE_KEY, resolvedPhone);
+            if (resolvedIsRegistered) localStorage.setItem(LOCAL_STUDENT_IS_REGISTERED_KEY, 'true');
+
+            appUser = {
+              ...appUser,
+              displayName: data?.displayName || currentUser.displayName || 'Student',
+              grade: resolvedGrade,
+              stream: resolvedStream,
+              schoolName: resolvedSchool,
+              region: resolvedRegion,
+              targetExamYear: resolvedTargetYear,
+              phoneNumber: resolvedPhone,
+              isRegistered: resolvedIsRegistered,
+            };
+            setUser(appUser);
+
+            // If user has not completed registration, show registration prompt
+            if (!resolvedIsRegistered) {
+              setIsRegistrationModalOpen(true);
             }
           }
         } catch (err) {
@@ -102,7 +178,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser({
             uid: 'guest',
             displayName: savedGuestName,
+            email: null,
+            photoURL: null,
             isAnonymous: true,
+            grade: localStorage.getItem(LOCAL_STUDENT_GRADE_KEY) || '12',
+            stream: (localStorage.getItem(LOCAL_STUDENT_STREAM_KEY) as any) || 'Natural Science',
+            schoolName: localStorage.getItem(LOCAL_STUDENT_SCHOOL_KEY) || '',
+            region: localStorage.getItem(LOCAL_STUDENT_REGION_KEY) || '',
+            targetExamYear: localStorage.getItem(LOCAL_STUDENT_TARGET_YEAR_KEY) || '',
+            phoneNumber: localStorage.getItem(LOCAL_STUDENT_PHONE_KEY) || '',
+            isRegistered: localStorage.getItem(LOCAL_STUDENT_IS_REGISTERED_KEY) === 'true',
           });
         } else {
           setUser(null);
@@ -182,9 +267,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const openRegistrationModal = () => setIsRegistrationModalOpen(true);
+  const closeRegistrationModal = () => setIsRegistrationModalOpen(false);
+
+  const updateStudentProfile = async (profileData: Partial<AppUser>) => {
+    // 1. Local Storage persistence
+    if (profileData.displayName) localStorage.setItem(LOCAL_GUEST_NAME_KEY, profileData.displayName);
+    if (profileData.grade) localStorage.setItem(LOCAL_STUDENT_GRADE_KEY, String(profileData.grade));
+    if (profileData.stream) localStorage.setItem(LOCAL_STUDENT_STREAM_KEY, profileData.stream);
+    if (profileData.schoolName) localStorage.setItem(LOCAL_STUDENT_SCHOOL_KEY, profileData.schoolName);
+    if (profileData.region) localStorage.setItem(LOCAL_STUDENT_REGION_KEY, profileData.region);
+    if (profileData.targetExamYear) localStorage.setItem(LOCAL_STUDENT_TARGET_YEAR_KEY, String(profileData.targetExamYear));
+    if (profileData.phoneNumber) localStorage.setItem(LOCAL_STUDENT_PHONE_KEY, profileData.phoneNumber);
+    localStorage.setItem(LOCAL_STUDENT_IS_REGISTERED_KEY, 'true');
+
+    // 2. State update
+    setUser((prev) => {
+      const updated: AppUser = {
+        uid: prev?.uid || 'guest',
+        email: prev?.email || null,
+        displayName: profileData.displayName ?? prev?.displayName ?? 'Student',
+        photoURL: prev?.photoURL || null,
+        isAnonymous: prev?.isAnonymous ?? true,
+        grade: profileData.grade ?? prev?.grade ?? '12',
+        stream: profileData.stream ?? prev?.stream ?? 'Natural Science',
+        schoolName: profileData.schoolName ?? prev?.schoolName,
+        region: profileData.region ?? prev?.region,
+        targetExamYear: profileData.targetExamYear ?? prev?.targetExamYear,
+        phoneNumber: profileData.phoneNumber ?? prev?.phoneNumber,
+        isRegistered: true,
+        metadata: prev?.metadata,
+      };
+      return updated;
+    });
+
+    // 3. Firestore persistence if authenticated
+    if (firebaseUser) {
+      try {
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        await setDoc(
+          userRef,
+          {
+            ...profileData,
+            isRegistered: true,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      } catch (err) {
+        console.warn('Failed to update student profile in Firestore:', err);
+      }
+    }
+  };
+
   const updateStudentGrade = async (grade: number | string, stream?: 'Natural Science' | 'Social Science' | 'General') => {
-    localStorage.setItem('student_selected_grade', String(grade));
-    if (stream) localStorage.setItem('student_selected_stream', stream);
+    localStorage.setItem(LOCAL_STUDENT_GRADE_KEY, String(grade));
+    if (stream) localStorage.setItem(LOCAL_STUDENT_STREAM_KEY, stream);
     
     setUser((prev) => (prev ? { ...prev, grade, ...(stream ? { stream } : {}) } : prev));
 
@@ -209,6 +347,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         isSigningIn,
         popupBlocked,
+        isRegistrationModalOpen,
+        openRegistrationModal,
+        closeRegistrationModal,
         signInWithGoogle,
         signOut,
         error,
@@ -216,6 +357,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         dismissPopupBlocked,
         setGuestDisplayName,
         updateStudentGrade,
+        updateStudentProfile,
       }}
     >
       {children}

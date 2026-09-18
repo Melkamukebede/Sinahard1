@@ -17,6 +17,9 @@ import {
   HelpCircle,
   Crown,
   ShieldCheck,
+  UserPlus,
+  Edit3,
+  CheckCircle2,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -53,6 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     isSigningIn,
     popupBlocked,
     dismissPopupBlocked,
+    openRegistrationModal,
   } = useAuth();
   const { unreadAlertsCount } = useNotifications();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -223,32 +227,61 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 )}
                 <span className="text-xs font-semibold max-w-[90px] truncate text-emerald-700 dark:text-emerald-400">
-                  {user.displayName || 'Synced'}
+                  {user.displayName || 'Student'}
                 </span>
+                {user.grade && (
+                  <span className="hidden sm:inline-block text-[10px] font-extrabold px-1.5 py-0.2 rounded-md bg-emerald-600 text-white">
+                    G-{user.grade}
+                  </span>
+                )}
                 <Cloud className="w-3.5 h-3.5 text-emerald-500" />
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl py-2 z-50 text-sm">
-                  <div className="px-4 py-2 border-b border-zinc-100 dark:border-zinc-800">
-                    <p className="font-semibold text-zinc-900 dark:text-white truncate">
-                      {user.displayName || 'User'}
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl py-2 z-50 text-sm animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-4 py-2 border-b border-zinc-100 dark:border-zinc-800 space-y-1">
+                    <p className="font-bold text-zinc-900 dark:text-white truncate">
+                      {user.displayName || 'Student'}
                     </p>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user.email}</p>
-                    <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                      <Cloud className="w-3 h-3" />
-                      Firestore Sync Active
+                    <div className="pt-1 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                        Grade {user.grade || '12'}
+                      </span>
+                      {user.stream && (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                          {user.stream}
+                        </span>
+                      )}
                     </div>
+                    {user.schoolName && (
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 pt-0.5 line-clamp-1">
+                        {user.schoolName} {user.region ? `(${user.region})` : ''}
+                      </p>
+                    )}
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      openRegistrationModal();
+                    }}
+                    className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 flex items-center gap-2 cursor-pointer transition text-xs font-semibold"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Edit Student Profile / Grade</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => {
                       signOut();
                       setShowUserMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer transition"
+                    className="w-full px-4 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer transition text-xs"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-3.5 h-3.5" />
                     Sign Out
                   </button>
                 </div>
@@ -268,34 +301,44 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="text-xs font-semibold max-w-[80px] truncate text-blue-700 dark:text-blue-400">
                   {user.displayName}
                 </span>
-                <CloudOff className="w-3.5 h-3.5 text-blue-500" />
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                  G-{user.grade || '12'}
+                </span>
               </button>
 
               <button
+                id="register-btn-guest"
                 type="button"
-                disabled={isSigningIn}
-                onClick={handleSignInClick}
-                className="p-1.5 rounded-full text-zinc-500 hover:text-emerald-500 transition cursor-pointer"
-                title="Connect Google Account"
+                onClick={openRegistrationModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition cursor-pointer shadow-xs active:scale-95"
+                title="Register with Google Account"
               >
-                {isSigningIn ? (
-                  <div className="w-4 h-4 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin" />
-                ) : (
-                  <LogIn className="w-4 h-4" />
-                )}
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Register</span>
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 top-10 mt-1 w-60 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl py-2 z-50 text-sm">
+                <div className="absolute right-0 top-10 mt-1 w-64 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl py-2 z-50 text-sm">
                   <div className="px-4 py-2 border-b border-zinc-100 dark:border-zinc-800 space-y-1">
                     <p className="font-semibold text-zinc-900 dark:text-white truncate">
                       {user.displayName}
                     </p>
                     <div className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
                       <CloudOff className="w-3 h-3 text-zinc-400" />
-                      Local Guest Storage Active
+                      Local Storage Mode • Grade {user.grade || '12'}
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      openRegistrationModal();
+                    }}
+                    className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 flex items-center gap-2 cursor-pointer transition text-xs font-semibold"
+                  >
+                    <UserPlus className="w-3.5 h-3.5 text-emerald-500" />
+                    Register / Connect Google Account
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -305,45 +348,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 flex items-center gap-2 cursor-pointer transition text-xs"
                   >
                     <UserIcon className="w-3.5 h-3.5 text-blue-500" />
-                    Edit Profile Name / Mode
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isSigningIn}
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      handleSignInClick();
-                    }}
-                    className="w-full px-4 py-2 text-left text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-2 cursor-pointer transition text-xs font-semibold"
-                  >
-                    <LogIn className="w-3.5 h-3.5" />
-                    Sign In with Google (Cloud Sync)
+                    Quick Guest Name Entry
                   </button>
                 </div>
               )}
             </div>
           ) : (
             <button
-              id="google-signin-btn"
+              id="register-btn-main"
               type="button"
-              disabled={isSigningIn}
-              onClick={handleSignInClick}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-zinc-950 transition cursor-pointer shadow-sm shadow-emerald-500/20 ${
-                isSigningIn ? 'opacity-70 cursor-wait' : ''
-              }`}
-              title="Sign in with Google to sync exams and results in real time"
+              onClick={openRegistrationModal}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition cursor-pointer shadow-sm shadow-emerald-600/25 active:scale-95"
+              title="Register your student profile with Google Account to tailor exams"
             >
-              {isSigningIn ? (
-                <>
-                  <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-950/40 border-t-zinc-950 animate-spin" />
-                  <span className="hidden sm:inline">Connecting...</span>
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span className="hidden sm:inline">Sign In</span>
-                </>
-              )}
+              <UserPlus className="w-3.5 h-3.5 stroke-[2.2]" />
+              <span>Register</span>
             </button>
           )}
         </div>

@@ -15,6 +15,7 @@ import { SubscriptionModal } from './components/SubscriptionModal';
 import { AdminSubscriptionsView } from './components/AdminSubscriptionsView';
 import { CuratedExamsModal } from './components/CuratedExamsModal';
 import { DatabaseUploadModal } from './components/DatabaseUploadModal';
+import { StudentRegistrationModal } from './components/StudentRegistrationModal';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -48,7 +49,12 @@ import {
 } from './services/officialExams';
 
 function MainApp() {
-  const { user, signInWithGoogle } = useAuth();
+  const {
+    user,
+    signInWithGoogle,
+    isRegistrationModalOpen,
+    closeRegistrationModal,
+  } = useAuth();
 
   const [activeTab, setActiveTab] = useState<PageTab>('home');
   const [exams, setExams] = useState<Exam[]>(INITIAL_SAMPLE_EXAMS);
@@ -419,6 +425,7 @@ function MainApp() {
             onOpenCuratedCatalogModal={() => setIsCuratedModalOpen(true)}
             onOpenDatabaseUpload={isAdmin ? (exam) => setExamForDatabaseUpload(exam) : undefined}
             isAdmin={isAdmin}
+            user={user}
           />
         )}
 
@@ -590,6 +597,15 @@ function MainApp() {
             prev.map((e) => (e.id === updatedExam.id ? { ...e, ...updatedExam } : e))
           );
           showToast(`Questions successfully synced to Cloud Firestore and Official Exams!`);
+        }}
+      />
+
+      {/* Student Profile Registration & Critical Academic Forms Modal */}
+      <StudentRegistrationModal
+        isOpen={isRegistrationModalOpen}
+        onClose={closeRegistrationModal}
+        onSuccess={(registeredProfile) => {
+          showToast(`Registered successfully as Grade ${registeredProfile.grade || '12'} student! Official exams tailored.`);
         }}
       />
 
