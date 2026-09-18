@@ -53,6 +53,7 @@ function MainApp() {
     user,
     signInWithGoogle,
     isRegistrationModalOpen,
+    openRegistrationModal,
     closeRegistrationModal,
   } = useAuth();
 
@@ -469,6 +470,12 @@ function MainApp() {
             }}
             onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
             onOpenPasteModal={handleOpenQuestionTextEditor}
+            onOpenRegistrationModal={openRegistrationModal}
+            onOpenCuratedModal={() => setIsCuratedModalOpen(true)}
+            onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+            onOpenNotificationsModal={() => setIsNotificationsModalOpen(true)}
+            isAdmin={isAdmin}
+            user={user}
           />
         )}
 
