@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Cloud,
@@ -9,15 +9,27 @@ import {
   ShieldCheck,
   Layers,
   Sparkles,
-  HelpCircle,
   Lock,
+  GraduationCap,
+  BookOpen,
+  Binary,
+  FileCheck2,
+  Calendar,
+  LogIn,
+  Clock,
+  Target,
+  Compass,
+  FileText,
 } from 'lucide-react';
-import { Exam, AppUser } from '../types';
+import { Exam, AppUser, SubjectType, DifficultyLevel } from '../types';
 import {
   uploadExamToFirestore,
   canUserUploadToFirestore,
+  inferGrade,
+  inferStream,
 } from '../services/databaseUpload';
 import { ADMIN_EMAIL } from '../services/db';
+import { useAuth } from '../context/AuthContext';
 
 interface DatabaseUploadModalProps {
   exam: Exam | null;
@@ -27,6 +39,26 @@ interface DatabaseUploadModalProps {
   onUploadComplete?: (exam: Exam, engine: 'firestore') => void;
 }
 
+const ACADEMIC_GRADE_OPTIONS = [
+  { id: 'Freshman', label: 'University Freshman', subtitle: 'Higher Education Remedial & Degree Core' },
+  { id: '12', label: 'Grade 12', subtitle: 'National University Entrance Examination (NEAEA / MoE)' },
+  { id: '11', label: 'Grade 11', subtitle: 'Senior Secondary Preparatory Curriculum' },
+  { id: '10', label: 'Grade 10', subtitle: 'Secondary General Education' },
+  { id: '9', label: 'Grade 9', subtitle: 'Secondary Foundation Curriculum' },
+  { id: '8', label: 'Grade 8', subtitle: 'Regional Ministry Level Examination' },
+  { id: '7', label: 'Grade 7', subtitle: 'Middle School Curriculum' },
+  { id: 'All', label: 'All Grades / General', subtitle: 'Open access for all academic stages' },
+  { id: 'custom', label: 'Custom Academic Level', subtitle: 'Specify custom grade or faculty department' },
+];
+
+const STREAM_OPTIONS = [
+  { id: 'Natural Science', label: 'Natural Science', subtitle: 'Physics, Chemistry, Biology, Advanced Math, Tech Drawing' },
+  { id: 'Social Science', label: 'Social Science', subtitle: 'Economics, Geography, History, General Business' },
+  { id: 'General', label: 'General Curriculum', subtitle: 'Common core foundation (Grades 9 & 10)' },
+  { id: 'Higher Education', label: 'Higher Education / Remedial', subtitle: 'University Freshman STEM & Humanities Courses' },
+  { id: 'All', label: 'All Streams', subtitle: 'Universal accessibility across all academic tracks' },
+];
+
 export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   exam,
   user,
@@ -34,14 +66,25 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   onClose,
   onUploadComplete,
 }) => {
+  const { signInWithGoogle, isSigningIn, popupBlocked } = useAuth();
+
+  // Form states initialized dynamically based on exam prop
+  const [selectedGrade, setSelectedGrade] = useState<string>('12');
+  const [customGradeText, setCustomGradeText] = useState<string>('');
+  const [selectedStream, setSelectedStream] = useState<string>('Natural Science');
+  const [unitName, setUnitName] = useState<string>('');
+  const [adminTag, setAdminTag] = useState<string>('Official Curriculum Exam');
+  const [curatorName, setCuratorName] = useState<string>('Ministry of Education (MoE)');
+  const [subjectType, setSubjectType] = useState<SubjectType>('theory');
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>('Medium');
+  const [timeLimit, setTimeLimit] = useState<number>(20);
+  const [passingScore, setPassingScore] = useState<number>(70);
+  const [targetExamYear, setTargetExamYear] = useState<string>('2026 (2018 E.C.)');
+
+  // Upload toggles
   const [uploadIndividualQuestions, setUploadIndividualQuestions] = useState<boolean>(true);
   const [isPublic, setIsPublic] = useState<boolean>(true);
   const [asOfficialExam, setAsOfficialExam] = useState<boolean>(true);
-  const [selectedGrade, setSelectedGrade] = useState<string>(
-    exam?.grade ? String(exam.grade) : '12'
-  );
-  const [unitName, setUnitName] = useState<string>(exam?.unit || '');
-  const [adminTag, setAdminTag] = useState<string>('Official Curriculum Exam');
 
   // Status & loading states
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -50,10 +93,130 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Sync state whenever active exam changes
+  useEffect(() => {
+    if (!exam) return;
+
+    // Detect grade from exam or infer intelligently
+    const detectedGrade = exam.grade ? String(exam.grade) : inferGrade(`${exam.name} ${exam.title || ''}`);
+    const isKnownGrade = ACADEMIC_GRADE_OPTIONS.some((g) => g.id === detectedGrade);
+
+    if (isKnownGrade) {
+      setSelectedGrade(detectedGrade);
+      setCustomGradeText('');
+    } else if (detectedGrade) {
+      setSelectedGrade('custom');
+      setCustomGradeText(detectedGrade);
+    } else {
+      setSelectedGrade('12');
+      setCustomGradeText('');
+    }
+
+    // Detect stream
+    const detectedStream = (exam as any).stream || inferStream(exam.subject, `${exam.name} ${exam.title || ''}`, detectedGrade);
+    setSelectedStream(detectedStream);
+
+    // Metadata defaults
+    setUnitName(exam.unit || (detectedGrade === 'Freshman' ? 'University Core Curriculum' : 'National Curriculum Unit'));
+    setSubjectType(exam.subjectType || (exam.subject?.toLowerCase().includes('math') || exam.subject?.toLowerCase().includes('physic') ? 'calculation' : 'theory'));
+    setDifficulty((exam.difficulty as DifficultyLevel) || 'Medium');
+    setTimeLimit(Number(exam.timeLimit) || 20);
+    setPassingScore(Number(exam.passingScore) || 70);
+    setTargetExamYear((exam as any).targetExamYear || '2026 (2018 E.C.)');
+
+    setCuratorName(
+      exam.curator ||
+      (detectedGrade === 'Freshman'
+        ? 'University Higher Education Mathematics Board'
+        : 'Ministry of Education (MoE) Specialist Team')
+    );
+
+    setAdminTag(
+      exam.adminTag ||
+      (detectedGrade === 'Freshman'
+        ? 'University Freshman Curriculum'
+        : `Grade ${detectedGrade} National Curriculum Exam`)
+    );
+
+    // Reset status indicators
+    setStatusMessage(null);
+    setErrorMessage(null);
+    setUploadProgress(0);
+  }, [exam, isOpen]);
+
+  // Adjust suggested stream when grade changes
+  const handleGradeChange = (newGrade: string) => {
+    setSelectedGrade(newGrade);
+    if (newGrade === 'Freshman') {
+      setSelectedStream('Higher Education');
+      if (!adminTag || adminTag.includes('Grade')) {
+        setAdminTag('University Freshman Curriculum');
+      }
+      if (!curatorName || curatorName.includes('Ministry')) {
+        setCuratorName('University Higher Education Mathematics Board');
+      }
+    } else if (newGrade === '9' || newGrade === '10') {
+      setSelectedStream('General');
+      if (adminTag.includes('Freshman')) {
+        setAdminTag(`Grade ${newGrade} Curriculum Exam`);
+      }
+    } else if (newGrade === '11' || newGrade === '12') {
+      if (selectedStream === 'General' || selectedStream === 'Higher Education') {
+        setSelectedStream('Natural Science');
+      }
+      if (adminTag.includes('Freshman')) {
+        setAdminTag(`Grade ${newGrade} National Exam`);
+      }
+    }
+  };
+
+  // Diagnostic audit for exam questions
+  const diagnostics = useMemo(() => {
+    if (!exam || !exam.questions) {
+      return { total: 0, hasMath: false, mathCount: 0, withExplanation: 0, isValid: false, issues: ['No questions found'] };
+    }
+
+    const total = exam.questions.length;
+    let mathCount = 0;
+    let withExplanation = 0;
+    const issues: string[] = [];
+
+    exam.questions.forEach((q, idx) => {
+      if (!q.text?.trim()) {
+        issues.push(`Question #${idx + 1} has empty text`);
+      }
+      if (!Array.isArray(q.options) || q.options.length < 2) {
+        issues.push(`Question #${idx + 1} has insufficient options (at least 2 required)`);
+      }
+      if (typeof q.correct !== 'number' || q.correct < 0 || q.correct > 3) {
+        issues.push(`Question #${idx + 1} correct answer index is invalid`);
+      }
+      if (q.explanation && q.explanation.trim().length > 0) {
+        withExplanation++;
+      }
+      // Check for LaTeX / math expressions
+      const mathRegex = /\$|\\frac|\\lim|\\int|\\sum|\\sqrt|\^|_|\\cdot|\\alpha|\\beta|\\theta|\\pi|\\times|\\pm|\\le|\\ge|\\ne|\\subset|\\in/;
+      const combinedText = `${q.text} ${q.options?.join(' ') || ''}`;
+      if (mathRegex.test(combinedText)) {
+        mathCount++;
+      }
+    });
+
+    return {
+      total,
+      hasMath: mathCount > 0,
+      mathCount,
+      withExplanation,
+      isValid: issues.length === 0,
+      issues,
+    };
+  }, [exam]);
+
   if (!isOpen || !exam) return null;
 
   const isAdmin = canUserUploadToFirestore(user);
   const userEmail = user?.email || 'Not logged in';
+  const effectiveGrade = selectedGrade === 'custom' ? (customGradeText.trim() || 'General') : selectedGrade;
 
   const handleUploadToFirestore = async () => {
     if (!isAdmin) {
@@ -65,16 +228,23 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     setErrorMessage(null);
     setStatusMessage(null);
     setUploadProgress(10);
-    setProgressStatusText('Connecting to Cloud Firestore...');
+    setProgressStatusText('Initializing connection to Cloud Firestore...');
 
     try {
       const result = await uploadExamToFirestore(exam, user, {
         uploadIndividualQuestions,
         isPublic,
         asOfficialExam,
-        grade: selectedGrade,
+        grade: effectiveGrade,
+        stream: selectedStream,
         unit: unitName.trim() || exam.unit,
-        adminTag: adminTag.trim() || 'Official Curriculum Exam',
+        adminTag: adminTag.trim() || (effectiveGrade === 'Freshman' ? 'University Freshman Curriculum' : `Grade ${effectiveGrade} Exam`),
+        curator: curatorName.trim(),
+        subjectType,
+        difficulty,
+        timeLimit,
+        passingScore,
+        targetExamYear,
         onProgress: (percent, text) => {
           setUploadProgress(percent);
           setProgressStatusText(text);
@@ -89,10 +259,16 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
             isUploadedToCloud: true,
             cloudStorageEngine: 'firestore',
             cloudUploadedAt: new Date().toISOString(),
-            grade: selectedGrade,
+            grade: effectiveGrade,
+            stream: selectedStream,
             unit: unitName.trim() || exam.unit,
+            curator: curatorName.trim(),
+            subjectType,
+            difficulty,
+            timeLimit,
+            passingScore,
             sourceType: asOfficialExam ? 'curated_catalog' : exam.sourceType,
-          },
+          } as Exam,
           'firestore'
         );
       }
@@ -106,18 +282,18 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-black/60 backdrop-blur-xs">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto bg-black/65 backdrop-blur-xs">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+          exit={{ opacity: 0, scale: 0.96, y: 12 }}
           transition={{ duration: 0.2 }}
-          className="w-full max-w-xl bg-white dark:bg-[#0b1320] border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden text-zinc-900 dark:text-zinc-100 font-['DM_Sans',sans-serif]"
+          className="w-full max-w-2xl bg-white dark:bg-[#0b1320] border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden text-zinc-900 dark:text-zinc-100 font-['DM_Sans',sans-serif] my-auto"
         >
           {/* Header */}
-          <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/30">
+          <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/70 dark:bg-zinc-900/40">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-xs">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-xs">
                 <CloudUpload className="w-5 h-5" />
               </div>
               <div>
@@ -125,13 +301,20 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                   <h3 className="text-base font-bold text-zinc-900 dark:text-white font-['Syne',sans-serif]">
                     Upload to Cloud Firestore
                   </h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3" />
-                    Admin
-                  </span>
+                  {isAdmin ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                      Verified Admin
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-rose-500" />
+                      Admin Protected
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Firebase Native Document Storage & Question Bank
+                  Firebase Native Document Storage & Central Question Bank
                 </p>
               </div>
             </div>
@@ -146,86 +329,307 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
           </div>
 
           <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
-            {/* Non-Admin Guard */}
-            {!isAdmin ? (
-              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 space-y-2">
+            {/* Non-Admin Alert & One-Click Sign-In */}
+            {!isAdmin && (
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 space-y-3">
                 <div className="flex items-center gap-2 text-sm font-bold">
-                  <Lock className="w-4 h-4 text-rose-500" />
-                  <span>Admin Privileges Required</span>
+                  <Lock className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span>Administrator Authentication Required</span>
                 </div>
                 <p className="text-xs text-rose-700 dark:text-rose-400 leading-relaxed">
-                  Only the verified administrator (<span className="font-mono font-bold">{ADMIN_EMAIL}</span>) can upload questions to Cloud Firestore.
+                  Only the verified administrator (<span className="font-mono font-bold">{ADMIN_EMAIL}</span>) can upload questions to Cloud Firestore collections (<span className="font-mono">/exams</span> and <span className="font-mono">/questions</span>).
                 </p>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400 pt-1">
-                  Current user: <span className="font-semibold">{userEmail}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-rose-500/20">
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Current account: <span className="font-semibold text-zinc-700 dark:text-zinc-200">{userEmail}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => signInWithGoogle()}
+                    disabled={isSigningIn}
+                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-bold text-xs shadow-sm cursor-pointer disabled:opacity-50 transition"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>{isSigningIn ? 'Signing In...' : 'Sign In with Google as Admin'}</span>
+                  </button>
                 </div>
+                {popupBlocked && (
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+                    Google sign-in popup was blocked by your browser. Please allow popups for this site.
+                  </p>
+                )}
               </div>
-            ) : null}
+            )}
 
-            {/* Exam Summary Card */}
-            <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/80 dark:border-zinc-800 space-y-2.5">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                    Selected Exam
-                  </span>
+            {/* Exam Diagnostic Summary Card */}
+            <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                      Exam Target
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                      {effectiveGrade === 'Freshman' ? 'University Freshman' : `Grade ${effectiveGrade}`}
+                    </span>
+                  </div>
                   <h4 className="text-sm font-bold text-zinc-900 dark:text-white line-clamp-1">
                     {exam.name}
                   </h4>
                 </div>
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 shrink-0">
                   {exam.subject}
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-200/60 dark:border-zinc-800 text-xs">
-                <div>
+              {/* Metrics audit bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2.5 border-t border-zinc-200/60 dark:border-zinc-800/80 text-xs">
+                <div className="p-2 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800">
                   <span className="text-zinc-400 text-[10px] block">Questions</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    <Layers className="w-3 h-3" />
-                    {exam.questions.length} items
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
+                    <Layers className="w-3.5 h-3.5" />
+                    {diagnostics.total} items
                   </span>
                 </div>
-                <div>
-                  <span className="text-zinc-400 text-[10px] block">Time & Score</span>
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-                    {exam.timeLimit}m • Pass {exam.passingScore}%
+
+                <div className="p-2 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800">
+                  <span className="text-zinc-400 text-[10px] block">Formula Engine</span>
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-200 flex items-center gap-1 mt-0.5">
+                    <Binary className="w-3.5 h-3.5 text-blue-500" />
+                    {diagnostics.hasMath ? `${diagnostics.mathCount} with LaTeX` : 'Plain Text'}
                   </span>
                 </div>
-                <div>
-                  <span className="text-zinc-400 text-[10px] block">Current Status</span>
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-                    {exam.isUploadedToCloud ? 'Already Synced' : 'Local Only'}
+
+                <div className="p-2 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800">
+                  <span className="text-zinc-400 text-[10px] block">Pedagogy</span>
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-200 flex items-center gap-1 mt-0.5">
+                    <FileCheck2 className="w-3.5 h-3.5 text-amber-500" />
+                    {diagnostics.withExplanation}/{diagnostics.total} Explained
+                  </span>
+                </div>
+
+                <div className="p-2 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800">
+                  <span className="text-zinc-400 text-[10px] block">Sync State</span>
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-200 flex items-center gap-1 mt-0.5">
+                    <Cloud className="w-3.5 h-3.5 text-cyan-500" />
+                    {exam.isUploadedToCloud ? 'Synced' : 'Local Draft'}
                   </span>
                 </div>
               </div>
+
+              {/* Diagnostic warnings if any */}
+              {!diagnostics.isValid && (
+                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-[11px] flex items-center gap-2">
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                  <span>Validation issue detected: {diagnostics.issues[0]}</span>
+                </div>
+              )}
             </div>
 
-            {/* Firestore Destination Info */}
+            {/* Firestore Destination Infrastructure Info */}
             <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-300">
-                <Cloud className="w-4 h-4 text-amber-500" />
-                <span>Target Firestore Collections</span>
+              <div className="flex items-center justify-between text-xs font-bold text-amber-700 dark:text-amber-300">
+                <span className="flex items-center gap-1.5">
+                  <Cloud className="w-4 h-4 text-amber-500" />
+                  Target Firestore Collections
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-800 dark:text-amber-200">
+                  Batch limit: 400 docs/commit
+                </span>
               </div>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                This uploads the complete exam structure into <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">/exams/{exam.id}</span> and batch-commits all {exam.questions.length} individual questions into <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">/questions</span> with security rules enforcement.
+                Stores complete metadata in <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">/exams/{exam.id}</span> and batch-commits all {exam.questions.length} normalized questions into <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">/questions</span> with strict security rules and zero-latency local catalog cache synchronization.
               </p>
             </div>
 
-            {/* Upload Options */}
-            {isAdmin && (
-              <div className="space-y-3 pt-1">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                    Upload & Official Sync Configurations
-                  </h4>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                    ⚡ Instant Sync Enabled
-                  </span>
+            {/* Upload & Academic Configurations */}
+            <div className="space-y-4 pt-1">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                  <GraduationCap className="w-4 h-4 text-amber-500" />
+                  Academic Level & Curriculum Configuration
+                </h4>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                  Live Catalog Sync
+                </span>
+              </div>
+
+              {/* 1. Academic Grade Selection */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                  Academic Grade / Educational Stage
+                </label>
+                <select
+                  value={selectedGrade}
+                  onChange={(e) => handleGradeChange(e.target.value)}
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white font-medium cursor-pointer"
+                >
+                  {ACADEMIC_GRADE_OPTIONS.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.label} — {g.subtitle}
+                    </option>
+                  ))}
+                </select>
+
+                {selectedGrade === 'custom' && (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      value={customGradeText}
+                      onChange={(e) => setCustomGradeText(e.target.value)}
+                      placeholder="Enter custom academic level (e.g. Higher Education Remedial, TVET Level 4)"
+                      className="w-full text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Stream & Unit Selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
+                    <Compass className="w-3.5 h-3.5 text-blue-500" />
+                    Academic Stream / Track
+                  </label>
+                  <select
+                    value={selectedStream}
+                    onChange={(e) => setSelectedStream(e.target.value)}
+                    className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white cursor-pointer"
+                  >
+                    {STREAM_OPTIONS.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
+                    <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+                    Curriculum Unit / Chapter
+                  </label>
+                  <input
+                    type="text"
+                    value={unitName}
+                    onChange={(e) => setUnitName(e.target.value)}
+                    placeholder="e.g. Unit 3: Differential Calculus"
+                    className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* 3. Subject Type & Difficulty & Session Year */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    Subject Assessment Type
+                  </label>
+                  <select
+                    value={subjectType}
+                    onChange={(e) => setSubjectType(e.target.value as SubjectType)}
+                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white cursor-pointer"
+                  >
+                    <option value="theory">Theory & Conceptual</option>
+                    <option value="calculation">Calculation & Problem Solving</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    Difficulty Level
+                  </label>
+                  <select
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value as DifficultyLevel)}
+                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white cursor-pointer"
+                  >
+                    <option value="Easy">Easy (Foundation)</option>
+                    <option value="Medium">Medium (Standard)</option>
+                    <option value="Hard">Hard (Challenging)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                    Target Exam Session
+                  </label>
+                  <input
+                    type="text"
+                    value={targetExamYear}
+                    onChange={(e) => setTargetExamYear(e.target.value)}
+                    placeholder="2026 (2018 E.C.)"
+                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* 4. Time Limit & Passing Score & Curator */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                    Time Limit (Minutes)
+                  </label>
+                  <input
+                    type="number"
+                    min={5}
+                    max={300}
+                    value={timeLimit}
+                    onChange={(e) => setTimeLimit(Math.max(1, Number(e.target.value) || 20))}
+                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
+                    <Target className="w-3.5 h-3.5 text-emerald-500" />
+                    Passing Score (%)
+                  </label>
+                  <input
+                    type="number"
+                    min={10}
+                    max={100}
+                    value={passingScore}
+                    onChange={(e) => setPassingScore(Math.min(100, Math.max(1, Number(e.target.value) || 70)))}
+                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
+                    <FileText className="w-3.5 h-3.5 text-purple-500" />
+                    Curator / Authority
+                  </label>
+                  <input
+                    type="text"
+                    value={curatorName}
+                    onChange={(e) => setCuratorName(e.target.value)}
+                    placeholder="e.g. Ministry of Education (MoE)"
+                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* 5. Curriculum / Verification Tag */}
+              <div>
+                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                  Public Curriculum / Verification Tag
+                </label>
+                <input
+                  type="text"
+                  value={adminTag}
+                  onChange={(e) => setAdminTag(e.target.value)}
+                  placeholder="e.g. Grade 12 National Exam 2026, MoE Official"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
+                />
+              </div>
+
+              {/* Toggles */}
+              <div className="space-y-2.5 pt-1">
                 {/* Instant Official Exams Catalog Sync */}
-                <label className="flex items-start gap-3 p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/30 cursor-pointer hover:border-emerald-500/50 transition">
+                <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/30 cursor-pointer hover:border-emerald-500/50 transition">
                   <input
                     type="checkbox"
                     checked={asOfficialExam}
@@ -233,50 +637,19 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                     className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
                   />
                   <div className="text-xs">
-                    <span className="font-bold text-zinc-900 dark:text-white block flex items-center gap-1.5">
+                    <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       Publish to Official Exams Catalog
-                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-black">LIVE</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-black">
+                        LIVE
+                      </span>
                     </span>
-                    <span className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                      Instantly syncs this exam and all questions into the Download Official Exams directory so students can access and download it immediately.
+                    <span className="text-zinc-500 dark:text-zinc-400 text-[11px] block mt-0.5">
+                      Synchronizes instantly to the student Official Exams directory tailored by registered grade (e.g., {effectiveGrade === 'Freshman' ? 'University Freshman' : `Grade ${effectiveGrade}`}).
                     </span>
                   </div>
                 </label>
 
-                {/* Grade and Unit specification */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                      Academic Grade
-                    </label>
-                    <select
-                      value={selectedGrade}
-                      onChange={(e) => setSelectedGrade(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
-                    >
-                      <option value="12">Grade 12 (National Exam)</option>
-                      <option value="11">Grade 11</option>
-                      <option value="10">Grade 10</option>
-                      <option value="9">Grade 9</option>
-                      <option value="All">All Grades / General</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                      Curriculum Unit / Chapter
-                    </label>
-                    <input
-                      type="text"
-                      value={unitName}
-                      onChange={(e) => setUnitName(e.target.value)}
-                      placeholder="e.g. Unit 3: Differential Calculus"
-                      className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
-                    >
-                    </input>
-                  </div>
-                </div>
-
+                {/* Individual question storage */}
                 <label className="flex items-start gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/80 dark:border-zinc-800 cursor-pointer hover:border-amber-500/40 transition">
                   <input
                     type="checkbox"
@@ -286,14 +659,15 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                   />
                   <div className="text-xs">
                     <span className="font-bold text-zinc-900 dark:text-white block">
-                      Sync to Global Question Bank (/questions)
+                      Sync to Global Modular Question Bank (/questions)
                     </span>
                     <span className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                      Optimized parallel batch commits for modular question queries and individual practice.
+                      Batch commits all questions so students and teachers can query modular questions by grade, stream, and topic.
                     </span>
                   </div>
                 </label>
 
+                {/* Public Availability */}
                 <label className="flex items-start gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/80 dark:border-zinc-800 cursor-pointer hover:border-amber-500/40 transition">
                   <input
                     type="checkbox"
@@ -306,25 +680,12 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                       Make Publicly Available to All Students
                     </span>
                     <span className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                      Students can immediately see, download, and practice this exam from the cloud repository.
+                      Registered students matching this grade limitation can immediately access, practice, and review this exam.
                     </span>
                   </div>
                 </label>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Curriculum / Verification Tag
-                  </label>
-                  <input
-                    type="text"
-                    value={adminTag}
-                    onChange={(e) => setAdminTag(e.target.value)}
-                    placeholder="e.g. Grade 12 National Exam 2026, MoE Official"
-                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
-                  />
-                </div>
               </div>
-            )}
+            </div>
 
             {/* Upload Progress Bar */}
             {isLoading && (
@@ -332,7 +693,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 <div className="flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
                   <span className="flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                    {progressStatusText || 'Uploading to Firestore...'}
+                    {progressStatusText || 'Uploading to Cloud Firestore...'}
                   </span>
                   <span>{uploadProgress}%</span>
                 </div>
@@ -347,7 +708,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
             {/* Error Message */}
             {errorMessage && (
-              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2">
+              <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                 <span className="leading-relaxed">{errorMessage}</span>
               </div>
@@ -355,12 +716,12 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
             {/* Success Message */}
             {statusMessage && (
-              <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs flex items-start gap-2">
+              <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                <div>
+                <div className="space-y-1">
                   <p className="font-bold">{statusMessage}</p>
-                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300/80 mt-1">
-                    Exam ID: <span className="font-mono">{exam.id}</span> • Collection: <span className="font-mono">/exams</span>
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300/85">
+                    Exam ID: <span className="font-mono font-bold">{exam.id}</span> • Grade Level: <span className="font-bold">{effectiveGrade === 'Freshman' ? 'University Freshman' : `Grade ${effectiveGrade}`}</span> • Stream: <span className="font-bold">{selectedStream}</span>
                   </p>
                 </div>
               </div>
@@ -377,7 +738,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
               {statusMessage ? 'Done' : 'Cancel'}
             </button>
 
-            {isAdmin && (
+            {isAdmin ? (
               <button
                 type="button"
                 disabled={isLoading}
@@ -395,6 +756,16 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                     <span>Upload to Cloud Firestore</span>
                   </>
                 )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => signInWithGoogle()}
+                disabled={isSigningIn}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 transition active:scale-95"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>{isSigningIn ? 'Signing In...' : 'Sign In as Admin to Upload'}</span>
               </button>
             )}
           </div>

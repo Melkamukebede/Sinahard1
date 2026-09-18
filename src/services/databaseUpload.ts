@@ -1,6 +1,6 @@
 import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Exam, Question, AppUser } from '../types';
+import { Exam, Question, AppUser, SubjectType, DifficultyLevel } from '../types';
 import { getLocalExams, saveLocalExams, ADMIN_EMAIL, isUserAdmin } from './db';
 import { publishOfficialExamLocally } from './officialExams';
 
@@ -9,7 +9,14 @@ export interface FirestoreUploadOptions {
   isPublic?: boolean;
   adminTag?: string;
   grade?: number | string;
+  stream?: string;
   unit?: string;
+  subjectType?: SubjectType;
+  difficulty?: DifficultyLevel | string;
+  timeLimit?: number;
+  passingScore?: number;
+  targetExamYear?: string;
+  curator?: string;
   asOfficialExam?: boolean;
   onProgress?: (progressPercent: number, status: string) => void;
 }
@@ -21,9 +28,36 @@ export interface FirestoreUploadResult {
   message: string;
 }
 
-function inferGrade(text: string): string {
+export function inferGrade(text: string): string {
+  if (/freshman|university|remedial|college|undergrad/i.test(text)) {
+    return 'Freshman';
+  }
   const match = text.match(/grade\s*(\d{1,2})/i) || text.match(/g(\d{1,2})/i);
-  return match ? match[1] : '12';
+  if (match) {
+    return match[1];
+  }
+  return '12';
+}
+
+export function inferStream(
+  subject: string = '',
+  text: string = '',
+  grade: string = '12'
+): 'Natural Science' | 'Social Science' | 'General' | 'Higher Education' {
+  if (grade === 'Freshman') return 'Higher Education';
+  if (grade === '9' || grade === '10') return 'General';
+
+  const combined = `${subject} ${text}`.toLowerCase();
+  if (/freshman|calculus|linear algebra|differential|remedial|engineering/i.test(combined)) {
+    return 'Higher Education';
+  }
+  if (/physics|chemistry|biology|technical drawing|math|algebra|geometry/i.test(combined)) {
+    return 'Natural Science';
+  }
+  if (/history|geography|economics|business|civics/i.test(combined)) {
+    return 'Social Science';
+  }
+  return 'General';
 }
 
 /**
@@ -51,9 +85,16 @@ export async function uploadExamToFirestore(
   const {
     uploadIndividualQuestions = true,
     isPublic = true,
-    adminTag = 'Official Curriculum Exam',
+    adminTag,
     grade,
+    stream,
     unit,
+    subjectType,
+    difficulty,
+    timeLimit,
+    passingScore,
+    targetExamYear,
+    curator,
     asOfficialExam = true,
     onProgress,
   } = options;
@@ -81,9 +122,24 @@ export async function uploadExamToFirestore(
     explanation: q.explanation ? String(q.explanation) : '',
   }));
 
-  const finalGrade = grade || exam.grade || inferGrade(`${exam.name} ${exam.title || ''}`);
-  const finalUnit = (unit || exam.unit || 'National Curriculum Unit').trim();
-  const finalCurator = (adminTag || exam.curator || 'Official Ministry Curriculum Specialist').trim();
+  const finalGrade = String(grade || exam.grade || inferGrade(`${exam.name} ${exam.title || ''}`));
+  const finalStream = stream || (exam as any).stream || inferStream(exam.subject, `${exam.name} ${exam.title || ''}`, finalGrade);
+  const finalUnit = (unit || exam.unit || (finalGrade === 'Freshman' ? 'University Core Curriculum' : 'National Curriculum Unit')).trim();
+  const finalCurator = (
+    curator ||
+    exam.curator ||
+    (finalGrade === 'Freshman' ? 'University Higher Education Mathematics Board' : 'Official Ministry Curriculum Specialist')
+  ).trim();
+  const finalAdminTag = (
+    adminTag ||
+    exam.adminTag ||
+    (finalGrade === 'Freshman' ? 'University Freshman Curriculum' : `Grade ${finalGrade} National Curriculum Exam`)
+  ).trim();
+  const finalSubjectType: SubjectType = subjectType || exam.subjectType || 'theory';
+  const finalDifficulty = difficulty || exam.difficulty || 'Medium';
+  const finalTimeLimit = Number(timeLimit ?? exam.timeLimit) || 20;
+  const finalPassingScore = Number(passingScore ?? exam.passingScore) || 70;
+  const finalTargetExamYear = targetExamYear || (exam as any).targetExamYear || '2026 (2018 E.C.)';
   const nowIso = new Date().toISOString();
 
   // 2. Prepare comprehensive exam payload
@@ -92,13 +148,14 @@ export async function uploadExamToFirestore(
     name: exam.name.trim(),
     title: (exam.title || exam.name).trim(),
     subject: (exam.subject || 'General').trim(),
-    difficulty: exam.difficulty || 'Medium',
-    timeLimit: Number(exam.timeLimit) || 20,
-    passingScore: Number(exam.passingScore) || 70,
-    subjectType: exam.subjectType || 'theory',
+    difficulty: finalDifficulty,
+    timeLimit: finalTimeLimit,
+    passingScore: finalPassingScore,
+    subjectType: finalSubjectType,
     description: (exam.description || '').trim(),
     questions: sanitizedQuestions,
     grade: finalGrade,
+    stream: finalStream,
     unit: finalUnit,
     curator: finalCurator,
     rating: exam.rating ?? 4.9,
@@ -107,7 +164,8 @@ export async function uploadExamToFirestore(
     userId: authorId,
     authorId,
     authorEmail,
-    adminTag,
+    adminTag: finalAdminTag,
+    targetExamYear: finalTargetExamYear,
     sourceType: asOfficialExam ? 'curated_catalog' : (exam.sourceType || 'curated_catalog'),
     isUploadedToCloud: true,
     cloudStorageEngine: 'firestore',
@@ -153,6 +211,7 @@ export async function uploadExamToFirestore(
             explanation: q.explanation || '',
             isPublic,
             grade: finalGrade,
+            stream: finalStream,
             unit: finalUnit,
             authorId,
             authorEmail,
@@ -196,7 +255,7 @@ export async function uploadExamToFirestore(
       success: true,
       examId,
       questionsCount: uploadedCount,
-      message: `Successfully uploaded "${exam.name}" with ${uploadedCount} question(s) to Cloud Firestore and synchronized instantly to Official Exams!`,
+      message: `Successfully uploaded "${exam.name}" (${finalGrade === 'Freshman' ? 'University Freshman' : `Grade ${finalGrade}`}) with ${uploadedCount} question(s) to Cloud Firestore and synchronized to Official Exams!`,
     };
   } catch (err: unknown) {
     handleFirestoreError(err, OperationType.WRITE, `exams/${examId}`);

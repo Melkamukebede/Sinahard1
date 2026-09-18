@@ -11,6 +11,9 @@ const LOCAL_STORAGE_OFFICIAL_EXAMS = 'exam_master_official_exams_cache';
 export const OFFICIAL_EXAMS_UPDATED_EVENT = 'exam_master_official_exams_updated';
 
 function inferGradeFromName(text: string): string {
+  if (/freshman|university|remedial|college|undergrad/i.test(text)) {
+    return 'Freshman';
+  }
   const match = text.match(/grade\s*(\d{1,2})/i) || text.match(/g(\d{1,2})/i);
   return match ? match[1] : '12';
 }
@@ -47,8 +50,10 @@ export function sanitizeFirestoreExam(data: Record<string, any>, docId: string):
     description: String(data.description || '').trim(),
     questions: sanitizedQuestions,
     grade,
-    unit: String(data.unit || 'National Curriculum Unit').trim(),
-    curator: String(data.curator || data.adminTag || 'Ministry Curriculum Specialist Team').trim(),
+    stream: data.stream,
+    targetExamYear: data.targetExamYear,
+    unit: String(data.unit || (grade === 'Freshman' ? 'University Core Curriculum' : 'National Curriculum Unit')).trim(),
+    curator: String(data.curator || data.adminTag || (grade === 'Freshman' ? 'University Higher Education Board' : 'Ministry Curriculum Specialist Team')).trim(),
     rating: typeof data.rating === 'number' ? data.rating : 4.9,
     downloadCount: typeof data.downloadCount === 'number' ? data.downloadCount : 150,
     sourceType: 'curated_catalog',
@@ -57,7 +62,7 @@ export function sanitizeFirestoreExam(data: Record<string, any>, docId: string):
     cloudUploadedAt: data.cloudUploadedAt || data.updatedAt || data.createdAt || new Date().toISOString(),
     createdAt: data.createdAt || new Date().toISOString(),
     updatedAt: data.updatedAt || new Date().toISOString(),
-    adminTag: data.adminTag || 'Official Exam',
+    adminTag: data.adminTag || (grade === 'Freshman' ? 'University Freshman Curriculum' : 'Official Exam'),
     isPublic: data.isPublic !== false,
   };
 }

@@ -586,9 +586,9 @@ function MainApp() {
         }}
       />
 
-      {/* Database Storage Upload Modal (Cloud Firestore - Admin only) */}
+      {/* Database Storage Upload Modal (Cloud Firestore - Admin privileged) */}
       <DatabaseUploadModal
-        isOpen={isAdmin && examForDatabaseUpload !== null}
+        isOpen={examForDatabaseUpload !== null}
         exam={examForDatabaseUpload}
         user={user}
         onClose={() => setExamForDatabaseUpload(null)}

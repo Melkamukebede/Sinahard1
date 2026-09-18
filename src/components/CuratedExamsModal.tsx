@@ -69,7 +69,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
   }, [officialExams]);
 
   // Dynamic filter lists
-  const availableGrades = ['All', '12', '11', '10', '9'];
+  const availableGrades = ['All', 'Freshman', '12', '11', '10', '9'];
 
   const availableSubjects = useMemo(() => {
     const subjects = new Set<string>();
@@ -194,7 +194,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
               <div className="flex items-center gap-2 text-xs font-bold text-zinc-900 dark:text-white">
                 <span>Filtering for Registered Level:</span>
                 <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-extrabold text-[11px]">
-                  Grade {registeredGrade}
+                  {registeredGrade === 'Freshman' ? 'University Freshman' : `Grade ${registeredGrade}`}
                 </span>
                 <span className="text-zinc-500 dark:text-zinc-400 font-normal">
                   ({registeredStream})
@@ -219,7 +219,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
               title="Toggle to strictly show only exams for your registered grade or explore all"
             >
               <Filter className="w-3.5 h-3.5" />
-              <span>{onlyShowRegisteredGrade ? `Only Grade ${registeredGrade} (Active)` : 'All Grades View'}</span>
+              <span>{onlyShowRegisteredGrade ? `Only ${registeredGrade === 'Freshman' ? 'Freshman' : `Grade ${registeredGrade}`} (Active)` : 'All Grades View'}</span>
             </button>
 
             {/* Change Grade / Register Button */}
@@ -257,7 +257,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                             : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
                         }`}
                       >
-                        {g === 'All' ? 'All Grades' : `Grade ${g}`}
+                        {g === 'All' ? 'All Grades' : g === 'Freshman' ? 'Freshman' : `Grade ${g}`}
                         {isStudentPrimary && (
                           <span className="ml-1.5 text-[9px] px-1 py-0.2 rounded-full bg-emerald-400 text-zinc-950 font-extrabold">
                             Registered

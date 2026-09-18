@@ -51,6 +51,7 @@ interface CreateExamWizardProps {
 export interface ExtractedExamMetadata {
   name?: string;
   subject?: string;
+  grade?: string | number;
   difficulty?: DifficultyLevel;
   subjectType?: SubjectType;
   timeLimit?: number;
@@ -148,6 +149,13 @@ export const extractExamMetadataFromText = (raw: string): ExtractedExamMetadata 
     const descMatch = trimmed.match(/^DESCRIPTION\s*[:\-\=]\s*(.+)$/i);
     if (descMatch && !metadata.description) {
       metadata.description = descMatch[1].trim();
+      continue;
+    }
+
+    // 8. Grade / Academic Level
+    const gradeMatch = trimmed.match(/^(?:GRADE(?:\s*LEVEL)?|ACADEMIC\s*LEVEL|CLASS)\s*[:\-\=]\s*(.+)$/i);
+    if (gradeMatch && !metadata.grade) {
+      metadata.grade = gradeMatch[1].trim();
       continue;
     }
   }
@@ -313,6 +321,7 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
   const [passingScore, setPassingScore] = useState<number>(initialExam?.passingScore || 70);
   const [subjectType, setSubjectType] = useState<SubjectType>(initialExam?.subjectType || 'theory');
   const [description, setDescription] = useState(initialExam?.description || '');
+  const [grade, setGrade] = useState<string | number | undefined>(initialExam?.grade);
 
   const [questions, setQuestions] = useState<Question[]>(() => {
     if (initialExam?.questions && initialExam.questions.length > 0) {
@@ -344,6 +353,7 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
       setPassingScore(initialExam.passingScore || 70);
       setSubjectType(initialExam.subjectType || 'theory');
       setDescription(initialExam.description || '');
+      setGrade(initialExam.grade);
       if (initialExam.questions && initialExam.questions.length > 0) {
         setQuestions(JSON.parse(JSON.stringify(initialExam.questions)));
       } else {
@@ -484,6 +494,61 @@ Total Questions: 2
    Explanation: The simple past is used for a completed period of time in the past that has no connection to the present.`);
   };
 
+  // Preset for Freshman Applied Mathematics I (5 questions)
+  const handleInsertFreshmanMathSample = () => {
+    setPasteRawText(`================================================================
+EXAM: Applied Mathematics I - Freshman Evaluation Exam
+Subject: Applied Mathematics
+Grade: Freshman
+Difficulty: Medium
+Subject Type: Calculation & Analytical
+Time Limit: 30 minutes
+Passing Score: 70%
+Total Questions: 5
+Description: Ethiopian University Freshman Applied Mathematics I test questions covering Limits, Calculus & Chain Rule, Integration by Parts, Matrices & Invertibility, and Optimization.
+================================================================
+
+1. Evaluate the limit: lim (x -> 0) [sin(3x) / (e^(2x) - 1)]
+   A) 3/2
+   B) 2/3
+   C) 1
+   D) 0
+   Answer: A
+   Explanation: Using L'Hopital's Rule for the 0/0 indeterminate form: differentiate the numerator d/dx[sin(3x)] = 3*cos(3x) and denominator d/dx[e^(2x) - 1] = 2*e^(2x). Evaluating at x = 0 yields (3 * 1) / (2 * 1) = 3/2. Alternatively, rewrite as [sin(3x)/(3x)] * [2x/(e^(2x)-1)] * (3/2) = 1 * 1 * (3/2) = 3/2.
+
+2. Given the function f(x) = ln(x^2 + 1), what is the equation of the tangent line to the graph of f(x) at x = 1?
+   A) y = x - 1 + ln(2)
+   B) y = 2x - 2 + ln(2)
+   C) y = x + ln(2)
+   D) y = 2x + ln(2)
+   Answer: A
+   Explanation: At x = 1, y0 = f(1) = ln(1^2 + 1) = ln(2). Taking the derivative via chain rule gives f'(x) = 2x / (x^2 + 1). At x = 1, the slope m = f'(1) = 2(1) / (1 + 1) = 1. Using the point-slope form y - y0 = m(x - x0): y - ln(2) = 1(x - 1), which simplifies to y = x - 1 + ln(2).
+
+3. Evaluate the definite integral: Integral from 0 to 1 of [x * e^(2x)] dx
+   A) (e^2 + 1) / 4
+   B) (e^2 - 1) / 4
+   C) (e^2 + 1) / 2
+   D) (e^2 - 2) / 4
+   Answer: A
+   Explanation: Using integration by parts with formula Integral(u dv) = u*v - Integral(v du). Set u = x -> du = dx, and dv = e^(2x) dx -> v = (1/2)*e^(2x). Then Integral[x*e^(2x) dx] = (1/2)*x*e^(2x) - (1/4)*e^(2x). Evaluating from 0 to 1: At x = 1, we get (1/2)*e^2 - (1/4)*e^2 = (1/4)*e^2. At x = 0, we get 0 - (1/4)*(1) = -1/4. Subtracting gives (1/4)*e^2 - (-1/4) = (e^2 + 1) / 4.
+
+4. For what real value of k is the 2x2 matrix A = [[2, k], [4, 6]] singular (non-invertible)?
+   A) k = 3
+   B) k = -3
+   C) k = 12
+   D) k = 0
+   Answer: A
+   Explanation: A square matrix is singular if and only if its determinant equals zero. det(A) = (2)(6) - (4)(k) = 12 - 4k. Setting det(A) = 0 gives 12 - 4k = 0 -> 4k = 12 -> k = 3.
+
+5. An open-top rectangular box with a square base is designed to hold a fixed volume of 32 m^3. What base side length x minimizes the surface area of the material used?
+   A) 4 m
+   B) 2 m
+   C) 8 m
+   D) sqrt(32) m
+   Answer: A
+   Explanation: Volume V = x^2 * h = 32 -> h = 32 / x^2. The surface area S of the open box is base area + 4 side walls: S(x) = x^2 + 4xh = x^2 + 4x(32 / x^2) = x^2 + 128/x. The first derivative is S'(x) = 2x - 128/x^2. Setting S'(x) = 0 gives 2x = 128/x^2 -> 2x^3 = 128 -> x^3 = 64 -> x = 4 m. S''(4) = 2 + 256/(4^3) = 6 > 0, confirming a minimum.`);
+  };
+
   // Import parsed questions and extract exam details (Name, Subject, Difficulty, Time, Passing Score)
   const handleImportParsedQuestions = (onlyWithinLimit: boolean = false) => {
     if (previewQuestions.length === 0) {
@@ -500,6 +565,7 @@ Total Questions: 2
     if (meta.timeLimit) setTimeLimit(meta.timeLimit);
     if (meta.passingScore) setPassingScore(meta.passingScore);
     if (meta.description) setDescription(meta.description);
+    if (meta.grade) setGrade(meta.grade);
 
     let toAdd = previewQuestions;
     if (onlyWithinLimit || (!isPremium && toAdd.length > maxImportQuestions)) {
@@ -565,6 +631,7 @@ Total Questions: 2
       timeLimit: meta.timeLimit || Number(timeLimit) || 25,
       passingScore: meta.passingScore || Number(passingScore) || 70,
       subjectType: meta.subjectType || subjectType,
+      grade: meta.grade || grade || initialExam?.grade,
       description: (meta.description || description).trim(),
       questions: toSave,
       createdAt: initialExam?.createdAt || new Date().toISOString(),
@@ -685,6 +752,7 @@ Total Questions: 2
       timeLimit: Number(timeLimit) || 20,
       passingScore: Number(passingScore) || 70,
       subjectType,
+      grade: grade || initialExam?.grade,
       description: description.trim(),
       questions,
       createdAt: initialExam?.createdAt || new Date().toISOString(),
@@ -981,12 +1049,22 @@ Total Questions: 2
             <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
+                onClick={handleInsertFreshmanMathSample}
+                className="px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs font-bold cursor-pointer transition flex items-center gap-1.5 shadow-2xs"
+                title="Insert 5 Freshman Applied Mathematics I exam questions"
+              >
+                <FileCode className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Freshman Math (5 Qs)</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleInsertSampleText}
                 className="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-semibold cursor-pointer transition flex items-center gap-1.5"
                 title="Insert standard exam format sample with header metadata"
               >
                 <FileCode className="w-3.5 h-3.5 text-blue-500" />
-                <span>Insert Sample</span>
+                <span>Grammar Sample</span>
               </button>
 
               {pasteRawText && (
@@ -1002,7 +1080,7 @@ Total Questions: 2
           </div>
 
           {/* Extracted Exam Details Indicator Card */}
-          {(extractedMeta.name || extractedMeta.subject || extractedMeta.difficulty || extractedMeta.timeLimit || extractedMeta.passingScore) && (
+          {(extractedMeta.name || extractedMeta.subject || extractedMeta.grade || extractedMeta.difficulty || extractedMeta.timeLimit || extractedMeta.passingScore) && (
             <div className="p-3.5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/60 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
@@ -1022,6 +1100,11 @@ Total Questions: 2
                 {extractedMeta.subject && (
                   <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-900/60 text-zinc-800 dark:text-zinc-200 font-medium">
                     <strong className="text-blue-600 dark:text-blue-400">Subject:</strong> {extractedMeta.subject}
+                  </span>
+                )}
+                {extractedMeta.grade && (
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold">
+                    <strong className="text-emerald-600 dark:text-emerald-400">Level:</strong> {extractedMeta.grade}
                   </span>
                 )}
                 {extractedMeta.difficulty && (

@@ -28,7 +28,9 @@ export interface Exam {
   sourceType?: 'user_created' | 'curated_catalog';
   isDownloaded?: boolean;
   catalogId?: string;
-  grade?: number | string; // e.g. 9, 10, 11, 12, 'National Exam'
+  grade?: number | string; // e.g. 9, 10, 11, 12, 'Freshman', 'National Exam'
+  stream?: string;
+  targetExamYear?: string;
   unit?: string;
   curator?: string;
   rating?: number;

@@ -35,12 +35,48 @@
         "subjectType": { "type": "string", "enum": ["theory", "calculation"] },
         "description": { "type": "string", "maxLength": 1000 },
         "questions": { "type": "array" },
+        "grade": { "type": "string", "maxLength": 32 },
+        "stream": { "type": "string", "maxLength": 64 },
+        "unit": { "type": "string", "maxLength": 128 },
+        "curator": { "type": "string", "maxLength": 128 },
+        "adminTag": { "type": "string", "maxLength": 128 },
+        "sourceType": { "type": "string", "maxLength": 64 },
+        "targetExamYear": { "type": "string", "maxLength": 32 },
+        "rating": { "type": "number" },
+        "downloadCount": { "type": "number" },
+        "isUploadedToCloud": { "type": "boolean" },
+        "cloudStorageEngine": { "type": "string", "maxLength": 32 },
+        "cloudUploadedAt": { "type": "string", "maxLength": 64 },
+        "authorEmail": { "type": "string", "maxLength": 256 },
         "userId": { "type": "string", "maxLength": 128 },
         "isPublic": { "type": "boolean" },
         "createdAt": { "type": "string", "maxLength": 64 },
         "updatedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "name", "userId", "questions"]
+    },
+    "Question": {
+      "title": "Question",
+      "description": "Modular question item in the centralized question bank",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "examId": { "type": "string", "maxLength": 128 },
+        "examName": { "type": "string", "maxLength": 256 },
+        "subject": { "type": "string", "maxLength": 128 },
+        "text": { "type": "string", "maxLength": 4000 },
+        "options": { "type": "array" },
+        "correct": { "type": "number" },
+        "explanation": { "type": "string", "maxLength": 4000 },
+        "grade": { "type": "string", "maxLength": 32 },
+        "stream": { "type": "string", "maxLength": 64 },
+        "unit": { "type": "string", "maxLength": 128 },
+        "isPublic": { "type": "boolean" },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorEmail": { "type": "string", "maxLength": 256 },
+        "uploadedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "examId", "text", "options", "correct"]
     },
     "Result": {
       "title": "Result",
@@ -107,6 +143,10 @@
     "/exams/{examId}": {
       "schema": "Exam",
       "description": "Exam documents created by users or templates"
+    },
+    "/questions/{questionId}": {
+      "schema": "Question",
+      "description": "Modular question items in the central question bank"
     },
     "/results/{resultId}": {
       "schema": "Result",
