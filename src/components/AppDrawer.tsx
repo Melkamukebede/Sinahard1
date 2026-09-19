@@ -27,7 +27,7 @@ interface AppDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenNotificationsModal: () => void;
-  onNavigateToManual: () => void;
+  onNavigateToManual?: () => void;
   onNavigateToAdminSubs?: () => void;
   onOpenDatabaseUpload?: () => void;
   onExportAllData: () => void;
@@ -207,35 +207,6 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-
-              {/* User Manual Documentation - Prominently in Drawer */}
-              <button
-                id="drawer-manual-btn"
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onNavigateToManual();
-                }}
-                className="w-full flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-left transition cursor-pointer group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500 text-zinc-950 flex items-center justify-center font-bold shadow-xs">
-                    <BookOpen className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                      <span>User Manual</span>
-                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-                        Guide
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                      LaTeX formulas & app documentation
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
               </button>
 
               {/* Admin Payment Verification (Melkamu / Admin) */}

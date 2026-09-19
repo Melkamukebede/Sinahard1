@@ -147,20 +147,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             Create
           </button>
 
-          <button
-            id="nav-tab-manual"
-            type="button"
-            onClick={() => onTabChange('manual')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-medium transition cursor-pointer ${
-              activeTab === 'manual'
-                ? 'bg-emerald-500 text-zinc-950 font-bold shadow-sm shadow-emerald-500/20'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
-            }`}
-          >
-            <HelpCircle className="w-4 h-4" />
-            Guide
-          </button>
-
           {/* Admin Verification Panel Link (Melkamu / Admin) */}
           {isAdmin && (
             <button
@@ -432,16 +418,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <PlusCircle className="w-4 h-4" />
           <span>Create</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onTabChange('manual')}
-          className={`flex flex-col items-center py-1 px-2 rounded-lg ${
-            activeTab === 'manual' ? 'text-emerald-500 font-bold' : 'text-zinc-500'
-          }`}
-        >
-          <HelpCircle className="w-4 h-4" />
-          <span>Guide</span>
         </button>
         <button
           type="button"

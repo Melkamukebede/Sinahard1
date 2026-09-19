@@ -29,6 +29,12 @@ import {
   FileCheck2,
   CloudUpload,
   Database,
+  Share2,
+  Bot,
+  Download,
+  Calculator,
+  Info,
+  Copy,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Exam, Question, SubjectType, DifficultyLevel } from '../types';
@@ -341,6 +347,40 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
   const [expandedIndex, setExpandedIndex] = useState<number>(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Quick Tips for Students
+  const [showTips, setShowTips] = useState<boolean>(() => {
+    return localStorage.getItem('hide_create_tips') !== 'true';
+  });
+  const [isMathTipsExpanded, setIsMathTipsExpanded] = useState<boolean>(false);
+  const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
+  const [copiedFormula, setCopiedFormula] = useState<string | null>(null);
+  const [testFormula, setTestFormula] = useState<string>('\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}');
+
+  const samplePrompt = `Please generate 10 multiple choice questions in plain .txt format for [Subject & Topic, e.g. Grade 12 Physics Electromagnetism or Freshman Math Limits].
+
+OUTPUT RULES:
+1. Output pure plain text (.txt format). No markdown code blocks, no greetings or conversational text.
+2. Put an asterisk (*) right after the correct option letter, like: C* The electric field is zero.
+3. For math and science formulas, use standard LaTeX like \\( \\frac{a}{b} \\) or \\( x^2 \\).
+4. VERTICAL STEP-BY-STEP EXPLANATIONS: For math questions, write the calculation vertically step-by-step with each step on its own line (not in one horizontal sentence).`;
+
+  const formulaShortcuts = [
+    { label: 'Fraction', code: '\\frac{a}{b}' },
+    { label: 'Square Root', code: '\\sqrt{x}' },
+    { label: 'Power / Exponent', code: 'x^2 + y^2 = r^2' },
+    { label: 'Plus or Minus', code: '\\pm' },
+    { label: 'Multiplication', code: '\\times' },
+    { label: 'Greek Symbols', code: '\\alpha, \\beta, \\theta, \\pi, \\Delta' },
+    { label: 'Integration', code: '\\int_{a}^{b} f(x) dx' },
+    { label: 'Limit', code: '\\lim_{x \\to 0} \\frac{\\sin(x)}{x} = 1' },
+  ];
+
+  const handleCopyFormula = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedFormula(code);
+    setTimeout(() => setCopiedFormula(null), 2000);
+  };
 
   // Synchronize state whenever initialExam or initialMode changes
   useEffect(() => {
@@ -889,6 +929,179 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
             </div>
           </button>
         </div>
+
+        {/* Interactive Tips for Creating Questions */}
+        <div className="rounded-3xl bg-white dark:bg-[#0c1626] border border-zinc-200/80 dark:border-white/10 shadow-xs overflow-hidden">
+          <div className="p-5 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <BookOpen className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
+                  Tips for Creating Questions
+                </h3>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  Quick, calm guide on adding questions and formulas
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const next = !showTips;
+                setShowTips(next);
+                localStorage.setItem('hide_create_tips', (!next).toString());
+              }}
+              className="text-xs font-semibold px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer flex items-center gap-1.5"
+            >
+              <span>{showTips ? 'Hide Tips' : 'Show Tips'}</span>
+              {showTips ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+
+          {showTips && (
+            <div className="p-5 space-y-4 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+              {/* Calm Banner Text */}
+              <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800">
+                <p className="text-zinc-700 dark:text-zinc-300 font-normal leading-relaxed">
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">ExamMaster</span> is comprehensive — you can create any question and practice prepared exams in an interactive app, for all grade level students.
+                </p>
+              </div>
+
+              {/* 3 Ways to Add Questions */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                  You can add questions in this app in three ways:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800">
+                    <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 mb-1">
+                      <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] flex items-center justify-center font-bold">1</span>
+                      <span>Manually</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
+                      Add each question manually while reading textbooks or after studying.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800">
+                    <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 mb-1">
+                      <span className="w-4 h-4 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-400 text-[10px] flex items-center justify-center font-bold">2</span>
+                      <span>Copy & Paste from AI</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
+                      Copy questions created by any AI like Claude, Gemini, ChatGPT, or DeepSeek.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800">
+                    <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 mb-1">
+                      <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] flex items-center justify-center font-bold">3</span>
+                      <span>Import .txt Files</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
+                      Import questions shared by friends or downloaded from Telegram channels.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Share Created Questions */}
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-2.5">
+                <Share2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <p className="text-zinc-700 dark:text-zinc-300 text-[11px] leading-relaxed">
+                  <strong>Share with friends:</strong> You can share your created questions with friends so everyone can practice together by clicking the <strong>Export</strong> button on your exam card in the Library!
+                </p>
+              </div>
+
+              {/* Ready to Use AI Prompt */}
+              <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bot className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                    <span className="font-bold text-purple-900 dark:text-purple-200 text-xs">
+                      Ready-To-Use AI Prompt
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(samplePrompt);
+                      setCopiedPrompt(true);
+                      setTimeout(() => setCopiedPrompt(false), 2000);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-[10px] flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                  >
+                    {copiedPrompt ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-300" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy Prompt</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <p className="text-zinc-600 dark:text-zinc-400 text-[11px]">
+                  Copy prompts to AI to create your questions, then paste them back here.
+                </p>
+              </div>
+
+              {/* Expandable Math & Science Formula Help */}
+              <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setIsMathTipsExpanded((prev) => !prev)}
+                  className="w-full p-3 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition text-left cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Calculator className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span className="font-semibold text-zinc-900 dark:text-white text-xs">
+                      Math & Science Formulas Help
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+                    <span>{isMathTipsExpanded ? 'Collapse' : 'Expand'}</span>
+                    {isMathTipsExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  </div>
+                </button>
+
+                {isMathTipsExpanded && (
+                  <div className="p-3.5 border-t border-zinc-200 dark:border-zinc-800 space-y-3 bg-white dark:bg-[#0c1626]">
+                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                      <Info className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Hint: This type of formula code helps just for creating manual questions.</span>
+                    </p>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {formulaShortcuts.map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={() => handleCopyFormula(item.code)}
+                          className="px-2 py-1 rounded-lg text-[11px] bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-mono border border-zinc-200 dark:border-zinc-700 flex items-center gap-1 cursor-pointer transition"
+                          title={`Copy ${item.code}`}
+                        >
+                          {copiedFormula === item.code ? (
+                            <Check className="w-3 h-3 text-emerald-500" />
+                          ) : (
+                            <Copy className="w-2.5 h-2.5 text-zinc-400" />
+                          )}
+                          <span>{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -973,20 +1186,20 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
         )}
 
         {/* TOP SECTION: Exam Professor Button */}
-        <div className="p-5 rounded-[24px] bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/20 dark:border-purple-500/30 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 sm:p-5 rounded-[24px] bg-emerald-500/10 border border-emerald-500/20 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-              <Sparkles className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-sm font-bold font-['Syne',sans-serif] text-zinc-900 dark:text-white flex items-center gap-2">
+              <div className="text-sm font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white flex items-center gap-2">
                 <span>Exam Professor</span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-300">
-                  AI Prompt Studio
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                  AI Prompt Builder
                 </span>
               </div>
               <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-0.5">
-                Generate curriculum prompts for AI tools, then paste the generated questions directly below.
+                Generate tailored .txt exam prompts for ChatGPT, Claude, Gemini, or DeepSeek.
               </p>
             </div>
           </div>
@@ -994,7 +1207,7 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
           <button
             type="button"
             onClick={onOpenProfessorModal}
-            className="px-5 py-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-xs shrink-0"
+            className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs shrink-0"
           >
             <Sparkles className="w-4 h-4" />
             <span>Open Exam Professor</span>
