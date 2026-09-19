@@ -275,7 +275,7 @@ export default defineConfig(({ mode }) => {
                     `EMP-TB-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
                   const amount = Number(payload.amount || 0);
                   const totalAmountStr = amount.toFixed(2);
-                  const subject = (payload.subject || 'ExamMaster Pro Subscription').slice(0, 64);
+                  const subject = (payload.subject || 'Sinahard Pro Subscription').slice(0, 64);
                   const returnUrl = payload.returnUrl || `${req.headers.origin || ''}?telebirr_verify=${outTradeNo}`;
                   const notifyUrl = payload.notifyUrl || `${req.headers.origin || ''}/api/telebirr/notify`;
                   const nonce = crypto.randomBytes(16).toString('hex');
@@ -285,7 +285,7 @@ export default defineConfig(({ mode }) => {
                     appId: activeAppId || 'telebirr-sandbox-app',
                     notifyUrl,
                     outTradeNo,
-                    receiveName: 'ExamMaster Pro',
+                    receiveName: 'Sinahard Pro',
                     returnUrl,
                     shortCode: activeShortCode || 'telebirr-sandbox-merchant',
                     subject,
@@ -491,7 +491,7 @@ export default defineConfig(({ mode }) => {
                   const order: TelebirrOrderRecord = telebirrOrders.get(outTradeNo) || {
                     outTradeNo,
                     amount: Number(payload.amount || 0),
-                    subject: 'ExamMaster Pro',
+                    subject: 'Sinahard Pro',
                     status: 'PENDING',
                     createdAt: new Date().toISOString(),
                     isSandbox: true,
@@ -552,7 +552,7 @@ export default defineConfig(({ mode }) => {
               const reqUrl = new URL(url, `http://${req.headers.host || 'localhost:3000'}`);
               const tradeNo = reqUrl.searchParams.get('trade_no') || 'EMP-TB-SAMPLE';
               const amount = reqUrl.searchParams.get('amount') || '199';
-              const subject = reqUrl.searchParams.get('subject') || 'ExamMaster Pro Subscription';
+              const subject = reqUrl.searchParams.get('subject') || 'Sinahard Pro Subscription';
               const phone = reqUrl.searchParams.get('phone') || '0911000000';
               const returnUrl = reqUrl.searchParams.get('return_url') || `/?telebirr_verify=${tradeNo}`;
 
@@ -612,7 +612,7 @@ export default defineConfig(({ mode }) => {
       <div>
         <div class="details-row">
           <span class="details-label">Merchant</span>
-          <span class="details-val">ExamMaster Pro</span>
+          <span class="details-val">Sinahard Pro</span>
         </div>
         <div class="details-row">
           <span class="details-label">Description</span>

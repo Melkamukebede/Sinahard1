@@ -3,25 +3,25 @@ import {
   X,
   Bell,
   BookOpen,
-  Download,
-  RotateCcw,
-  Sun,
-  Moon,
-  LogIn,
   LogOut,
   Cloud,
   CloudOff,
-  GraduationCap,
   ChevronRight,
   ShieldCheck,
   Crown,
   CloudUpload,
+  Send,
+  Bot,
+  Phone,
+  Copy,
+  Check,
+  ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { useNotifications } from '../context/NotificationContext';
 import { UserSubscription } from '../types';
 import { isUserAdmin } from '../services/db';
+import { SinahardLogo } from './SinahardLogo';
 
 interface AppDrawerProps {
   isOpen: boolean;
@@ -30,8 +30,8 @@ interface AppDrawerProps {
   onNavigateToManual?: () => void;
   onNavigateToAdminSubs?: () => void;
   onOpenDatabaseUpload?: () => void;
-  onExportAllData: () => void;
-  onResetDefaultExams: () => void;
+  onExportAllData?: () => void;
+  onResetDefaultExams?: () => void;
   onOpenSubscriptionModal: () => void;
   activeSubscription: UserSubscription | null;
 }
@@ -43,13 +43,22 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   onNavigateToManual,
   onNavigateToAdminSubs,
   onOpenDatabaseUpload,
-  onExportAllData,
-  onResetDefaultExams,
   onOpenSubscriptionModal,
 }) => {
-  const { user, signInWithGoogle, signOut, isSigningIn } = useAuth();
-  const { theme, toggleTheme, isDark } = useTheme();
-  const { unreadAlertsCount, permission, dailyReminderEnabled } = useNotifications();
+  const { user, signOut } = useAuth();
+  const { unreadAlertsCount, dailyReminderEnabled } = useNotifications();
+  const [copiedPhone, setCopiedPhone] = React.useState(false);
+
+  const handleCopyPhone = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      navigator.clipboard.writeText('+251918049806');
+      setCopiedPhone(true);
+      setTimeout(() => setCopiedPhone(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
 
   // Close on Escape
   useEffect(() => {
@@ -86,12 +95,10 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
           {/* Drawer Header - Frosted Glass Bar */}
           <div className="relative px-5 py-4 border-b border-white/60 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold shadow-2xs">
-                <GraduationCap className="w-4 h-4 stroke-[2]" />
-              </div>
+              <SinahardLogo size="sm" idSuffix="drawer" />
               <div>
                 <h3 className="font-bold text-sm font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
-                  ExamMaster Menu
+                  Sinahard Menu
                 </h3>
                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                   Utilities, AI tools & settings
@@ -151,8 +158,8 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between">
-                {isCloudSynced ? (
+              {isCloudSynced && (
+                <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between">
                   <button
                     type="button"
                     onClick={signOut}
@@ -161,21 +168,8 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                     <LogOut className="w-3.5 h-3.5" />
                     Sign Out
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={isSigningIn}
-                    onClick={() => {
-                      onClose();
-                      signInWithGoogle();
-                    }}
-                    className="w-full py-2 px-4 rounded-full bg-zinc-950 dark:bg-white hover:opacity-90 text-white dark:text-zinc-950 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
-                  >
-                    <LogIn className="w-3.5 h-3.5" />
-                    Sign In with Google
-                  </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Specialized Tools & Utilities */}
@@ -309,62 +303,133 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
               </button>
             </div>
 
-            {/* Data & Backup Tools */}
-            <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 px-1">
-                Data & Management
+            {/* Contact Us & Community Support */}
+            <div className="space-y-2 pt-1">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 px-1 flex items-center justify-between">
+                <span>Contact Us & Support</span>
+                <span className="text-[10px] lowercase font-normal text-zinc-500">24/7 student help</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={onExportAllData}
-                  className="p-3 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 hover:border-zinc-300 dark:hover:border-zinc-700 text-left shadow-xs active:scale-98 transition cursor-pointer"
-                  title="Export complete backup as JSON"
-                >
-                  <Download className="w-4 h-4 text-zinc-700 dark:text-zinc-300 mb-1" />
-                  <div className="text-xs font-bold text-zinc-900 dark:text-white">Backup JSON</div>
-                  <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Export data</div>
-                </button>
+              {/* Telegram Group */}
+              <a
+                id="drawer-contact-telegram-group"
+                href="https://t.me/aplus012"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-[#229ED9]/15 dark:bg-[#229ED9]/25 text-[#229ED9] border border-[#229ED9]/30 flex items-center justify-center font-bold shadow-2xs">
+                    <Send className="w-4 h-4 -translate-x-[1px] translate-y-[1px]" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                      <span>Telegram Group</span>
+                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-[#229ED9]/10 text-[#229ED9] border border-[#229ED9]/20">
+                        @aplus012
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Join community discussions & updates
+                    </div>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-transform" />
+              </a>
 
-                <button
-                  type="button"
-                  onClick={onResetDefaultExams}
-                  className="p-3 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 hover:border-zinc-300 dark:hover:border-zinc-700 text-left shadow-xs active:scale-98 transition cursor-pointer"
-                  title="Restore default sample curriculum exams"
-                >
-                  <RotateCcw className="w-4 h-4 text-zinc-700 dark:text-zinc-300 mb-1" />
-                  <div className="text-xs font-bold text-zinc-900 dark:text-white">Reset Samples</div>
-                  <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Restore default</div>
-                </button>
+              {/* Telegram Support Bot */}
+              <a
+                id="drawer-contact-support-bot"
+                href="https://t.me/Frm2026_bot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold shadow-2xs">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                      <span>Support Bot</span>
+                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        @Frm2026_bot
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Automated support, Q&A & direct assistance
+                    </div>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-transform" />
+              </a>
+
+              {/* Phone Hotline with Direct Call & Copy */}
+              <div
+                id="drawer-contact-phone"
+                className="p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-left shadow-xs transition"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/15 dark:bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold shadow-2xs">
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                        <span>Phone Hotline</span>
+                        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          Direct
+                        </span>
+                      </div>
+                      <a
+                        href="tel:+251918049806"
+                        className="text-[12px] font-mono font-semibold text-zinc-800 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white hover:underline block"
+                      >
+                        +251 918 049 806
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleCopyPhone}
+                      className="px-2.5 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                      title="Copy phone number"
+                    >
+                      {copiedPhone ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-zinc-500" />
+                          <span className="text-[11px]">Copy</span>
+                        </>
+                      )}
+                    </button>
+                    <a
+                      href="tel:+251918049806"
+                      className="p-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 transition cursor-pointer shadow-2xs"
+                      title="Call +251918049806"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
+
           </div>
 
-          {/* Drawer Footer with Theme Toggle */}
-          <div className="p-4 border-t border-white/60 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-xs transition cursor-pointer"
-              >
-                {isDark ? (
-                  <>
-                    <Sun className="w-3.5 h-3.5 text-zinc-200" />
-                    <span>Light Mode</span>
-                  </>
-                ) : (
-                  <>
-                    <Moon className="w-3.5 h-3.5 text-zinc-700" />
-                    <span>Dark Mode</span>
-                  </>
-                )}
-              </button>
-            </div>
-
+          {/* Drawer Footer */}
+          <div className="px-5 py-4 border-t border-white/60 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+              Sinahard Pro
+            </span>
             <span className="text-[10px] font-mono text-zinc-400">
-              ExamMaster v2.1
+              v2.1
             </span>
           </div>
         </div>

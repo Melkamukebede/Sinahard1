@@ -106,7 +106,7 @@ export async function initializeChapaPayment(
     callback_url: window.location.origin,
     return_url: `${window.location.origin}?chapa_verify=${txRef}`,
     customization: {
-      title: 'ExamMaster Pro',
+      title: 'Sinahard Pro',
       description: `${plan.durationLabel} plan`,
     },
     ...(userProvidedKey ? { secretKey: userProvidedKey } : {}),
@@ -161,7 +161,7 @@ export async function initializeChapaPayment(
           callback_url: window.location.origin,
           return_url: `${window.location.origin}?chapa_verify=${directTxRef}`,
           customization: {
-            title: 'ExamMaster Pro',
+            title: 'Sinahard Pro',
             description: `${plan.durationLabel} plan`,
           },
         }),

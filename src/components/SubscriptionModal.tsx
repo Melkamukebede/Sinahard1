@@ -43,6 +43,7 @@ import {
   checkTelebirrConfigStatus,
   TelebirrConfigStatus,
 } from '../services/telebirr';
+import { SinahardLogo } from './SinahardLogo';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -66,7 +67,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(
     ETHIOPIAN_SUBSCRIPTION_PLANS[2] // 1 month selected by default
   );
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('chapa');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('telebirr');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [transactionRef, setTransactionRef] = useState('');
   const [chapaApiKey, setChapaApiKey] = useState('');
@@ -439,13 +440,11 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         {/* Modal Header */}
         <div className="relative px-6 pt-6 pb-4 bg-white/60 dark:bg-white/[0.02] border-b border-white/60 dark:border-white/10 flex items-start justify-between backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white flex items-center justify-center shadow-2xs border border-white/80 dark:border-white/10">
-              <Crown className="w-6 h-6 stroke-[2]" />
-            </div>
+            <SinahardLogo size="lg" idSuffix="sub-modal" />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
-                  ExamMaster Premium
+                  Sinahard Premium
                 </h2>
                 <span className="text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                   Ethiopian Birr (ETB)
@@ -543,7 +542,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {[
                 { id: 'telebirr', name: 'Telebirr', icon: Smartphone, desc: 'Mobile Transfer / *127#' },
-                { id: 'chapa', name: 'Chapa (API)', icon: Zap, desc: 'Instant Live Gateway' },
+                { id: 'chapa', name: 'Chapa', icon: Zap, desc: 'Coming Soon', isComingSoon: true },
                 { id: 'cbe', name: 'CBE Birr / CBE', icon: Building, desc: 'Commercial Bank' },
                 { id: 'abyssinia', name: 'BoA (Abyssinia)', icon: CreditCard, desc: 'Direct Bank' },
               ].map((m) => {
@@ -559,7 +558,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       setActiveTxRef(null);
                       setErrorMsg(null);
                     }}
-                    className={`p-3 rounded-[22px] text-left border transition cursor-pointer flex items-center gap-2.5 shadow-xs active:scale-98 ${
+                    className={`p-3 rounded-[22px] text-left border transition cursor-pointer flex items-center gap-2.5 shadow-xs active:scale-98 relative overflow-hidden ${
                       isSelected
                         ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent'
                         : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
@@ -574,8 +573,19 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     >
                       <Icon className="w-4 h-4" />
                     </div>
-                    <div className="min-w-0">
-                      <span className={`text-xs font-bold block truncate ${isSelected ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}`}>{m.name}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-xs font-bold block truncate ${isSelected ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}`}>{m.name}</span>
+                        {m.isComingSoon && (
+                          <span className={`text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-md shrink-0 leading-none ${
+                            isSelected
+                              ? 'bg-amber-400 text-zinc-950'
+                              : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                          }`}>
+                            Soon
+                          </span>
+                        )}
+                      </div>
                       <span className={`text-[10px] block truncate ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500'}`}>{m.desc}</span>
                     </div>
                   </button>
@@ -761,26 +771,34 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             )}
 
             {paymentMethod === 'chapa' && (
-              <div className="space-y-2">
+              <div className="space-y-3 p-3.5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/50">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                    Chapa Automated Gateway Integration
+                  <span className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                    <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    Chapa Automated Gateway
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                    Instant Online Checkout
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    Coming Soon
                   </span>
                 </div>
-                <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                  Seamlessly connects to Chapa to process Telebirr, CBE Birr, and card payments with immediate verification.
+                <p className="text-xs text-amber-800/90 dark:text-amber-300/90 leading-relaxed font-normal">
+                  Chapa online payment integration is currently coming soon. Please use <strong>Telebirr</strong>, <strong>CBE Birr</strong>, or <strong>Bank of Abyssinia</strong> below for immediate membership activation.
                 </p>
-                <div>
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="Enter phone number (e.g. 0911234567)"
-                    className="w-full px-4 py-2.5 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-mono text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
-                  />
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('telebirr')}
+                    className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 transition cursor-pointer shadow-2xs"
+                  >
+                    Pay with Telebirr (*127#)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('cbe')}
+                    className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer border border-zinc-200 dark:border-zinc-700"
+                  >
+                    Pay with CBE Birr
+                  </button>
                 </div>
               </div>
             )}
@@ -1039,7 +1057,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     <li><strong>Unlimited Questions:</strong> Build, practice, and test with 100, 200, or 500+ questions without any cap.</li>
                     <li><strong>Unlimited Bulk Imports:</strong> Import full curriculum units, past national exam sheets &amp; lecture notes directly.</li>
                     <li><strong>Full Worked Solutions:</strong> Complete step-by-step LaTeX formulas, worked math steps, and memory aid tricks.</li>
-                    <li><strong>Priority Payments:</strong> Instant automated Telebirr &amp; Chapa activation, or CBE / BoA manual verification.</li>
+                    <li><strong>Priority Payments:</strong> Instant automated Telebirr activation, or CBE / BoA manual verification (Chapa automated gateway coming soon).</li>
                   </ul>
                 </div>
               </div>
@@ -1057,11 +1075,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
             <button
               type="button"
-              disabled={isSubmitting}
+              disabled={isSubmitting || paymentMethod === 'chapa'}
               onClick={() => {
+                if (paymentMethod === 'chapa') {
+                  return;
+                }
                 if (
-                  (paymentMethod === 'chapa' ||
-                    (paymentMethod === 'telebirr' && telebirrMode === 'gateway')) &&
+                  paymentMethod === 'telebirr' &&
+                  telebirrMode === 'gateway' &&
                   checkoutUrl
                 ) {
                   handleOpenCheckoutInNewTab(checkoutUrl);
@@ -1069,18 +1090,20 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   handleSubmitPayment();
                 }
               }}
-              className="px-6 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-2 transition cursor-pointer shadow-xs active:scale-98 disabled:opacity-50"
+              className={`px-6 py-2.5 rounded-full font-semibold text-xs flex items-center gap-2 transition shadow-xs active:scale-98 disabled:opacity-50 ${
+                paymentMethod === 'chapa'
+                  ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 cursor-not-allowed'
+                  : 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 cursor-pointer'
+              }`}
             >
               <ShieldCheck className="w-4 h-4" />
               <span>
-                {paymentMethod === 'telebirr' && telebirrMode === 'gateway'
+                {paymentMethod === 'chapa'
+                  ? 'Chapa Payment (Coming Soon)'
+                  : paymentMethod === 'telebirr' && telebirrMode === 'gateway'
                   ? checkoutUrl
                     ? 'Open Telebirr Checkout ↗'
                     : 'Proceed to Telebirr Checkout'
-                  : paymentMethod === 'chapa'
-                  ? checkoutUrl
-                    ? 'Open Chapa Checkout ↗'
-                    : 'Proceed to Chapa Checkout'
                   : 'Submit & Verify Payment'}
               </span>
             </button>

@@ -52,7 +52,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return [
       {
         id: 'welcome-alert',
-        title: 'Welcome to ExamMaster Pro!',
+        title: 'Welcome to Sinahard Pro!',
         body: 'Prepare for tests with interactive practice, step-by-step LaTeX math explanations, and AI prompt tools.',
         type: 'info',
         timestamp: new Date().toISOString(),
@@ -83,7 +83,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const result = await Notification.requestPermission();
       setPermission(result);
       if (result === 'granted') {
-        new Notification('ExamMaster Pro', {
+        new Notification('Sinahard Pro', {
           body: 'Push notifications activated! We will notify you about study reminders and test results.',
           icon: '/favicon.ico',
         });
@@ -177,7 +177,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (currentTime === dailyReminderTime && lastSentDate !== todayStr) {
         localStorage.setItem('last_reminder_sent_date', todayStr);
         sendNotification('Time for Daily Practice! 📚', {
-          body: "Stay on track for your exams. Take a 10-minute quiz on ExamMaster Pro today!",
+          body: "Stay on track for your exams. Take a 10-minute quiz on Sinahard Pro today!",
         });
       }
     };

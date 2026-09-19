@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   BookOpen,
   HelpCircle,
@@ -12,13 +12,18 @@ import {
   Play,
   Clock,
   CheckCircle2,
-  SlidersHorizontal,
   RotateCcw,
+  Share2,
+  FileText,
+  Sparkles,
+  Download,
+  ChevronDown,
 } from 'lucide-react';
 import { Exam, ExamResult, UserSubscription } from '../types';
 import { PageTab } from './Navbar';
 import { isUserSubscriptionActive } from '../services/db';
 import { UserTierStatus } from '../services/subscriptionLimits';
+import { SinahardLogo } from './SinahardLogo';
 
 interface HomeViewProps {
   exams: Exam[];
@@ -28,6 +33,7 @@ interface HomeViewProps {
   onOpenPasteModal: () => void;
   onOpenProfessorModal: () => void;
   onOpenSubscriptionModal?: () => void;
+  onOpenCuratedModal?: () => void;
   activeSubscription?: UserSubscription | null;
   userTier?: UserTierStatus;
 }
@@ -58,6 +64,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onNavigate,
   onStartPractice,
   onOpenSubscriptionModal,
+  onOpenCuratedModal,
   activeSubscription,
   userTier,
 }) => {
@@ -79,6 +86,28 @@ export const HomeView: React.FC<HomeViewProps> = ({
   // Primary Focus Exam
   const focusExam = exams[0] || null;
 
+  // Four Core Features expanded/collapsed toggle state (collapsed by default at first)
+  const [isFeaturesExpanded, setIsFeaturesExpanded] = React.useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('sinahard_welcome_features_expanded');
+      return saved !== null ? saved === 'true' : false;
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleFeatures = () => {
+    setIsFeaturesExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('sinahard_welcome_features_expanded', String(next));
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
+  };
+
   // Date calculation
   const now = new Date();
   const dayName = now.toLocaleDateString(undefined, { weekday: 'short' });
@@ -86,18 +115,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const dayNumber = now.getDate();
   const dateFormatted = `${dayName}, ${monthName} ${dayNumber}`;
 
-  // Circular gauge calculation
-  const radius = 22;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (overallProgress / 100) * circumference;
-
   const bannerTitle = isPremiumActive
     ? 'Premium Student Membership Active'
     : userTier?.isTrial
     ? `3-Day Welcome Trial Active (${userTier.trialDaysRemaining}d remaining)`
     : userTier?.isGuest
-    ? 'ExamMaster Guest Mode (20 Qs/Exam)'
-    : 'ExamMaster Free Student Tier';
+    ? 'Sinahard Guest Mode (20 Qs/Exam)'
+    : 'Sinahard Free Student Tier';
 
   const bannerDescription = isPremiumActive
     ? `Valid until ${
@@ -117,158 +141,183 @@ export const HomeView: React.FC<HomeViewProps> = ({
       className="space-y-6 sm:space-y-7 pb-20 max-w-5xl mx-auto font-['Plus_Jakarta_Sans',sans-serif]"
     >
       {/* ─────────────────────────────────────────────────────────────
-          PAGE HEADER (Atmospheric Title & System Mastery Gauge)
-      ───────────────────────────────────────────────────────────── */}
-      <motion.div variants={itemVariants} className="pt-2 px-1 flex items-start justify-between">
-        <div className="space-y-0.5">
-          <h1 className="text-3xl sm:text-4xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
-            Academic Dashboard
-          </h1>
-          <p className="text-base sm:text-lg font-normal text-zinc-500 dark:text-zinc-400 tracking-tight">
-            {dateFormatted}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* System Circular Mastery Gauge */}
-          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/70 dark:bg-[#0c182b] backdrop-blur-xl border border-white/80 dark:border-white/10 shadow-xs">
-            <div className="relative w-11 h-11 flex items-center justify-center">
-              <svg className="w-11 h-11 -rotate-90 transform" viewBox="0 0 54 54">
-                <circle
-                  cx="27"
-                  cy="27"
-                  r={radius}
-                  className="stroke-zinc-200/80 dark:stroke-white/10 fill-none"
-                  strokeWidth="3.5"
-                />
-                <circle
-                  cx="27"
-                  cy="27"
-                  r={radius}
-                  className="stroke-zinc-900 dark:stroke-white fill-none transition-all duration-1000 ease-out"
-                  strokeWidth="3.5"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-center">
-                <span className="text-[11px] font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white leading-none">
-                  {overallProgress}%
-                </span>
-              </div>
-            </div>
-            <div className="text-left pr-1 hidden sm:block">
-              <span className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 leading-tight">
-                Mastery
-              </span>
-              <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">
-                average
-              </span>
-            </div>
-          </div>
-
-          {/* Quick Repository Action Button */}
-          <button
-            type="button"
-            onClick={() => onNavigate('files')}
-            className="w-10 h-10 rounded-full bg-white dark:bg-[#0c182b] backdrop-blur-xl border border-white/80 dark:border-white/10 flex items-center justify-center text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
-            title="Browse all exams"
-          >
-            <SlidersHorizontal className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
-          </button>
-        </div>
-      </motion.div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          LAYER 1: TRANSLUCENT CONTAINER (Outer Shell with Ambient Glow)
-          LAYER 2: PORCELAIN FOCUS HERO CARD (Elevated Card)
+          WELCOME & 4 CORE POINTS OF SINAHARD
+          Bridges passive reading (PDFs / books) to interactive practice
       ───────────────────────────────────────────────────────────── */}
       <motion.div
         variants={itemVariants}
-        className="relative rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 p-4 sm:p-7 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] overflow-hidden"
+        className="relative rounded-[32px] sm:rounded-[38px] bg-white/70 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/70 dark:border-white/10 p-5 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] overflow-hidden"
       >
         {/* Subtle Atmospheric Ambient Glow */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-80 h-80 bg-zinc-400/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10">
-          {focusExam ? (
-            <div className="rounded-[26px] sm:rounded-[28px] bg-white dark:bg-[#0c182b] p-6 sm:p-8 shadow-xs border border-white/80 dark:border-white/10">
-              {/* Top row */}
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-400">
-                  Recommended Focus Exam
-                </span>
-                <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
-                  <GraduationCap className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+        <div className="relative z-10 space-y-5">
+          {/* Welcome Header with Sinahard Advanced Emblem */}
+          <div className="border-b border-zinc-100 dark:border-zinc-800/80 pb-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5">
+              <SinahardLogo size="xl" idSuffix="welcome-hero" className="shrink-0" />
+              <div className="space-y-2 max-w-3xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                  <Sparkles className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
+                  <span>Welcome to Sinahard</span>
+                  <span className="text-zinc-400 dark:text-zinc-600">•</span>
+                  <span className="font-normal text-zinc-500 dark:text-zinc-400">{dateFormatted}</span>
                 </div>
+                <h2 className="text-2xl sm:text-3xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white leading-tight">
+                  Bridging the Gap from Reading to Active Practice
+                </h2>
+                <p className="text-xs sm:text-[14px] text-zinc-600 dark:text-zinc-300 leading-relaxed font-normal">
+                  When you upload PDFs, read textbooks, or study notes, passive reading alone isn't enough to build lasting exam confidence. To truly retain knowledge, you require an active, interactive testing environment. <strong className="font-semibold text-zinc-900 dark:text-white">Sinahard</strong> fills that critical gap with timed tests, instant evaluation, peer sharing, bulk imports, and pre-prepared curriculum exams.
+                </p>
               </div>
+            </div>
+          </div>
 
-              {/* Title */}
-              <h2 className="text-2xl sm:text-3xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white leading-tight mb-2.5">
-                {focusExam.title || focusExam.name}
-              </h2>
-
-              {/* Description */}
-              <p className="text-xs sm:text-[14px] text-zinc-600 dark:text-zinc-300 leading-relaxed max-w-2xl mb-6 font-normal">
-                {focusExam.description ||
-                  'Review formulas, solve curriculum questions, and master step-by-step LaTeX explanations.'}
-              </p>
-
-              {/* Bottom Button Row */}
-              <div className="flex items-center justify-between flex-wrap gap-4 pt-1">
-                <button
-                  type="button"
-                  onClick={() => onStartPractice(focusExam)}
-                  className="px-7 py-3 rounded-full bg-zinc-950 dark:bg-white hover:bg-black dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs sm:text-sm flex items-center gap-2.5 transition active:scale-98 cursor-pointer shadow-xs"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Start Exam</span>
-                  <span className="opacity-70 font-normal">
-                    {focusExam.timeLimit ? `${focusExam.timeLimit} mins` : '30 mins'}
+          {/* Collapsed Compact State or Expanded Full Grid */}
+          <AnimatePresence initial={false} mode="wait">
+            {!isFeaturesExpanded ? (
+              <motion.button
+                key="collapsed-features-bar"
+                type="button"
+                onClick={toggleFeatures}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18 }}
+                className="w-full p-3 sm:p-3.5 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-dashed border-zinc-200 dark:border-zinc-700/80 hover:border-zinc-400 dark:hover:border-zinc-500 transition text-left cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                    4 Core Features:
                   </span>
-                </button>
-
-                <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                    <span>{focusExam.timeLimit || 30}m</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+                    <Play className="w-3 h-3 text-zinc-500" /> Active Testing
                   </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1.5">
-                    <HelpCircle className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                    <span>{focusExam.questions?.length || 0} Questions</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+                    <GraduationCap className="w-3 h-3 text-zinc-500" /> Curated Catalog
                   </span>
-                  <span>•</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+                    <Download className="w-3 h-3 text-zinc-500" /> Instant Conversion
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+                    <Share2 className="w-3 h-3 text-zinc-500" /> Peer Sharing
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-950 dark:group-hover:text-white shrink-0">
+                  <span>Expand Details</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </div>
+              </motion.button>
+            ) : (
+              <motion.div
+                key="expanded-features-grid"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.22, ease: 'easeInOut' }}
+                className="overflow-hidden space-y-2.5"
+              >
+                {/* Header row inside expanded view with collapse button */}
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                    4 Core Features Overview
+                  </span>
                   <button
                     type="button"
-                    onClick={() => onNavigate('files')}
-                    className="text-zinc-900 dark:text-white hover:underline font-semibold cursor-pointer"
+                    onClick={toggleFeatures}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition cursor-pointer"
                   >
-                    Change exam
+                    <span>Collapse Details</span>
+                    <ChevronDown className="w-3.5 h-3.5 rotate-180" />
                   </button>
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-[26px] bg-white dark:bg-[#0c182b] p-8 text-center border border-white/80 dark:border-white/10 shadow-xs">
-              <BookOpen className="w-10 h-10 text-zinc-400 mx-auto mb-2 opacity-50" />
-              <h3 className="font-bold text-base text-zinc-900 dark:text-white">
-                No Exams in Repository
-              </h3>
-              <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto">
-                Create a new practice exam with AI assistance or import questions to begin your daily focus session.
-              </p>
-              <button
-                type="button"
-                onClick={() => onNavigate('create')}
-                className="mt-4 px-6 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs transition cursor-pointer shadow-xs active:scale-98"
-              >
-                + Create Practice Exam
-              </button>
-            </div>
-          )}
+
+                {/* Four Core Points Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-0.5">
+                  {/* Core Point 1: Interactive Practice Area */}
+                  <div className="p-4 sm:p-5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex flex-col justify-between space-y-3">
+                    <div className="space-y-2">
+                      <div className="w-9 h-9 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shadow-2xs border border-white/80 dark:border-white/10">
+                        <Play className="w-4 h-4 fill-current text-zinc-700 dark:text-zinc-300" />
+                      </div>
+                      <h3 className="font-bold text-sm text-zinc-900 dark:text-white font-['Outfit',sans-serif]">
+                        1. Interactive Practice Area
+                      </h3>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                        Turn passive reading of books and PDFs into active recall exams with realistic timers, instant scoring, and step-by-step mathematical explanations.
+                      </p>
+                    </div>
+                    <div className="pt-1">
+                      <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider block">
+                        Active Testing
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Core Point 2: Pre-Prepared Official Exams */}
+                  <div className="p-4 sm:p-5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex flex-col justify-between space-y-3">
+                    <div className="space-y-2">
+                      <div className="w-9 h-9 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shadow-2xs border border-white/80 dark:border-white/10">
+                        <GraduationCap className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+                      </div>
+                      <h3 className="font-bold text-sm text-zinc-900 dark:text-white font-['Outfit',sans-serif]">
+                        2. Pre-Prepared Exams
+                      </h3>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                        Practice directly with official past national exams and curated entrance question banks tailored to your registered grade and stream.
+                      </p>
+                    </div>
+                    <div className="pt-1">
+                      <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider block">
+                        Curated Catalog
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Core Point 3: Import & Convert Any Exam */}
+                  <div className="p-4 sm:p-5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex flex-col justify-between space-y-3">
+                    <div className="space-y-2">
+                      <div className="w-9 h-9 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shadow-2xs border border-white/80 dark:border-white/10">
+                        <Download className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+                      </div>
+                      <h3 className="font-bold text-sm text-zinc-900 dark:text-white font-['Outfit',sans-serif]">
+                        3. Bulk Import & AI
+                      </h3>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                        Bulk import questions downloaded from Telegram channels, study groups, or paste AI-generated questions formatted with our template.
+                      </p>
+                    </div>
+                    <div className="pt-1">
+                      <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider block">
+                        Instant Conversion
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Core Point 4: Share with Peers */}
+                  <div className="p-4 sm:p-5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex flex-col justify-between space-y-3">
+                    <div className="space-y-2">
+                      <div className="w-9 h-9 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shadow-2xs border border-white/80 dark:border-white/10">
+                        <Share2 className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+                      </div>
+                      <h3 className="font-bold text-sm text-zinc-900 dark:text-white font-['Outfit',sans-serif]">
+                        4. Peer Sharing & Export
+                      </h3>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                        Export exams in plain .txt format with one click so you and your study partners can exchange questions and test each other offline.
+                      </p>
+                    </div>
+                    <div className="pt-1">
+                      <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider block">
+                        Offline Collaboration
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
 

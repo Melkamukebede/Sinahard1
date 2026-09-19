@@ -81,7 +81,7 @@ export async function initializeTelebirrPayment(
   const payload: TelebirrInitializeRequest = {
     amount: plan.priceETB,
     outTradeNo,
-    subject: `ExamMaster Pro - ${plan.name}`,
+    subject: `Sinahard Pro - ${plan.name}`,
     phone: cleanPhone,
     returnUrl: `${window.location.origin}?telebirr_verify=${outTradeNo}`,
     notifyUrl: `${window.location.origin}/api/telebirr/notify`,

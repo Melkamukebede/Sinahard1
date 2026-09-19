@@ -8,6 +8,7 @@ import {
   Calendar,
   Phone,
   CheckCircle2,
+  Check,
   X,
   Sparkles,
   LogIn,
@@ -190,7 +191,7 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
         {/* Scrollable Form Content */}
         <div className="overflow-y-auto p-5 sm:p-6 space-y-5">
           {/* Google Account Connection Banner */}
-          <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-3.5 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200/80 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               {isGoogleLinked ? (
                 <>
@@ -198,10 +199,10 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
                     <img
                       src={user.photoURL}
                       alt={displayName}
-                      className="w-9 h-9 rounded-full object-cover border border-emerald-500/40"
+                      className="w-9 h-9 rounded-full object-cover border border-zinc-200 dark:border-zinc-700"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-emerald-500 text-zinc-950 font-extrabold flex items-center justify-center text-sm">
+                    <div className="w-9 h-9 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold flex items-center justify-center text-xs">
                       {displayName.charAt(0) || 'S'}
                     </div>
                   )}
@@ -210,7 +211,7 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
                       <span>{user?.email}</span>
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                     </div>
-                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
                       Google Account Connected (Cloud Sync Active)
                     </span>
                   </div>
@@ -218,7 +219,7 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
               ) : (
                 <div>
                   <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                    <LogIn className="w-3.5 h-3.5 text-emerald-500" />
+                    <LogIn className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
                     <span>Connect Google Account (Recommended)</span>
                   </div>
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -233,13 +234,13 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
                 type="button"
                 disabled={isSigningIn}
                 onClick={handleGoogleConnect}
-                className={`px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm shadow-emerald-600/20 transition cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
+                className={`px-4 py-2 rounded-full bg-zinc-950 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs shadow-xs transition cursor-pointer flex items-center justify-center gap-1.5 shrink-0 active:scale-98 ${
                   isSigningIn ? 'opacity-70 cursor-wait' : ''
                 }`}
               >
                 {isSigningIn ? (
                   <>
-                    <div className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
                     <span>Connecting...</span>
                   </>
                 ) : (
@@ -255,12 +256,12 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
           </div>
 
           {popupBlocked && (
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between gap-2">
+            <div className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 flex items-center justify-between gap-2">
               <span>Google popup blocked by preview security. You can continue filling registration below.</span>
               <button
                 type="button"
                 onClick={() => window.open(window.location.href, '_blank')}
-                className="font-bold underline flex items-center gap-1 hover:text-amber-800"
+                className="font-semibold underline flex items-center gap-1 text-zinc-900 dark:text-white"
               >
                 Open in new tab <ExternalLink className="w-3 h-3" />
               </button>
@@ -270,8 +271,8 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Student Name */}
             <div>
-              <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-emerald-500" />
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                 <span>Student Full Name *</span>
               </label>
               <input
@@ -280,18 +281,18 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Enter your student full name (e.g. Melkamu Kebede)"
-                className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/15 dark:focus:ring-white/20 focus:border-zinc-400 dark:focus:border-zinc-600 transition"
               />
             </div>
 
             {/* School Level / Grade Selection (CRITICAL) */}
             <div>
-              <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center justify-between">
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <GraduationCap className="w-3.5 h-3.5 text-emerald-500" />
+                  <GraduationCap className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                   <span>School Level & Grade *</span>
                 </span>
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-normal">
                   Exams will filter to this grade
                 </span>
               </label>
@@ -306,15 +307,15 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
                       onClick={() => handleGradeSelect(gl.id)}
                       className={`p-2.5 rounded-xl text-left border transition cursor-pointer flex flex-col justify-between ${
                         isSelected
-                          ? 'bg-emerald-500/15 border-emerald-500 text-emerald-900 dark:text-emerald-200 shadow-xs'
-                          : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600'
+                          ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
+                          : 'bg-zinc-50/80 dark:bg-zinc-900/50 border-zinc-200/80 dark:border-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-xs">{gl.label}</span>
-                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-white dark:text-zinc-950" />}
                       </div>
-                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-1">
+                      <span className={`text-[10px] mt-1 line-clamp-1 ${isSelected ? 'text-zinc-400 dark:text-zinc-500' : 'text-zinc-500 dark:text-zinc-400'}`}>
                         {gl.subtitle}
                       </span>
                     </button>
@@ -325,8 +326,8 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
 
             {/* Academic Stream (Critical Form 1) */}
             <div>
-              <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-blue-500" />
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                 <span>Academic Stream / Focus Track *</span>
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -343,15 +344,15 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
                       key={s}
                       type="button"
                       onClick={() => setStream(s)}
-                      className={`p-2 rounded-xl text-center border transition cursor-pointer ${
+                      className={`p-2.5 rounded-xl text-center border transition cursor-pointer ${
                         isSelected
-                          ? 'bg-blue-500/15 border-blue-500 text-blue-900 dark:text-blue-200 font-bold'
-                          : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-700/80 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300'
+                          ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs font-semibold'
+                          : 'bg-zinc-50/80 dark:bg-zinc-900/50 border-zinc-200/80 dark:border-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 font-medium'
                       }`}
                     >
                       <span className="text-xs block">{s}</span>
                       {isRecommended && (
-                        <span className="text-[9px] block text-zinc-400 font-normal mt-0.5">
+                        <span className={`text-[9px] block font-normal mt-0.5 ${isSelected ? 'text-zinc-400 dark:text-zinc-500' : 'text-zinc-400 dark:text-zinc-500'}`}>
                           {isRecommended}
                         </span>
                       )}
@@ -364,8 +365,8 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
             {/* School Name & Region (Critical Form 2) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                  <School className="w-3.5 h-3.5 text-purple-500" />
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
+                  <School className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                   <span>School / Academy Name</span>
                 </label>
                 <input
@@ -373,19 +374,19 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
                   value={schoolName}
                   onChange={(e) => setSchoolName(e.target.value)}
                   placeholder="e.g. Bole Secondary, Menelik II"
-                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/15 dark:focus:ring-white/20 focus:border-zinc-400 dark:focus:border-zinc-600 transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                   <span>Administrative Region / City</span>
                 </label>
                 <select
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900/15 dark:focus:ring-white/20 focus:border-zinc-400 dark:focus:border-zinc-600 transition cursor-pointer"
                 >
                   {ETHIOPIAN_REGIONS.map((r) => (
                     <option key={r} value={r}>
@@ -399,14 +400,14 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
             {/* Target Exam Year & Phone Number (Critical Form 3) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                   <span>Target National Exam Year</span>
                 </label>
                 <select
                   value={targetExamYear}
                   onChange={(e) => setTargetExamYear(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-900/15 dark:focus:ring-white/20 focus:border-zinc-400 dark:focus:border-zinc-600 transition cursor-pointer"
                 >
                   <option value="2026 (2018 E.C.)">2026 (2018 E.C.) - Upcoming</option>
                   <option value="2027 (2019 E.C.)">2027 (2019 E.C.)</option>
@@ -416,8 +417,8 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-teal-500" />
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                   <span>Mobile Phone (Optional for Telebirr / CBE)</span>
                 </label>
                 <input
@@ -425,17 +426,17 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   placeholder="e.g. 0911234567"
-                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/15 dark:focus:ring-white/20 focus:border-zinc-400 dark:focus:border-zinc-600 transition"
                 />
               </div>
             </div>
 
             {/* Submit Bar */}
-            <div className="pt-2 flex items-center justify-between gap-3 border-t border-zinc-100 dark:border-white/10">
+            <div className="pt-3 flex items-center justify-between gap-3 border-t border-zinc-100 dark:border-white/10">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-xs font-semibold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition cursor-pointer shadow-xs"
+                className="px-5 py-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -443,7 +444,7 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs shadow-xs transition cursor-pointer active:scale-98 flex items-center gap-2 ${
+                className={`px-6 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:bg-black dark:hover:bg-zinc-100 font-semibold text-xs shadow-xs transition cursor-pointer active:scale-98 flex items-center gap-2 ${
                   isSubmitting ? 'opacity-70 cursor-wait' : ''
                 }`}
               >
@@ -459,7 +460,7 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-zinc-400" />
+                    <Sparkles className="w-4 h-4" />
                     <span>Save & Filter Grade {grade} Exams</span>
                   </>
                 )}

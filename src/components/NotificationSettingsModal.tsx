@@ -46,7 +46,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
   };
 
   const handleSendTest = () => {
-    sendNotification('ExamMaster Pro Test Alert', {
+    sendNotification('Sinahard Pro Test Alert', {
       body: 'Notifications are working perfectly! You are set to receive study reminders.',
     });
     setTestSent(true);

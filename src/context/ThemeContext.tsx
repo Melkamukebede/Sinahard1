@@ -15,7 +15,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem('exam_theme');
     if (saved === 'light' || saved === 'dark') return saved;
-    // Default to dark mode as the classic ExamMaster Pro aesthetic, but fully supports white mode
+    // Default to dark mode as the classic Sinahard Pro aesthetic, but fully supports white mode
     return 'dark';
   });
 

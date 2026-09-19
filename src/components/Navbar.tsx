@@ -15,7 +15,6 @@ import {
   Sparkles,
   Menu,
   HelpCircle,
-  Crown,
   ShieldCheck,
   UserPlus,
   Edit3,
@@ -27,6 +26,7 @@ import { useNotifications } from '../context/NotificationContext';
 import { AuthNoticeModal } from './AuthNoticeModal';
 import { isUserAdmin, isUserSubscriptionActive } from '../services/db';
 import { UserSubscription } from '../types';
+import { SinahardLogo } from './SinahardLogo';
 
 export type PageTab = 'home' | 'files' | 'results' | 'create' | 'manual' | 'admin-subs';
 
@@ -35,7 +35,7 @@ interface NavbarProps {
   onTabChange: (tab: PageTab) => void;
   onOpenNotifications: () => void;
   onOpenDrawer: () => void;
-  onOpenSubscriptionModal: () => void;
+  onOpenSubscriptionModal?: () => void;
   activeSubscription: UserSubscription | null;
 }
 
@@ -82,12 +82,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={() => onTabChange('home')}
           className="flex items-center gap-2.5 cursor-pointer select-none group"
         >
-          <div className="w-9 h-9 rounded-xl bg-zinc-950 dark:bg-white flex items-center justify-center text-white dark:text-zinc-950 shadow-xs group-hover:scale-105 transition-transform">
-            <GraduationCap className="w-5 h-5 stroke-[2.2]" />
-          </div>
+          <SinahardLogo size="md" idSuffix="navbar" />
           <div className="flex flex-col">
             <span className="font-['Outfit',sans-serif] font-bold text-lg tracking-tight text-zinc-900 dark:text-white flex items-center">
-              ExamMaster <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 ml-1.5">Pro</span>
+              Sinahard <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 ml-1.5">Pro</span>
             </span>
           </div>
         </div>
@@ -418,16 +416,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <PlusCircle className="w-4 h-4" />
           <span>Create</span>
-        </button>
-        <button
-          type="button"
-          onClick={onOpenSubscriptionModal}
-          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition ${
-            isPremiumActive ? 'text-zinc-950 dark:text-white font-bold' : 'text-zinc-500'
-          }`}
-        >
-          <Crown className="w-4 h-4" />
-          <span>Premium</span>
         </button>
       </div>
     </header>

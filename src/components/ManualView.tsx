@@ -82,7 +82,7 @@ OUTPUT RULES:
           </div>
 
           <p className="text-base sm:text-lg lg:text-xl font-normal font-['Outfit',sans-serif] text-zinc-800 dark:text-zinc-200 leading-relaxed">
-            <span className="font-semibold text-zinc-900 dark:text-white">ExamMaster</span> is comprehensive — you can create any question and practice prepared exams in an interactive app, for all grade level students.
+            <span className="font-semibold text-zinc-900 dark:text-white">Sinahard</span> is comprehensive — you can create any question and practice prepared exams in an interactive app, for all grade level students.
           </p>
         </div>
       </div>
