@@ -41,13 +41,32 @@ export const ManualView: React.FC<ManualViewProps> = ({
   const [copiedSymbol, setCopiedSymbol] = useState<string | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
 
-  const samplePrompt = `Please generate 10 multiple choice questions in plain .txt format for [Subject & Topic, e.g. Grade 12 Physics Electromagnetism or Freshman Math Limits].
+  const samplePrompt = `================================================================
+EXAM: Physics: Classical Mechanics & Energy
+Subject: Physics
+Difficulty: Medium
+Subject Type: Formulas & Calculations
+Time Limit: 20 minutes
+Passing Score: 70%
+================================================================
+
+1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
+   A) \\( 240,000 \\text{ J} \\)
+   B) \\( 120,000 \\text{ J} \\)
+   C) \\( 480,000 \\text{ J} \\)
+   D) \\( 24,000 \\text{ J} \\)
+   Answer: A
+   Explanation: **Formula:**
+\\[ E_k = \\frac{1}{2} m v^2 \\]
+**Calculation:**
+\\[ E_k = \\frac{1}{2} (1200)(20^2) = 600 \\times 400 = 240,000 \\text{ J} = 240 \\text{ kJ} \\]
+**Answer:** \\( 240,000 \\text{ J} \\)
 
 OUTPUT RULES:
-1. Output pure plain text (.txt format). No markdown code blocks, no greetings or conversational text.
-2. Put an asterisk (*) right after the correct option letter, like: C* The electric field is zero.
-3. For math and science formulas, use standard LaTeX like \\( \\frac{a}{b} \\) or \\( x^2 \\).
-4. VERTICAL STEP-BY-STEP EXPLANATIONS: For math questions, write the calculation vertically step-by-step with each step on its own line (not in one horizontal sentence).`;
+1. Output pure plain text (.txt format). No markdown code blocks, no greetings or conversational intro.
+2. Put Answer: [Letter] on its own line.
+3. DO NOT use numbers in the explanation area (avoid 1. Formula 2. Calculation; instead use **Formula:**, **Calculation:**, **Answer:**).
+4. For math and physics formulas, wrap display equations in \\[ ... \\] and inline variables in \\( ... \\).`;
 
   const formulaShortcuts = [
     { label: 'Fraction', code: '\\frac{a}{b}' },

@@ -8,10 +8,6 @@ import {
   Trash2,
   Clock,
   HelpCircle,
-  Award,
-  Filter,
-  Calculator,
-  BookMarked,
   ArrowUpDown,
   RotateCcw,
   FileDown,
@@ -19,7 +15,11 @@ import {
   Layers,
   CloudDownload,
   CloudUpload,
-  Cloud,
+  GraduationCap,
+  Bookmark,
+  ChevronDown,
+  ChevronUp,
+  Tag,
 } from 'lucide-react';
 import { Exam, AppUser } from '../types';
 
@@ -35,7 +35,6 @@ interface FilesViewProps {
   user?: AppUser | null;
 }
 
-type DurationFilter = 'all' | 'quick' | 'medium' | 'long';
 type SortOption = 'newest' | 'questions' | 'duration' | 'name';
 type SourceFilter = 'all' | 'user_created' | 'downloaded';
 
@@ -44,20 +43,48 @@ export const FilesView: React.FC<FilesViewProps> = ({
   onStartPractice,
   onEditExam,
   onDeleteExam,
-  onCreateNew,
   onOpenCuratedCatalogModal,
   onOpenDatabaseUpload,
   isAdmin = false,
   user,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState<string>('All');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('All');
-  const [selectedType, setSelectedType] = useState<string>('All');
-  const [durationFilter, setDurationFilter] = useState<DurationFilter>('all');
+  const [selectedTopic, setSelectedTopic] = useState<string>('All');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [copiedNotification, setCopiedNotification] = useState<string | null>(null);
+
+  // Track which exams are expanded to show details
+  const [expandedExamIds, setExpandedExamIds] = useState<Record<string, boolean>>({});
+
+  const toggleExpandExam = (examId: string) => {
+    setExpandedExamIds((prev) => {
+      const isCurrentlyOpen = Boolean(prev[examId]);
+      // When expanding one subject, close others so other cards on left/right aren't expanded with it
+      return isCurrentlyOpen ? {} : { [examId]: true };
+    });
+  };
+
+  // Helper to extract clean grade label from an exam
+  const getExamGrade = (exam: Exam): string => {
+    if (exam.grade !== undefined && exam.grade !== null && String(exam.grade).trim() !== '') {
+      const g = String(exam.grade).trim();
+      return g.toLowerCase().startsWith('grade') ? g : `Grade ${g}`;
+    }
+    const match = exam.name.match(/grade\s*(\d{1,2})/i) || exam.name.match(/g(\d{1,2})/i);
+    if (match) return `Grade ${match[1]}`;
+    if (/freshman|university|college/i.test(exam.name)) return 'Freshman';
+    return 'General';
+  };
+
+  // Helper to extract primary topic or unit
+  const getExamTopic = (exam: Exam): string => {
+    if (exam.unit && exam.unit.trim()) return exam.unit.trim();
+    if (exam.description && exam.description.trim()) return exam.description.trim();
+    return 'Core Curriculum';
+  };
 
   // Counts by source
   const userCreatedCount = useMemo(
@@ -68,6 +95,28 @@ export const FilesView: React.FC<FilesViewProps> = ({
     () => exams.filter((e) => e.isDownloaded || e.sourceType === 'curated_catalog').length,
     [exams]
   );
+
+  // Dynamically extract grades and counts
+  const gradeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    exams.forEach((e) => {
+      const g = getExamGrade(e);
+      counts[g] = (counts[g] || 0) + 1;
+    });
+    return counts;
+  }, [exams]);
+
+  const dynamicGrades = useMemo(() => {
+    const keys = Object.keys(gradeCounts).sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, ''), 10);
+      const numB = parseInt(b.replace(/\D/g, ''), 10);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      if (!isNaN(numA)) return -1;
+      if (!isNaN(numB)) return 1;
+      return a.localeCompare(b);
+    });
+    return ['All', ...keys];
+  }, [gradeCounts]);
 
   // Dynamically extract subjects and counts
   const subjectCounts = useMemo(() => {
@@ -83,44 +132,36 @@ export const FilesView: React.FC<FilesViewProps> = ({
     return ['All', ...Object.keys(subjectCounts).sort()];
   }, [subjectCounts]);
 
-  // Dynamically extract difficulty options and counts
-  const difficultyCounts = useMemo(() => {
+  // Dynamically extract topics/units and counts
+  const topicCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     exams.forEach((e) => {
-      const diff = e.difficulty || 'Medium';
-      counts[diff] = (counts[diff] || 0) + 1;
+      const topic = getExamTopic(e);
+      counts[topic] = (counts[topic] || 0) + 1;
     });
     return counts;
   }, [exams]);
 
-  // Subject types counts
-  const typeCounts = useMemo(() => {
-    const counts: Record<string, number> = { calculation: 0, theory: 0 };
-    exams.forEach((e) => {
-      if (e.subjectType === 'calculation') counts.calculation++;
-      else counts.theory++;
-    });
-    return counts;
-  }, [exams]);
+  const dynamicTopics = useMemo(() => {
+    return ['All', ...Object.keys(topicCounts).sort()];
+  }, [topicCounts]);
 
-  // Active filters count
+  // Active filters count (grade, subject, topic, search)
   const activeFiltersCount = useMemo(() => {
     let count = 0;
+    if (selectedGrade !== 'All') count++;
     if (selectedSubject !== 'All') count++;
-    if (selectedDifficulty !== 'All') count++;
-    if (selectedType !== 'All') count++;
-    if (durationFilter !== 'all') count++;
+    if (selectedTopic !== 'All') count++;
     if (sourceFilter !== 'all') count++;
     if (searchTerm.trim() !== '') count++;
     return count;
-  }, [selectedSubject, selectedDifficulty, selectedType, durationFilter, sourceFilter, searchTerm]);
+  }, [selectedGrade, selectedSubject, selectedTopic, sourceFilter, searchTerm]);
 
   const handleResetFilters = () => {
     setSearchTerm('');
+    setSelectedGrade('All');
     setSelectedSubject('All');
-    setSelectedDifficulty('All');
-    setSelectedType('All');
-    setDurationFilter('all');
+    setSelectedTopic('All');
     setSourceFilter('all');
   };
 
@@ -131,9 +172,9 @@ export const FilesView: React.FC<FilesViewProps> = ({
       const lines: string[] = [];
       lines.push('================================================================');
       lines.push(`EXAM: ${exam.name}`);
+      lines.push(`Grade: ${getExamGrade(exam)}`);
       lines.push(`Subject: ${exam.subject || 'General'}`);
-      lines.push(`Difficulty: ${exam.difficulty || 'Medium'}`);
-      lines.push(`Subject Type: ${exam.subjectType === 'calculation' ? 'Formulas & Calculations' : 'Theory & Concepts'}`);
+      lines.push(`Topic/Unit: ${getExamTopic(exam)}`);
       lines.push(`Time Limit: ${exam.timeLimit} minutes`);
       lines.push(`Passing Score: ${exam.passingScore}%`);
       lines.push('================================================================\n');
@@ -179,28 +220,28 @@ export const FilesView: React.FC<FilesViewProps> = ({
   // Filtered & Sorted exams
   const filteredExams = useMemo(() => {
     const list = exams.filter((exam) => {
+      const examGrade = getExamGrade(exam);
+      const examSubject = exam.subject?.trim() || 'General';
+      const examTopic = getExamTopic(exam);
+
       const matchSearch =
         searchTerm === '' ||
         exam.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (exam.subject && exam.subject.toLowerCase().includes(searchTerm.toLowerCase()));
+        examSubject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        examGrade.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        examTopic.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        exam.questions.some((q) => q.text.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      const matchGrade =
+        selectedGrade === 'All' || examGrade.toLowerCase() === selectedGrade.toLowerCase();
 
       const matchSubject =
-        selectedSubject === 'All' ||
-        (exam.subject || 'General').toLowerCase() === selectedSubject.toLowerCase();
+        selectedSubject === 'All' || examSubject.toLowerCase() === selectedSubject.toLowerCase();
 
-      const matchDifficulty =
-        selectedDifficulty === 'All' || exam.difficulty === selectedDifficulty;
-
-      const matchType =
-        selectedType === 'All' ||
-        (selectedType === 'calculation' && exam.subjectType === 'calculation') ||
-        (selectedType === 'theory' && exam.subjectType !== 'calculation');
-
-      const matchDuration =
-        durationFilter === 'all' ||
-        (durationFilter === 'quick' && exam.timeLimit <= 15) ||
-        (durationFilter === 'medium' && exam.timeLimit > 15 && exam.timeLimit <= 30) ||
-        (durationFilter === 'long' && exam.timeLimit > 30);
+      const matchTopic =
+        selectedTopic === 'All' ||
+        examTopic.toLowerCase().includes(selectedTopic.toLowerCase()) ||
+        (exam.unit && exam.unit.toLowerCase().includes(selectedTopic.toLowerCase()));
 
       const isCurated = Boolean(exam.isDownloaded || exam.sourceType === 'curated_catalog');
       const matchSource =
@@ -208,7 +249,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
         (sourceFilter === 'downloaded' && isCurated) ||
         (sourceFilter === 'user_created' && !isCurated);
 
-      return matchSearch && matchSubject && matchDifficulty && matchType && matchDuration && matchSource;
+      return matchSearch && matchGrade && matchSubject && matchTopic && matchSource;
     });
 
     return list.sort((a, b) => {
@@ -224,7 +265,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
       // 'newest' default
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     });
-  }, [exams, searchTerm, selectedSubject, selectedDifficulty, selectedType, durationFilter, sourceFilter, sortBy]);
+  }, [exams, searchTerm, selectedGrade, selectedSubject, selectedTopic, sourceFilter, sortBy]);
 
   return (
     <div className="space-y-6 pb-20 max-w-6xl mx-auto">
@@ -267,7 +308,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
                 </span>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Your personal library of user-crafted and downloaded curriculum exams
+                Explore, preview questions, and practice official curriculum exams
               </p>
             </div>
           </div>
@@ -283,16 +324,6 @@ export const FilesView: React.FC<FilesViewProps> = ({
               >
                 <CloudDownload className="w-3.5 h-3.5" />
                 <span>Download Exams {user?.grade ? `(G${user.grade})` : ''}</span>
-              </button>
-            )}
-
-            {onCreateNew && (
-              <button
-                type="button"
-                onClick={onCreateNew}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 border border-white/80 dark:border-white/10 font-semibold text-xs cursor-pointer transition shadow-xs active:scale-98"
-              >
-                <span>+ Create</span>
               </button>
             )}
 
@@ -344,6 +375,22 @@ export const FilesView: React.FC<FilesViewProps> = ({
 
           <button
             type="button"
+            onClick={() => setSourceFilter('downloaded')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+              sourceFilter === 'downloaded'
+                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+            }`}
+          >
+            <CloudDownload className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Official Curriculum</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+              {downloadedCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setSourceFilter('user_created')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
               sourceFilter === 'user_created'
@@ -357,26 +404,10 @@ export const FilesView: React.FC<FilesViewProps> = ({
               {userCreatedCount}
             </span>
           </button>
-
-          <button
-            type="button"
-            onClick={() => setSourceFilter('downloaded')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
-              sourceFilter === 'downloaded'
-                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            <CloudDownload className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Downloaded Official</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
-              {downloadedCount}
-            </span>
-          </button>
         </div>
 
         {/* ─────────────────────────────────────────────────────────
-            LAYER 2: FILTER PANEL (Elevated Porcelain Card)
+            LAYER 2: FILTER PANEL (Grade, Subject, Topic strictly)
         ───────────────────────────────────────────────────────── */}
         <div className="relative z-10 p-4 sm:p-5 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-3.5">
           {/* Search Input Bar */}
@@ -387,7 +418,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search exams by title, keywords, or topics..."
+              placeholder="Search by title, subject, grade, topic, or question keywords..."
               className="w-full pl-10 pr-14 py-2.5 text-xs sm:text-sm rounded-full bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 transition"
             />
             {searchTerm && (
@@ -401,18 +432,42 @@ export const FilesView: React.FC<FilesViewProps> = ({
             )}
           </div>
 
-          {/* Dropdown Filters Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-            {/* 1. Subject Dropdown */}
+          {/* Strict 3 Filters: Grade, Subject, Topic (Others Eliminated) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            {/* 1. Grade Filter */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-                <Filter className="w-3 h-3 text-zinc-500" />
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                <GraduationCap className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Grade</span>
+              </label>
+              <select
+                id="filterGradeSelect"
+                value={selectedGrade}
+                onChange={(e) => setSelectedGrade(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
+              >
+                <option value="All">All Grades ({exams.length})</option>
+                {dynamicGrades
+                  .filter((g) => g !== 'All')
+                  .map((grade) => (
+                    <option key={grade} value={grade}>
+                      {grade} ({gradeCounts[grade] || 0})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* 2. Subject Filter */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-zinc-500" />
                 <span>Subject</span>
               </label>
               <select
+                id="filterSubjectSelect"
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
               >
                 <option value="All">All Subjects ({exams.length})</option>
                 {dynamicSubjects
@@ -425,58 +480,26 @@ export const FilesView: React.FC<FilesViewProps> = ({
               </select>
             </div>
 
-            {/* 2. Difficulty Dropdown */}
+            {/* 3. Topic / Unit Filter */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-                <Award className="w-3 h-3 text-zinc-500" />
-                <span>Difficulty</span>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                <Bookmark className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Topic</span>
               </label>
               <select
-                value={selectedDifficulty}
-                onChange={(e) => setSelectedDifficulty(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
+                id="filterTopicSelect"
+                value={selectedTopic}
+                onChange={(e) => setSelectedTopic(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none truncate"
               >
-                <option value="All">All Difficulties</option>
-                {['Easy', 'Medium', 'Hard'].map((diff) => (
-                  <option key={diff} value={diff}>
-                    {diff} ({difficultyCounts[diff] || 0})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 3. Type Dropdown */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-                <Calculator className="w-3 h-3 text-zinc-500" />
-                <span>Content Type</span>
-              </label>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
-              >
-                <option value="All">All Question Types</option>
-                <option value="calculation">Formulas / Calculations ({typeCounts.calculation || 0})</option>
-                <option value="theory">Concepts / Theory ({typeCounts.theory || 0})</option>
-              </select>
-            </div>
-
-            {/* 4. Duration Dropdown */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-zinc-500" />
-                <span>Duration</span>
-              </label>
-              <select
-                value={durationFilter}
-                onChange={(e) => setDurationFilter(e.target.value as DurationFilter)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
-              >
-                <option value="all">All Durations</option>
-                <option value="quick">Quick (≤ 15 mins)</option>
-                <option value="medium">Standard (15 - 30 mins)</option>
-                <option value="long">Extended (&gt; 30 mins)</option>
+                <option value="All">All Topics ({exams.length})</option>
+                {dynamicTopics
+                  .filter((t) => t !== 'All')
+                  .map((topic) => (
+                    <option key={topic} value={topic}>
+                      {topic.length > 50 ? `${topic.substring(0, 50)}...` : topic} ({topicCounts[topic] || 0})
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
@@ -485,7 +508,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
           {activeFiltersCount > 0 && (
             <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
               <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Active filters applied ({activeFiltersCount})
+                Filters applied: Grade ({selectedGrade}), Subject ({selectedSubject}), Topic ({selectedTopic !== 'All' ? 'Custom' : 'All'})
               </span>
               <button
                 type="button"
@@ -501,14 +524,15 @@ export const FilesView: React.FC<FilesViewProps> = ({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          LAYER 1 CONTAINER: EXAMS REPOSITORY GRID (Layer 2 porcelain cards)
+          LAYER 1 CONTAINER: EXAMS REPOSITORY GRID
+          With Expandable Questions (showing question number, time, LaTeX text, choices & solutions)
       ───────────────────────────────────────────────────────────── */}
       {filteredExams.length === 0 ? (
         <div className="text-center py-14 px-4 rounded-[32px] bg-white/40 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-xs">
           <BookOpen className="w-8 h-8 text-zinc-400 mx-auto mb-2 opacity-50" />
           <h3 className="text-sm font-bold text-zinc-900 dark:text-white">No matching exams found</h3>
           <p className="text-xs text-zinc-500 mt-0.5">
-            Try adjusting your search criteria or reset active dropdown filters.
+            Try adjusting your Grade, Subject, or Topic filter criteria.
           </p>
           {activeFiltersCount > 0 && (
             <button
@@ -522,160 +546,232 @@ export const FilesView: React.FC<FilesViewProps> = ({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
           <AnimatePresence mode="popLayout">
             {filteredExams.map((exam) => {
-              const isCalculation = exam.subjectType === 'calculation';
               const isCurated = Boolean(exam.isDownloaded || exam.sourceType === 'curated_catalog');
+              const gradeLabel = getExamGrade(exam);
+              const topicLabel = getExamTopic(exam);
+              const isExpanded = Boolean(expandedExamIds[exam.id]);
+              const questionCount = exam.questions?.length || 0;
+              const avgSecondsPerQ = questionCount > 0 ? Math.max(1, Math.round((exam.timeLimit * 60) / questionCount)) : 60;
 
               return (
                 <motion.div
-                  layout
+                  layout="position"
                   key={exam.id}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.96 }}
-                  whileHover={{ y: -3, transition: { duration: 0.2 } }}
-                  className="group flex flex-col justify-between p-5 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 transition-all shadow-xs hover:shadow-md"
+                  className={`group rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 transition-all shadow-xs hover:shadow-md ${
+                    isExpanded ? 'ring-1 ring-zinc-900/15 dark:ring-white/15' : ''
+                  }`}
                 >
-                  <div>
-                    {/* Card Top Badges */}
-                    <div className="flex items-center justify-between gap-2 mb-2.5">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
-                          {exam.subject || 'General'}
-                        </span>
-                        {isCurated ? (
-                          <span
-                            className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700"
-                            title="Official Downloaded Curriculum Exam"
-                          >
-                            <CloudDownload className="w-3 h-3 text-zinc-600 dark:text-zinc-400" />
-                            <span>Official</span>
-                            {exam.grade && <span className="opacity-80">· G{exam.grade}</span>}
+                  {!isExpanded ? (
+                    /* ─────────────────────────────────────────────────────────────
+                       COLLAPSED VIEW: GRADE, SUBJECT, TOPIC, WITH PRACTICE & EXPAND
+                    ───────────────────────────────────────────────────────────── */
+                    <div
+                      onClick={() => toggleExpandExam(exam.id)}
+                      className="p-4 flex flex-col gap-2.5 cursor-pointer hover:bg-zinc-50/60 dark:hover:bg-white/[0.02] transition select-none rounded-[24px]"
+                    >
+                      {/* Top Row: Grade, Subject, and Actions (Practice + Expand) */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Grade Badge */}
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+                            <GraduationCap className="w-3 h-3" />
+                            <span>{gradeLabel}</span>
                           </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
-                            <Layers className="w-2.5 h-2.5 text-zinc-500" />
-                            <span>User Created</span>
-                          </span>
-                        )}
-                        {exam.isUploadedToCloud && (
-                          <span
-                            className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700"
-                            title={`Uploaded to database storage (${exam.cloudStorageEngine || 'firestore'})`}
-                          >
-                            <Cloud className="w-2.5 h-2.5 text-zinc-500" />
-                            <span>Cloud Stored</span>
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                          {exam.difficulty}
-                        </span>
-                        {isCalculation ? (
-                          <span
-                            title="Formulas & Calculations"
-                            className="p-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                          >
-                            <Calculator className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-                          </span>
-                        ) : (
-                          <span
-                            title="Conceptual Reasoning"
-                            className="p-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                          >
-                            <BookMarked className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-                          </span>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Title */}
-                    <h3 className="font-bold text-sm sm:text-base font-['Outfit',sans-serif] text-zinc-900 dark:text-white mb-2 transition-colors line-clamp-2 leading-snug">
-                      {exam.name}
-                    </h3>
+                          {/* Subject Badge */}
+                          <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                            {exam.subject || 'General'}
+                          </span>
 
-                    {/* Metadata Chips */}
-                    <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 py-2 border-t border-zinc-100 dark:border-zinc-800/80">
-                      <span className="flex items-center gap-1">
-                        <HelpCircle className="w-3.5 h-3.5 text-zinc-400" />
-                        {exam.questions.length} Qs
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                        {exam.timeLimit}m
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Award className="w-3.5 h-3.5 text-zinc-400" />
-                        {exam.passingScore}% pass
-                      </span>
-                    </div>
-                  </div>
+                          {isCurated && (
+                            <span
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
+                              title="Official Curriculum Exam"
+                            >
+                              <CloudDownload className="w-2.5 h-2.5" />
+                              <span>Official</span>
+                            </span>
+                          )}
+                        </div>
 
-                  {/* Card Action Toolbar */}
-                  <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
-                    <div className="flex items-center gap-1">
-                      {!isCurated && (
-                        <>
+                        {/* Collapsed Actions: Practice and Expand */}
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             type="button"
-                            onClick={() => onEditExam(exam)}
-                            className="p-2 rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-                            title="Edit Exam in Wizard"
-                            aria-label="Edit Exam"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStartPractice(exam);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:opacity-90 active:scale-98 transition cursor-pointer shadow-2xs"
+                            title="Start Practice"
                           >
-                            <Edit className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+                            <Play className="w-3 h-3 fill-current" />
+                            <span>Practice</span>
                           </button>
 
-                          {isAdmin && onOpenDatabaseUpload && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpandExam(exam.id);
+                            }}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
+                            title="Expand details"
+                          >
+                            <span>Expand</span>
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Topic Pill */}
+                      <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/60 px-3 py-1.5 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                        <Tag className="w-3 h-3 text-zinc-400 shrink-0" />
+                        <span className="font-medium truncate" title={topicLabel}>
+                          <strong className="text-zinc-700 dark:text-zinc-300">Topic:</strong> {topicLabel}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ─────────────────────────────────────────────────────────────
+                       EXPANDED VIEW: GRADE, SUBJECT, TOPIC, TITLE,
+                       TOTAL QUE, TIME, AND 3 SMALL ACTION BUTTONS
+                    ───────────────────────────────────────────────────────────── */
+                    <div className="p-4 sm:p-5 space-y-3.5 flex flex-col justify-between">
+                      <div className="space-y-3">
+                        {/* Header: Grade, Subject, Official Badge & Collapse Button */}
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+                              <GraduationCap className="w-3 h-3" />
+                              <span>{gradeLabel}</span>
+                            </span>
+
+                            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                              {exam.subject || 'General'}
+                            </span>
+
+                            {isCurated ? (
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
+                                title="Official Curriculum Exam"
+                              >
+                                <CloudDownload className="w-2.5 h-2.5" />
+                                <span>Official</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                                <Layers className="w-2.5 h-2.5 text-zinc-500" />
+                                <span>User Created</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleExpandExam(exam.id)}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 transition cursor-pointer shadow-2xs hover:opacity-90 active:scale-98"
+                            title="Collapse"
+                          >
+                            <span>Collapse</span>
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Title & Topic */}
+                        <div className="space-y-1">
+                          <h3 className="font-semibold text-sm sm:text-base font-['Outfit',sans-serif] text-zinc-900 dark:text-white leading-snug">
+                            {exam.name}
+                          </h3>
+                          <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/60 px-2.5 py-1 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                            <Tag className="w-3 h-3 text-zinc-400 shrink-0" />
+                            <span className="font-medium truncate" title={topicLabel}>
+                              <strong className="text-zinc-700 dark:text-zinc-300">Topic:</strong> {topicLabel}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Concise Metrics: Total que & Time */}
+                        <div className="flex items-center gap-3 text-xs py-1.5 px-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
+                          <div className="flex items-center gap-1.5 font-medium">
+                            <HelpCircle className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                            <span className="text-zinc-500 dark:text-zinc-400">Total que:</span>
+                            <span className="text-zinc-900 dark:text-white font-semibold">{questionCount}</span>
+                          </div>
+                          <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                          <div className="flex items-center gap-1.5 font-medium">
+                            <Clock className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                            <span className="text-zinc-500 dark:text-zinc-400">Time:</span>
+                            <span className="text-zinc-900 dark:text-white font-semibold">{exam.timeLimit} mins</span>
+                          </div>
+                        </div>
+
+                        {/* 3 Action Buttons: [Practice] [Edit or Export] [Delete] - Small & Not Bold */}
+                        <div className="grid grid-cols-3 gap-2 pt-0.5">
+                          {/* Button 1: Practice */}
+                          <button
+                            type="button"
+                            onClick={() => onStartPractice(exam)}
+                            className="py-1.5 px-2 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-medium text-xs flex items-center justify-center gap-1.5 transition hover:opacity-90 active:scale-98 cursor-pointer shadow-xs"
+                            title="Start Timed Practice"
+                          >
+                            <Play className="w-3 h-3 fill-current" />
+                            <span>Practice</span>
+                          </button>
+
+                          {/* Button 2: Edit or Export */}
+                          {!isCurated ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => onEditExam(exam)}
+                                className="flex-1 py-1.5 px-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-medium text-xs flex items-center justify-center gap-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer border border-zinc-200/80 dark:border-zinc-700 active:scale-98"
+                                title="Edit Exam in Wizard"
+                              >
+                                <Edit className="w-3 h-3" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => handleExportTxt(exam, e)}
+                                className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer border border-zinc-200/80 dark:border-zinc-700 active:scale-98"
+                                title="Export TXT"
+                              >
+                                <FileDown className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
                             <button
                               type="button"
-                              onClick={() => onOpenDatabaseUpload(exam)}
-                              className="p-2 rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-                              title="Upload to Cloud Firestore Database"
-                              aria-label="Upload to Cloud Firestore Database"
+                              onClick={(e) => handleExportTxt(exam, e)}
+                              className="py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-medium text-xs flex items-center justify-center gap-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer border border-zinc-200/80 dark:border-zinc-700 active:scale-98"
+                              title="Export as text file"
                             >
-                              <CloudUpload className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+                              <FileDown className="w-3 h-3" />
+                              <span>Export</span>
                             </button>
                           )}
 
+                          {/* Button 3: Delete */}
                           <button
                             type="button"
-                            onClick={(e) => handleExportTxt(exam, e)}
-                            className="p-2 rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-                            title="Export as .txt file"
-                            aria-label="Export as text file"
+                            onClick={() => onDeleteExam(exam.id)}
+                            className="py-1.5 px-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-medium text-xs flex items-center justify-center gap-1 transition hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-900/30 active:scale-98 cursor-pointer"
+                            title={isCurated ? 'Remove from downloaded exams' : 'Delete Exam'}
                           >
-                            <FileDown className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete</span>
                           </button>
-                        </>
-                      )}
-
-                      {/* Delete Exam */}
-                      <button
-                        type="button"
-                        onClick={() => onDeleteExam(exam.id)}
-                        className="p-2 rounded-full text-zinc-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
-                        title={isCurated ? 'Remove from your downloaded exams' : 'Delete Exam'}
-                        aria-label="Delete Exam"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                        </div>
+                      </div>
                     </div>
-
-                    {/* Start Practice Action: System Capsule Button */}
-                    <button
-                      type="button"
-                      onClick={() => onStartPractice(exam)}
-                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-zinc-950 dark:bg-white hover:bg-black dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs transition cursor-pointer shadow-xs active:scale-98"
-                      title="Start Timed Practice"
-                    >
-                      <Play className="w-3 h-3 fill-current" />
-                      <span>Practice</span>
-                    </button>
-                  </div>
+                  )}
                 </motion.div>
               );
             })}

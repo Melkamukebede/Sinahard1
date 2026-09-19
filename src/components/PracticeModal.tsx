@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Clock,
   CheckCircle2,
+  XCircle,
+  AlertCircle,
   ChevronLeft,
   ChevronRight,
   Send,
@@ -10,11 +12,12 @@ import {
   Pause,
   Play,
   X,
-  Sparkles,
-  HelpCircle,
+  Square,
+  LayoutList,
+  Check,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Exam, ExamAnswerRecord, ExamResult } from '../types';
+import { Exam, ExamAnswerRecord, ExamResult, Question } from '../types';
 import { MathRenderer } from './MathRenderer';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { useNotifications } from '../context/NotificationContext';
@@ -26,6 +29,8 @@ interface PracticeModalProps {
   onSubmitResult: (result: ExamResult) => void;
 }
 
+type PracticeViewMode = '1-to-1' | '6-to-1';
+
 export const PracticeModal: React.FC<PracticeModalProps> = ({
   exam,
   isOpen,
@@ -34,21 +39,44 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 }) => {
   const { notifyExamCompleted } = useNotifications();
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // Mode: '1-to-1' (single focus) vs '6-to-1' (6 questions vertically per page)
+  const [viewMode, setViewMode] = useState<PracticeViewMode>('1-to-1');
+
+  // Navigation indices
+  const [currentIndex, setCurrentIndex] = useState(0); // for 1-to-1 mode
+  const [batchPage, setBatchPage] = useState(0); // for 6-to-1 mode (0-indexed)
+
+  // Answers & revealed explanations per-question
   const [userAnswers, setUserAnswers] = useState<(number | null)[]>([]);
+  const [revealedQuestions, setRevealedQuestions] = useState<Record<number, boolean>>({});
+  const [everRevealedQuestions, setEverRevealedQuestions] = useState<Record<number, boolean>>({});
+
+  // Timer & Pause State
   const [timeLeft, setTimeLeft] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [isRevealed, setIsRevealed] = useState(false);
+
+  // Submit confirmation dialog
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+
+  // Scroll ref to top of question container when page/question changes
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const BATCH_SIZE = 6;
 
   // Initialize practice session
   useEffect(() => {
     if (isOpen && exam) {
       setCurrentIndex(0);
+      setBatchPage(0);
       setUserAnswers(new Array(exam.questions.length).fill(null));
+      setRevealedQuestions({});
+      setEverRevealedQuestions({});
       setTimeLeft(exam.timeLimit * 60);
       setIsPaused(false);
-      setIsRevealed(false);
+      setShowSubmitConfirm(false);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
     }
   }, [isOpen, exam]);
 
@@ -75,8 +103,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // If pressing Space and not focused on an input/button
-      if (e.code === 'Space' && (e.target as HTMLElement).tagName !== 'BUTTON') {
+      if (e.code === 'Space' && (e.target as HTMLElement).tagName !== 'BUTTON' && (e.target as HTMLElement).tagName !== 'INPUT') {
         e.preventDefault();
         setIsPaused((prev) => !prev);
       }
@@ -90,32 +117,118 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
     setIsPaused((prev) => !prev);
   };
 
-  const handleSelectOption = (optionIndex: number) => {
+  /**
+   * Question choice rule:
+   * Choices are strictly restricted from being clicked/selected if:
+   * 1. The user has already selected an option for this question.
+   * 2. The user has clicked the explanation button for this question.
+   */
+  const isQuestionDisabled = useCallback(
+    (qIndex: number) => {
+      const isAnswered = userAnswers[qIndex] !== null && userAnswers[qIndex] !== undefined;
+      const hasClickedExplanation = !!everRevealedQuestions[qIndex] || !!revealedQuestions[qIndex];
+      return isAnswered || hasClickedExplanation;
+    },
+    [userAnswers, revealedQuestions, everRevealedQuestions]
+  );
+
+  const handleSelectOption = (qIndex: number, optionIndex: number) => {
     if (isPaused) return;
+
+    // Disabled once chosen or once explanation is clicked
+    if (isQuestionDisabled(qIndex)) {
+      return;
+    }
+
     const updated = [...userAnswers];
-    updated[currentIndex] = optionIndex;
+    updated[qIndex] = optionIndex;
     setUserAnswers(updated);
   };
 
-  const currentQuestion = exam ? exam.questions[currentIndex] : null;
+  // Toggle explanation for a specific question (permanently restricts option selecting)
+  const handleToggleExplanation = (qIndex: number) => {
+    if (isPaused) return;
 
-  const handleNext = () => {
+    setEverRevealedQuestions((prev) => ({
+      ...prev,
+      [qIndex]: true,
+    }));
+
+    setRevealedQuestions((prev) => ({
+      ...prev,
+      [qIndex]: !prev[qIndex],
+    }));
+  };
+
+  // 1-to-1 mode navigation
+  const handleNext1to1 = () => {
     if (!exam) return;
-    setIsRevealed(false);
     if (currentIndex < exam.questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+      const nextIdx = currentIndex + 1;
+      setCurrentIndex(nextIdx);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
     } else {
       setShowSubmitConfirm(true);
     }
   };
 
-  const handlePrev = () => {
-    setIsRevealed(false);
+  const handlePrev1to1 = () => {
     if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
+      const prevIdx = currentIndex - 1;
+      setCurrentIndex(prevIdx);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
     }
   };
 
+  // 6-to-1 mode navigation
+  const totalBatchPages = exam ? Math.ceil(exam.questions.length / BATCH_SIZE) : 0;
+
+  const handleNextBatch = () => {
+    if (!exam) return;
+    if (batchPage < totalBatchPages - 1) {
+      setBatchPage((prev) => prev + 1);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+    } else {
+      setShowSubmitConfirm(true);
+    }
+  };
+
+  const handlePrevBatch = () => {
+    if (batchPage > 0) {
+      setBatchPage((prev) => prev - 1);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+    }
+  };
+
+  // Jump to specific question from navigator strip
+  const handleJumpToQuestion = (targetIdx: number) => {
+    if (isPaused) return;
+    if (viewMode === '1-to-1') {
+      setCurrentIndex(targetIdx);
+    } else {
+      const targetBatch = Math.floor(targetIdx / BATCH_SIZE);
+      setBatchPage(targetBatch);
+      setTimeout(() => {
+        const el = document.getElementById(`practice-question-${targetIdx}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
+    }
+    if (scrollContainerRef.current && viewMode === '1-to-1') {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  };
+
+  // Final submission and grading
   const handleFinalSubmit = useCallback(() => {
     if (!exam) return;
 
@@ -154,7 +267,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
       }
     }
 
-    // Push notification trigger
+    // Push notification
     notifyExamCompleted(exam.name, correctCount, totalQuestions, percentage);
 
     const result: ExamResult = {
@@ -179,7 +292,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
     handleFinalSubmit();
   }, [handleFinalSubmit]);
 
-  if (!isOpen || !exam || !currentQuestion) return null;
+  if (!isOpen || !exam) return null;
 
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -188,35 +301,253 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
   };
 
   const answeredCount = userAnswers.filter((a) => a !== null).length;
-  const progressPct = ((currentIndex + 1) / exam.questions.length) * 100;
-  const isLastQuestion = currentIndex === exam.questions.length - 1;
+  const progressPct = ((answeredCount) / exam.questions.length) * 100;
+
+  // Batch slicing for 6-to-1 mode
+  const batchStartIdx = batchPage * BATCH_SIZE;
+  const batchEndIdx = Math.min(batchStartIdx + BATCH_SIZE, exam.questions.length);
+  const currentBatchQuestions = exam.questions.slice(batchStartIdx, batchEndIdx);
+
+  // Helper component to render a single Question Card (used in both 1-to-1 and 6-to-1)
+  const renderQuestionCard = (q: Question, qIndex: number) => {
+    const isAnswered = userAnswers[qIndex] !== null && userAnswers[qIndex] !== undefined;
+    const isExplRevealed = !!revealedQuestions[qIndex];
+    const isDisabled = isAnswered || isExplRevealed;
+    const selectedOpt = userAnswers[qIndex];
+
+    return (
+      <div
+        key={q.id || qIndex}
+        id={`practice-question-${qIndex}`}
+        className="p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4 transition-all"
+      >
+        {/* Card Header: Question Number */}
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
+          <div className="flex items-center gap-2.5">
+            <span className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-bold text-xs flex items-center justify-center border border-zinc-200/60 dark:border-white/5">
+              {qIndex + 1}
+            </span>
+            <span className="text-xs font-bold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
+              Question {qIndex + 1} of {exam.questions.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Question Statement */}
+        <div className="text-base sm:text-lg font-medium text-zinc-900 dark:text-zinc-100 leading-relaxed pt-1">
+          <MathRenderer content={q.text} />
+        </div>
+
+        {/* Options List */}
+        <div className="space-y-2.5 pt-1">
+          {q.options.map((optText, optIdx) => {
+            const isSelected = selectedOpt === optIdx;
+            const letter = String.fromCharCode(65 + optIdx);
+            const isCorrectOption = q.correct === optIdx;
+
+            // Visual Styling based on selection and explanation state
+            let optionCardClasses = '';
+            if (isExplRevealed) {
+              if (isCorrectOption) {
+                optionCardClasses = 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500 text-zinc-950 dark:text-white shadow-2xs';
+              } else if (isSelected && !isCorrectOption) {
+                optionCardClasses = 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500 text-zinc-950 dark:text-white shadow-2xs';
+              } else {
+                optionCardClasses = 'bg-zinc-50/50 dark:bg-white/[0.02] border-zinc-200 dark:border-white/5 opacity-60 text-zinc-500 dark:text-zinc-400';
+              }
+            } else if (isSelected) {
+              optionCardClasses = 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs';
+            } else {
+              optionCardClasses = isDisabled
+                ? 'bg-zinc-50/60 dark:bg-white/[0.02] border-zinc-200/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400 opacity-60 cursor-not-allowed'
+                : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] cursor-pointer shadow-2xs';
+            }
+
+            return (
+              <div
+                key={optIdx}
+                onClick={() => {
+                  if (!isDisabled) {
+                    handleSelectOption(qIndex, optIdx);
+                  }
+                }}
+                className={`flex items-center gap-3.5 p-3.5 sm:p-4 rounded-[20px] border transition-all select-none ${
+                  isDisabled ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer active:scale-[0.995]'
+                } ${optionCardClasses}`}
+              >
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
+                    isExplRevealed && isCorrectOption
+                      ? 'bg-emerald-500 text-white shadow-2xs'
+                      : isExplRevealed && isSelected && !isCorrectOption
+                      ? 'bg-rose-500 text-white shadow-2xs'
+                      : isSelected
+                      ? 'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white shadow-2xs'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                  }`}
+                >
+                  {letter}
+                </div>
+                <div className="flex-1 text-sm sm:text-base leading-relaxed font-normal">
+                  <MathRenderer content={optText} inline />
+                </div>
+                {/* Visual Icon Check / Indicator */}
+                {isExplRevealed && isCorrectOption && (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                )}
+                {isExplRevealed && isSelected && !isCorrectOption && (
+                  <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Bottom Question Actions: Explanation Button at the bottom of every question */}
+        <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t border-zinc-100 dark:border-zinc-800/80">
+          <button
+            type="button"
+            onClick={() => handleToggleExplanation(qIndex)}
+            className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 cursor-pointer transition border shadow-2xs active:scale-98 ${
+              isExplRevealed
+                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                : 'bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 border-white/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[#0f1d33]'
+            }`}
+          >
+            {isExplRevealed ? (
+              <>
+                <EyeOff className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Hide Explanation</span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                <span>View Explanation</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Correct Answer Shower & Step-by-Step Explanation Banner */}
+        {isExplRevealed && (
+          <div className="p-4 sm:p-5 rounded-[24px] bg-emerald-500/10 border border-emerald-500/25 text-zinc-900 dark:text-white space-y-3 animate-in fade-in duration-200">
+            {/* Banner Header: Correct Answer Shower */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-emerald-500/20">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                  {String.fromCharCode(65 + q.correct)}
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                    Correct Answer
+                  </span>
+                  <div className="text-sm sm:text-base font-bold text-zinc-950 dark:text-white">
+                    Option {String.fromCharCode(65 + q.correct)}: <MathRenderer content={q.options[q.correct]} inline />
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Comparison Badge */}
+              <div className="shrink-0">
+                {selectedOpt === q.correct ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                    Your Choice: Correct ✓
+                  </span>
+                ) : selectedOpt !== null && selectedOpt !== undefined ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                    <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                    Your Choice: Option {String.fromCharCode(65 + selectedOpt)} (Incorrect)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                    No answer selected
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Step-by-Step Solution & LaTeX formulas */}
+            {q.explanation && (
+              <div className="pt-1 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 space-y-1.5">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                  <span>Step-by-step Solution:</span>
+                </div>
+                <div className="leading-relaxed">
+                  <MathRenderer content={q.explanation} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-        <div className="w-full max-w-4xl h-[94vh] max-h-[850px] bg-white/95 dark:bg-[#0c182b] border border-white/80 dark:border-white/10 rounded-[32px] shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
-          {/* Header Bar */}
-          <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between gap-4 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md">
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="w-full max-w-4xl h-[94vh] max-h-[880px] bg-white/95 dark:bg-[#0c182b] border border-white/80 dark:border-white/10 rounded-[32px] shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
+          {/* Header Bar using App Color Design */}
+          <div className="px-5 sm:px-6 py-3.5 border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between gap-3 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md flex-wrap">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <h2 className="font-['Outfit',sans-serif] font-bold text-sm sm:text-base text-zinc-900 dark:text-white truncate">
                 {exam.name}
               </h2>
             </div>
 
-            {/* Timer & Controls */}
-            <div className="flex items-center gap-3">
+            {/* Center Controls: Mode Toggle (1 to 1 vs 6 to 1) */}
+            <div className="flex items-center p-1 rounded-full bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-white/10 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode('1-to-1');
+                  if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
+                }}
+                className={`px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                  viewMode === '1-to-1'
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+                title="Single question focus mode"
+              >
+                <Square className="w-3.5 h-3.5" />
+                <span>1 to 1 Mode</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode('6-to-1');
+                  setBatchPage(Math.floor(currentIndex / BATCH_SIZE));
+                  if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
+                }}
+                className={`px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                  viewMode === '6-to-1'
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+                title="6 questions per page vertically"
+              >
+                <LayoutList className="w-3.5 h-3.5" />
+                <span>6 to 1 Mode</span>
+              </button>
+            </div>
+
+            {/* Right Controls: Timer & Close */}
+            <div className="flex items-center gap-2.5">
               {/* Interactive Timer Button */}
               <button
                 type="button"
                 onClick={togglePause}
                 title="Click or press Space to pause/resume"
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer border select-none shadow-xs ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer border select-none shadow-xs ${
                   isPaused
                     ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 animate-pulse'
                     : timeLeft <= 60
                     ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 animate-pulse'
-                    : 'bg-white/80 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 border-white/60 dark:border-white/10'
+                    : 'bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-200 border-white/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[#0f1d33]'
                 }`}
               >
                 {isPaused ? (
@@ -237,7 +568,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
@@ -253,157 +584,185 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             />
           </div>
 
-          {/* Subheader Tracker */}
-          <div className="px-6 py-2.5 bg-zinc-50/50 dark:bg-white/[0.02] border-b border-zinc-100 dark:border-white/10 flex items-center justify-between text-xs text-zinc-500">
-            <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-              Question {currentIndex + 1} of {exam.questions.length}
-            </span>
-            <span>
-              Answered: <strong className="text-zinc-900 dark:text-white">{answeredCount}</strong> / {exam.questions.length}
-            </span>
+          {/* Subheader Tracker & Question Navigation Ribbon */}
+          <div className="px-5 sm:px-6 py-2 bg-zinc-50/70 dark:bg-white/[0.02] border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between gap-3 text-xs text-zinc-500">
+            <div className="flex items-center gap-2 truncate">
+              {viewMode === '1-to-1' ? (
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                  Question {currentIndex + 1} of {exam.questions.length}
+                </span>
+              ) : (
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                  Batch {batchPage + 1} of {totalBatchPages} (Questions {batchStartIdx + 1}–{batchEndIdx})
+                </span>
+              )}
+            </div>
+
+            {/* Answered Counter */}
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-xs">
+                Answered: <strong className="text-zinc-900 dark:text-white">{answeredCount}</strong> / {exam.questions.length}
+              </span>
+            </div>
           </div>
 
-          {/* Main Question & Options Area */}
-          <div className="flex-1 overflow-y-auto p-6 relative">
-            {isPaused ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center mb-4 border border-zinc-200 dark:border-zinc-700">
-                  <Pause className="w-8 h-8 text-zinc-700 dark:text-zinc-300" />
-                </div>
-                <h3 className="text-xl font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
-                  Practice Paused
-                </h3>
-                <p className="text-xs text-zinc-500 max-w-sm mt-1 mb-6">
-                  The exam timer is stopped. Questions are blurred to maintain testing integrity.
-                </p>
+          {/* Quick Question Jump Ribbon (Scrollable pills) */}
+          <div className="px-5 sm:px-6 py-1.5 bg-white/40 dark:bg-white/[0.01] border-b border-zinc-100 dark:border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mr-1 shrink-0">
+              Jump:
+            </span>
+            {exam.questions.map((_, idx) => {
+              const isAns = userAnswers[idx] !== null && userAnswers[idx] !== undefined;
+              const isExpl = !!revealedQuestions[idx];
+              const isCurrent = viewMode === '1-to-1' ? currentIndex === idx : idx >= batchStartIdx && idx < batchEndIdx;
+
+              let pillClass = '';
+              if (isCurrent) {
+                pillClass = 'ring-2 ring-zinc-950 dark:ring-white font-bold bg-zinc-950 text-white dark:bg-white dark:text-zinc-950';
+              } else if (isAns) {
+                pillClass = 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30';
+              } else if (isExpl) {
+                pillClass = 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30';
+              } else {
+                pillClass = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700';
+              }
+
+              return (
                 <button
+                  key={idx}
                   type="button"
-                  onClick={togglePause}
-                  className="px-6 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs inline-flex items-center gap-2 cursor-pointer shadow-xs active:scale-98 transition"
+                  onClick={() => handleJumpToQuestion(idx)}
+                  className={`w-6 h-6 rounded-full text-[10px] flex items-center justify-center shrink-0 cursor-pointer transition ${pillClass}`}
                 >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  Resume Exam
+                  {idx + 1}
                 </button>
-                <span className="text-xs text-zinc-400 mt-2">or press Space key</span>
-              </div>
-            ) : (
-              <div className="max-w-3xl mx-auto space-y-5">
-                {/* Question Text Porcelain Card */}
-                <div className="p-6 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2.5">
-                    <HelpCircle className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-                    <span>Question {currentIndex + 1}</span>
-                  </div>
-                  <div className="text-base sm:text-lg font-medium text-zinc-900 dark:text-zinc-100 leading-relaxed">
-                    <MathRenderer content={currentQuestion.text} />
-                  </div>
-                </div>
+              );
+            })}
+          </div>
 
-                {/* Options List */}
-                <div className="space-y-2.5">
-                  {currentQuestion.options.map((optionText, optIndex) => {
-                    const isSelected = userAnswers[currentIndex] === optIndex;
-                    const letter = String.fromCharCode(65 + optIndex);
-
-                    return (
-                      <div
-                        key={optIndex}
-                        onClick={() => handleSelectOption(optIndex)}
-                        className={`flex items-center gap-3.5 p-4 rounded-[20px] border transition-all cursor-pointer select-none ${
-                          isSelected
-                            ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
-                            : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 shadow-xs'
-                        }`}
-                      >
-                        <div
-                          className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
-                            isSelected
-                              ? 'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white shadow-2xs'
-                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
-                          }`}
-                        >
-                          {letter}
-                        </div>
-                        <div className="flex-1 text-sm sm:text-base leading-relaxed font-normal">
-                          <MathRenderer content={optionText} inline />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Answer Reveal Panel (Study Mode) */}
-                {isRevealed && (
-                  <div className="p-5 rounded-[22px] bg-emerald-500/10 border border-emerald-500/20 text-zinc-900 dark:text-white space-y-3 animate-in fade-in">
-                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                      <span>
-                        Correct Answer: {String.fromCharCode(65 + currentQuestion.correct)}. {currentQuestion.options[currentQuestion.correct]}
-                      </span>
-                    </div>
-                    {currentQuestion.explanation && (
-                      <div className="pt-2 border-t border-emerald-500/20 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300">
-                        <div className="font-semibold text-emerald-600 dark:text-emerald-400 text-xs uppercase mb-1">
-                          Step-by-step Solution:
-                        </div>
-                        <MathRenderer content={currentQuestion.explanation} />
-                      </div>
-                    )}
-                  </div>
+          {/* Main Questions View Area (Supports Blur when Time is Paused) */}
+          <div className="flex-1 relative overflow-hidden flex flex-col">
+            {/* Scrollable Questions Container */}
+            <div
+              ref={scrollContainerRef}
+              className={`flex-1 overflow-y-auto p-4 sm:p-6 transition-all duration-300 ${
+                isPaused ? 'filter blur-md md:blur-lg select-none pointer-events-none opacity-40' : ''
+              }`}
+            >
+              <div className="max-w-3xl mx-auto space-y-6">
+                {viewMode === '1-to-1' ? (
+                  // 1-to-1 Mode: Single Question
+                  renderQuestionCard(exam.questions[currentIndex], currentIndex)
+                ) : (
+                  // 6-to-1 Mode: 6 Questions vertically
+                  currentBatchQuestions.map((q, i) => {
+                    const actualIdx = batchStartIdx + i;
+                    return renderQuestionCard(q, actualIdx);
+                  })
                 )}
+              </div>
+            </div>
+
+            {/* Anti-Peek Paused Overlay (Active only when paused) */}
+            {isPaused && (
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/40 dark:bg-black/40 backdrop-blur-xs p-6 animate-in fade-in duration-200">
+                <div className="max-w-md w-full p-8 rounded-[28px] bg-white/90 dark:bg-[#0c182b]/90 border border-white/80 dark:border-white/10 shadow-2xl text-center backdrop-blur-xl">
+                  <div className="w-16 h-16 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
+                    <Pause className="w-8 h-8 fill-current" />
+                  </div>
+                  <h3 className="text-xl font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
+                    Exam Paused
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto mt-1.5 mb-6 leading-relaxed">
+                    Questions, equations, and answers are blurred to preserve testing integrity while the clock is stopped.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={togglePause}
+                    className="w-full py-3 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98 transition"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Resume Exam</span>
+                  </button>
+                  <p className="text-[11px] text-zinc-400 mt-2.5">or press Spacebar to resume</p>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Footer Controls */}
-          <div className="px-6 py-4 border-t border-zinc-100 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md flex items-center justify-between gap-2">
-            <button
-              type="button"
-              disabled={currentIndex === 0}
-              onClick={handlePrev}
-              className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-white dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-xs"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Previous
-            </button>
+          {/* Footer Navigation Controls */}
+          <div className="px-5 sm:px-6 py-3.5 border-t border-zinc-100 dark:border-zinc-800/80 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md flex items-center justify-between gap-2">
+            {viewMode === '1-to-1' ? (
+              // 1-to-1 Mode Footer
+              <>
+                <button
+                  type="button"
+                  disabled={currentIndex === 0}
+                  onClick={handlePrev1to1}
+                  className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsRevealed(!isRevealed)}
-                className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-white transition cursor-pointer shadow-xs"
-              >
-                {isRevealed ? (
-                  <>
-                    <EyeOff className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-                    Hide Answer
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-                    Reveal Answer
-                  </>
-                )}
-              </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleNext1to1}
+                    className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
+                  >
+                    {currentIndex === exam.questions.length - 1 ? (
+                      <>
+                        <span>Finish Exam</span>
+                        <Send className="w-3.5 h-3.5" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Next</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            ) : (
+              // 6-to-1 Mode Footer (Batch pagination)
+              <>
+                <button
+                  type="button"
+                  disabled={batchPage === 0}
+                  onClick={handlePrevBatch}
+                  className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous 6 Questions</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={handleNext}
-                className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
-              >
-                {isLastQuestion ? (
-                  <>
-                    <span>Finish</span>
-                    <Send className="w-3.5 h-3.5" />
-                  </>
-                ) : (
-                  <>
-                    <span>Next</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </div>
+                <div className="hidden sm:flex items-center text-xs text-zinc-500">
+                  Page {batchPage + 1} of {totalBatchPages}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleNextBatch}
+                    className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
+                  >
+                    {batchPage === totalBatchPages - 1 ? (
+                      <>
+                        <span>Finish Exam</span>
+                        <Send className="w-3.5 h-3.5" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Next 6 Questions</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

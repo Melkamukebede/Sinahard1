@@ -10,6 +10,10 @@ import {
   FileText,
   HelpCircle,
   Code,
+  Lightbulb,
+  Zap,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface ProfessorModalProps {
@@ -21,6 +25,8 @@ interface ProfessorModalProps {
 
 type SubjectType = 'calculation' | 'theory';
 type ActiveView = 'prompt' | 'txt_preview';
+type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
+type PromptStyle = 'brief' | 'detailed';
 
 export const ProfessorModal: React.FC<ProfessorModalProps> = ({
   isOpen,
@@ -30,100 +36,231 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
 }) => {
   // Core Configuration - Brief & Focused
   const [subjectType, setSubjectType] = useState<SubjectType>('calculation');
-  const [subject, setSubject] = useState<string>('Grade 12 Mathematics');
-  const [topics, setTopics] = useState<string>('quadratic equations, derivatives, limits, matrices');
+  const [subject, setSubject] = useState<string>('Physics');
+  const [topics, setTopics] = useState<string>('Classical Mechanics, Kinetic Energy, Newton Laws, Free Fall');
   const [totalQuestions, setTotalQuestions] = useState<number>(10);
-  const [eduLevel, setEduLevel] = useState<string>('Grade 12 / National Exam');
-  const [timeLimit, setTimeLimit] = useState<number>(25);
-  const [difficulty, setDifficulty] = useState<'Standard' | 'Challenging' | 'Introductory'>('Standard');
+  const [eduLevel, setEduLevel] = useState<string>('Grade 11-12 / National Exam');
+  const [timeLimit, setTimeLimit] = useState<number>(20);
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>('Medium');
+  const [promptStyle, setPromptStyle] = useState<PromptStyle>('brief');
+  const [showProTips, setShowProTips] = useState<boolean>(false);
 
   // UI View Tab
   const [activeView, setActiveView] = useState<ActiveView>('prompt');
   const [copied, setCopied] = useState<boolean>(false);
 
   // Quick curriculum presets
-  const applyPreset = (preset: 'math12' | 'physics' | 'chemistry' | 'biology' | 'freshman' | 'social') => {
-    if (preset === 'math12') {
+  const applyPreset = (preset: 'physics' | 'math12' | 'chemistry' | 'freshman' | 'biology' | 'social') => {
+    if (preset === 'physics') {
+      setSubjectType('calculation');
+      setSubject('Physics');
+      setTopics('Classical Mechanics, Kinetic Energy, Newton Laws, Work & Energy, Free Fall');
+      setTotalQuestions(10);
+      setEduLevel('Grade 11-12 / National Exam');
+      setTimeLimit(20);
+      setDifficulty('Medium');
+    } else if (preset === 'math12') {
       setSubjectType('calculation');
       setSubject('Grade 12 Mathematics');
-      setTopics('quadratic equations, limits, derivatives, matrices, vectors');
+      setTopics('Quadratic Equations, Limits, Derivatives, Matrices, Vectors');
       setTotalQuestions(10);
       setEduLevel('Grade 12 / National Exam');
       setTimeLimit(25);
-      setDifficulty('Standard');
-    } else if (preset === 'physics') {
-      setSubjectType('calculation');
-      setSubject('Grade 12 Physics');
-      setTopics('kinematics, Newton laws, work & energy, electromagnetism, optics');
-      setTotalQuestions(10);
-      setEduLevel('Grade 12 / National Exam');
-      setTimeLimit(25);
-      setDifficulty('Standard');
+      setDifficulty('Medium');
     } else if (preset === 'chemistry') {
       setSubjectType('calculation');
-      setSubject('Grade 12 Chemistry');
-      setTopics('mole concept, stoichiometry, gas laws, chemical equilibrium, acids & bases');
+      setSubject('Chemistry');
+      setTopics('Mole Concept, Stoichiometry, Gas Laws, Chemical Equilibrium, Acids & Bases');
       setTotalQuestions(8);
       setEduLevel('Grade 12 / National Exam');
       setTimeLimit(20);
-      setDifficulty('Standard');
+      setDifficulty('Medium');
     } else if (preset === 'freshman') {
       setSubjectType('calculation');
       setSubject('Freshman Applied Mathematics I');
-      setTopics('limits, continuity, derivatives, optimization, integrals');
+      setTopics('Limits & Continuity, Derivatives, Optimization, Integrals, Taylor Series');
       setTotalQuestions(10);
       setEduLevel('University Freshman');
       setTimeLimit(30);
-      setDifficulty('Challenging');
+      setDifficulty('Hard');
     } else if (preset === 'biology') {
       setSubjectType('theory');
-      setSubject('Grade 12 Biology');
-      setTopics('cell biology, enzymes, photosynthesis, genetics, human physiology');
+      setSubject('Biology');
+      setTopics('Cell Biology, Enzymes, Cellular Respiration, Photosynthesis, Genetics');
       setTotalQuestions(10);
       setEduLevel('Grade 12 / National Exam');
       setTimeLimit(20);
-      setDifficulty('Standard');
+      setDifficulty('Medium');
     } else if (preset === 'social') {
       setSubjectType('theory');
-      setSubject('History & Social Studies');
-      setTopics('Ethiopian history, modern world history, government, civics');
+      setSubject('History & Civics');
+      setTopics('Ethiopian History, Modern World History, Governance, Constitutional Law');
       setTotalQuestions(10);
       setEduLevel('Grade 11-12');
       setTimeLimit(20);
-      setDifficulty('Standard');
+      setDifficulty('Medium');
     }
   };
+
+  // Difficulty Directive Details & Pedagogical Rubric
+  const difficultyConfig = useMemo(() => {
+    if (difficulty === 'Easy') {
+      return {
+        label: 'Easy (Foundational)',
+        badgeColor: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
+        summary: 'Direct single-formula application & core definition recall without complex isolation.',
+        briefGuide: 'Direct single-formula usage, clean numbers, standard SI units, distinct distractors without tricky traps.',
+        detailedDirective: `DIFFICULTY LEVEL DIRECTIVE: EASY (FOUNDATIONAL / RECALL):
+- Primary Focus: Direct single-step concept recall and single-formula calculation.
+- Given variables must plug directly into standard formulas without prior variable isolation or multi-step substitution.
+- Use clean numbers and standard SI units; avoid unit conversion traps (e.g. use m/s and kg directly).
+- Distractors (incorrect options): Clear and distinctly different from the correct value; do NOT use confusing trick options or double-negatives.`,
+        distractorRule: 'Distractors must be straightforward and distinct, avoiding subtle numerical traps.',
+      };
+    } else if (difficulty === 'Hard') {
+      return {
+        label: 'Hard (Advanced / Entrance)',
+        badgeColor: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20',
+        summary: 'Multi-concept synthesis, non-trivial algebraic derivation, and subtle distractor traps.',
+        briefGuide: 'Combines 2+ principles (e.g. Energy + Kinematics), non-trivial algebra, unit conversion traps, and realistic misconception distractors.',
+        detailedDirective: `DIFFICULTY LEVEL DIRECTIVE: HARD (ADVANCED / COMPETITIVE & UNIVERSITY ENTRANCE):
+- Primary Focus: High-rigor, multi-concept synthesis combining two or more physical principles (e.g. Conservation of Mechanical Energy + Kinematics, or Work-Energy Theorem + Friction and Newton's 2nd Law; or optimization calculus).
+- Requires non-trivial algebraic rearrangement or symbolic derivation before numerical substitution.
+- Include realistic unit conversion traps (e.g. km/h to m/s, grams to kg, cm to meters) and boundary conditions.
+- Distractors (incorrect options): Sophisticated distractors matching real student pitfalls (e.g. forgetting 1/2 factor in (1/2)mv^2, forgetting square root, sign slip, or using diameter instead of radius).`,
+        distractorRule: 'Distractors must reflect common student errors such as neglecting the 1/2 factor, missed square roots, or forgotten unit conversions.',
+      };
+    } else {
+      // Medium
+      return {
+        label: 'Medium (Standard Exam)',
+        badgeColor: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
+        summary: 'Ethiopian National Exam / standard curriculum benchmark with 2-step algebraic reasoning.',
+        briefGuide: 'Standard preparatory exam standard: 2-step reasoning (e.g. find acceleration first), algebraic rearrangement, and plausible distractors.',
+        detailedDirective: `DIFFICULTY LEVEL DIRECTIVE: MEDIUM (STANDARD EXAM / NATIONAL CURRICULUM):
+- Primary Focus: Standard Ethiopian National Exam / university preparatory exam benchmark.
+- Problems require 2 reasoning steps (e.g. solve for an intermediate parameter like acceleration or velocity before computing kinetic energy, force, or distance).
+- Requires moderate algebraic isolation of variables.
+- Distractors (incorrect options): High-quality plausible choices reflecting common student calculation slips (e.g. forgetting to square terms, inverted fractions, sign slip, or arithmetic slips).`,
+        distractorRule: 'Distractors must reflect common student math slips like forgetting to square velocity or inverted fractions.',
+      };
+    }
+  }, [difficulty]);
 
   // Generate standardized Plain Text (.TXT format) prompt for AI
   const generatedPrompt = useMemo(() => {
     const isMath = subjectType === 'calculation';
+    const mainTopic = topics.split(',')[0]?.trim() || 'Core Curriculum';
+    const fullExamTitle = `${subject}: ${mainTopic}`;
 
-    let mathRules = '';
-    if (isMath) {
-      mathRules = `CRITICAL FORMATTING & VERTICAL EXPLANATION RULES (MANDATORY):
-1. VERTICAL STEP-WISE EXPLANATIONS:
-   - For all calculations and math questions, the explanation MUST be written vertically step-by-step.
-   - NEVER write calculations horizontally on one continuous line or inside a dense paragraph.
-   - Format each mathematical step on its own separate line vertically:
-     Step 1: State the governing formula or principle: \\( ... \\)
-     Step 2: Substitute the given values into the formula: \\( ... \\)
-     Step 3: Intermediate simplification step: \\( ... \\)
-     Step 4: Compute the final numerical/algebraic result: \\( ... \\)
-     Conclusion: State the correct answer clearly.
-2. ENCLOSE ALL MATH IN LATEX:
-   - Use \\( ... \\) for inline formulas, variables, and units (e.g. \\(f(x) = 2x^2 + 5x\\), \\(x = \\pm 2\\), \\(\\frac{a}{b}\\), \\(\\sqrt{16}\\), \\(9.8\\,\\text{m/s}^2\\)).
-   - Wrap options in \\( ... \\) when they contain formulas (e.g. A) \\(x = 2\\), B) \\(x = -2\\)).
-   - Do NOT output raw ASCII math (never write x^2 without \\(x^2\\) or sqrt without \\(\\sqrt{x}\\)).`;
-    } else {
-      mathRules = `CRITICAL THEORY & CONCEPTUAL FORMATTING RULES:
-1. Do NOT use LaTeX tags or math delimiters (no \\( ... \\)).
-2. Provide clear, vertical bulleted explanations:
-   - Core Concept: State the underlying scientific or historical principle.
-   - Key Reason: Explain why the correct option is true.
-   - Distractor Check: Briefly note why plausible incorrect options are false.`;
+    // BRIEF PROMPT MODE: High-impact, concise, laser-focused
+    if (promptStyle === 'brief') {
+      if (isMath) {
+        return `Please generate ${totalQuestions} professional multiple choice questions in plain .txt format for:
+Subject: ${subject}
+Academic Level: ${eduLevel}
+Topics: ${topics || 'Standard curriculum'}
+Difficulty: ${difficulty} (${difficultyConfig.briefGuide})
+
+FORMAT SPECIFICATION:
+================================================================
+EXAM: ${fullExamTitle}
+Subject: ${subject}
+Difficulty: ${difficulty}
+Subject Type: Formulas & Calculations
+Time Limit: ${timeLimit} minutes
+Passing Score: 70%
+================================================================
+
+For each question:
+1. [Clear problem statement with LaTeX notation like \\( m = 1200 \\text{ kg} \\)]
+   A) [Option with \\( ... \\)]
+   B) [Option with \\( ... \\)]
+   C) [Option with \\( ... \\)]
+   D) [Option with \\( ... \\)]
+   Answer: [Correct Option Letter: A, B, C, or D]
+   Explanation: **Formula:**
+\\[ [State the governing formula or principle in LaTeX] \\]
+**Calculation:**
+\\[ [Step-by-step substitution and algebraic evaluation] \\]
+**Answer:** \\( [Final numerical value with SI units] \\)
+
+CRITICAL RULES:
+1. STRICTLY NO NUMBERS IN EXPLANATION: Do NOT write "1. Formula", "2. Calculation", or "Step 1", "Step 2". Use ONLY bold labels (**Formula:**, **Calculation:**, **Answer:**).
+2. LATEX NOTATION: Wrap display equations in \\[ ... \\] and inline variables/numbers in \\( ... \\).
+3. DIFFICULTY CALIBRATION (${difficulty.toUpperCase()}): ${difficultyConfig.briefGuide}
+4. REALISTIC DISTRACTORS: Options B, C, D must reflect realistic student calculation slips (${difficultyConfig.distractorRule}).
+5. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the EXAM header.`;
+      } else {
+        return `Please generate ${totalQuestions} professional multiple choice questions in plain .txt format for:
+Subject: ${subject}
+Academic Level: ${eduLevel}
+Topics: ${topics || 'Standard curriculum'}
+Difficulty: ${difficulty} (${difficultyConfig.briefGuide})
+
+FORMAT SPECIFICATION:
+================================================================
+EXAM: ${fullExamTitle}
+Subject: ${subject}
+Difficulty: ${difficulty}
+Subject Type: Conceptual & Theory
+Time Limit: ${timeLimit} minutes
+Passing Score: 70%
+================================================================
+
+For each question:
+1. [Clear conceptual or scenario-based question statement]
+   A) [Option A]
+   B) [Option B]
+   C) [Option C]
+   D) [Option D]
+   Answer: [Correct Option Letter: A, B, C, or D]
+   Explanation: **Core Concept:**
+[Scientific principle, historical context, or fundamental definition]
+**Key Reason:**
+[Why the chosen option is correct and accurate]
+**Distractor Analysis:**
+[Brief reason why other plausible choices are incorrect]
+**Answer:** Option [Letter]
+
+CRITICAL RULES:
+1. STRICTLY NO NUMBERS IN EXPLANATION: Do NOT write "1. Concept 2. Reason". Use ONLY bold thematic labels (**Core Concept:**, **Key Reason:**, **Distractor Analysis:**, **Answer:**).
+2. DIFFICULTY CALIBRATION (${difficulty.toUpperCase()}): ${difficultyConfig.briefGuide}
+3. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the EXAM header.`;
+      }
     }
 
-    return `You are an expert exam professor and curriculum specialist creating a standardized ${totalQuestions}-question exam for ${eduLevel} students in ${subject}.
+    // DETAILED MASTER PROMPT MODE: Comprehensive curriculum rubric
+    let subjectRules = '';
+    if (isMath) {
+      subjectRules = `CRITICAL FORMATTING & VERTICAL STEP-WISE EXPLANATION RULES (MANDATORY):
+1. STRICTLY NO NUMBERS IN EXPLANATION:
+   - Do NOT write numbered lists in the explanation (NEVER write "1. Formula", "2. Calculation", "1. Substitute", or "Step 1", "Step 2").
+   - Structure every explanation vertically using clean, bold thematic labels:
+     **Formula:**
+     \\[ \\text{State the governing equation or law} \\]
+     **Calculation:**
+     \\[ \\text{Step-by-step substitution and numerical evaluation} \\]
+     **Answer:** \\( \\text{State final answer clearly with SI units} \\)
+2. LATEX MATHEMATICAL NOTATION:
+   - Use \\[ ... \\] for display math on its own line (e.g. \\[ E_k = \\frac{1}{2} m v^2 \\]).
+   - Use \\( ... \\) for inline variables, parameters, and units (e.g. \\( m = 1200 \\text{ kg} \\), \\( v = 20 \\text{ m/s} \\)).
+   - Wrap options in \\( ... \\) when they contain numerical values, equations, or scientific units.
+   - Do NOT output raw ASCII math (never write x^2 without \\(x^2\\) or sqrt without \\(\\sqrt{x}\\)).
+3. DISTRACTOR INTEGRITY:
+   - ${difficultyConfig.distractorRule}`;
+    } else {
+      subjectRules = `CRITICAL THEORY & CONCEPTUAL EXPLANATION RULES:
+1. STRICTLY NO NUMBERS IN EXPLANATION:
+   - Do NOT use numbered lists like "1. Definition 2. Reason".
+   - Structure explanations using bold thematic sections:
+     **Core Concept:** [State underlying scientific law, definition, or historical context]
+     **Key Reason:** [Explain exactly why the correct answer is valid]
+     **Distractor Analysis:** [Briefly clarify why plausible incorrect choices fail]
+     **Answer:** [Option Letter and summary statement]`;
+    }
+
+    return `You are an expert exam professor and national curriculum specialist creating a standardized ${totalQuestions}-question examination for ${eduLevel} students in ${subject}.
 
 OUTPUT FORMAT REQUIREMENT:
 Return the exam strictly in clean plain text (.TXT format), ready for direct import into Exam Master.
@@ -132,110 +269,121 @@ Return the exam strictly in clean plain text (.TXT format), ready for direct imp
 - Start directly on line 1 with the EXAM header below, followed by question 1.
 
 REQUIRED EXAM HEADER:
-EXAM: ${subject} Exam
-SUBJECT: ${subject}
-SUBJECT TYPE: ${isMath ? 'Calculation' : 'Theory'}
-DIFFICULTY: ${difficulty}
-TIME LIMIT: ${timeLimit}
-PASSING SCORE: 70
-DESCRIPTION: Standardized ${eduLevel} examination covering ${topics || 'core curriculum topics'}.
+================================================================
+EXAM: ${fullExamTitle}
+Subject: ${subject}
+Difficulty: ${difficulty}
+Subject Type: ${isMath ? 'Formulas & Calculations' : 'Conceptual & Theory'}
+Time Limit: ${timeLimit} minutes
+Passing Score: 70%
+================================================================
 
 QUESTION STRUCTURE (Repeat for all ${totalQuestions} questions):
 1. [Question text or scenario]
-A) [Option A]
-B) [Option B]
-C) [Option C]
-D) [Option D]
-Answer: [Correct Option Letter: A, B, C, or D]
-Explanation:
-[Provide vertical step-wise explanation according to rules below]
+   A) [Option A]
+   B) [Option B]
+   C) [Option C]
+   D) [Option D]
+   Answer: [Correct Option Letter: A, B, C, or D]
+   Explanation:
+[Provide step-wise explanation without numbers according to rules below]
 
-${mathRules}
+${difficultyConfig.detailedDirective}
+
+${subjectRules}
 
 EXAM PARAMETERS:
 - Total Questions: ${totalQuestions}
-- Curriculum Level: ${eduLevel}
+- Academic Level: ${eduLevel}
 - Specific Topics to Cover: ${topics || 'Standard curriculum'}
-- Difficulty Level: ${difficulty}
-- Randomize the correct answer letter evenly among A, B, C, and D.`;
-  }, [subjectType, subject, topics, totalQuestions, eduLevel, timeLimit, difficulty]);
+- Difficulty Setting: ${difficulty}
+- Answer Key Balance: Randomize correct option letters evenly across A, B, C, and D.`;
+  }, [subjectType, subject, topics, totalQuestions, eduLevel, timeLimit, difficulty, promptStyle, difficultyConfig]);
 
-  // Sample TXT Output Preview
+  // Sample TXT Output Preview matching user request
   const sampleTxtPreview = useMemo(() => {
     if (subjectType === 'calculation') {
-      return `EXAM: Grade 12 Mathematics Exam
-SUBJECT: Grade 12 Mathematics
-SUBJECT TYPE: Calculation
-DIFFICULTY: Standard
-TIME LIMIT: 25
-PASSING SCORE: 70
-DESCRIPTION: Standardized Grade 12 examination covering quadratic equations and calculus.
+      return `================================================================
+EXAM: Physics: Classical Mechanics & Energy
+Subject: Physics
+Difficulty: Medium
+Subject Type: Formulas & Calculations
+Time Limit: 20 minutes
+Passing Score: 70%
+================================================================
 
-1. Find the real solutions of the equation \\(2x^2 - 8 = 0\\).
-A) \\(x = 2\\)
-B) \\(x = \\pm 2\\)
-C) \\(x = 4\\)
-D) \\(x = \\pm 4\\)
-Answer: B
-Explanation:
-Step 1: Divide both sides by 2:
-\\(x^2 - 4 = 0\\)
-Step 2: Add 4 to both sides:
-\\(x^2 = 4\\)
-Step 3: Take the square root of both sides:
-\\(x = \\pm \\sqrt{4}\\)
-Step 4: Compute the roots:
-\\(x = \\pm 2\\)
-Conclusion: The equation has two real roots, \\(x = 2\\) and \\(x = -2\\). Hence option B is correct.
+1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
+   A) \\( 240,000 \\text{ J} \\)
+   B) \\( 120,000 \\text{ J} \\)
+   C) \\( 480,000 \\text{ J} \\)
+   D) \\( 24,000 \\text{ J} \\)
+   Answer: A
+   Explanation: **Formula:**
+\\[ E_k = \\frac{1}{2} m v^2 \\]
+**Calculation:**
+\\[ E_k = \\frac{1}{2} (1200)(20^2) = 600 \\times 400 = 240,000 \\text{ J} = 240 \\text{ kJ} \\]
+**Answer:** \\( 240,000 \\text{ J} \\)
 
-2. What is the derivative of the function \\(f(x) = 3x^2 + 5x - 4\\)?
-A) \\(3x + 5\\)
-B) \\(6x - 4\\)
-C) \\(6x + 5\\)
-D) \\(6x^2 + 5\\)
-Answer: C
-Explanation:
-Step 1: Apply the power rule \\(\\frac{d}{dx}[x^n] = n x^{n-1}\\) to each term:
-Step 2: Differentiate \\(3x^2\\):
-\\(\\frac{d}{dx}[3x^2] = 3 \\cdot 2x = 6x\\)
-Step 3: Differentiate \\(5x\\) and constant \\(-4\\):
-\\(\\frac{d}{dx}[5x] = 5\\)
-\\(\\frac{d}{dx}[-4] = 0\\)
-Step 4: Sum the derivatives:
-\\(f'(x) = 6x + 5\\)
-Conclusion: Option C is the correct derivative.`;
+2. According to Newton's Second Law, if a net force of \\( 45 \\text{ N} \\) acts on a \\( 5 \\text{ kg} \\) object, what is its acceleration?
+   A) \\( 9 \\text{ m/s}^2 \\)
+   B) \\( 225 \\text{ m/s}^2 \\)
+   C) \\( 0.11 \\text{ m/s}^2 \\)
+   D) \\( 40 \\text{ m/s}^2 \\)
+   Answer: A
+   Explanation: **Formula:**
+\\[ F = ma \\implies a = \\frac{F}{m} \\]
+**Calculation:**
+\\[ a = \\frac{45 \\text{ N}}{5 \\text{ kg}} = 9 \\text{ m/s}^2 \\]
+**Answer:** \\( 9 \\text{ m/s}^2 \\)
+
+3. An object is dropped from a height \\( h = 20 \\text{ m} \\) in a vacuum where \\( g = 9.8 \\text{ m/s}^2 \\). What is its speed right before hitting the ground?
+   A) \\( 19.8 \\text{ m/s} \\)
+   B) \\( 14.0 \\text{ m/s} \\)
+   C) \\( 9.8 \\text{ m/s} \\)
+   D) \\( 39.2 \\text{ m/s} \\)
+   Answer: A
+   Explanation: **Conservation of mechanical energy:**
+\\[ mgh = \\frac{1}{2}mv^2 \\implies v = \\sqrt{2gh} \\]
+**Calculation:**
+\\[ v = \\sqrt{2 \\times 9.8 \\times 20} = \\sqrt{392} \\approx 19.8 \\text{ m/s} \\]
+**Answer:** \\( 19.8 \\text{ m/s} \\)`;
     } else {
-      return `EXAM: Grade 12 Biology Exam
-SUBJECT: Grade 12 Biology
-SUBJECT TYPE: Theory
-DIFFICULTY: Standard
-TIME LIMIT: 20
-PASSING SCORE: 70
-DESCRIPTION: Standardized Grade 12 examination covering cell biology and physiology.
+      return `================================================================
+EXAM: Biology: Cell Energetics & Molecular Biology
+Subject: Biology
+Difficulty: Medium
+Subject Type: Conceptual & Theory
+Time Limit: 20 minutes
+Passing Score: 70%
+================================================================
 
 1. Which cellular organelle is primarily responsible for generating adenosine triphosphate (ATP) through aerobic cellular respiration?
-A) Ribosome
-B) Mitochondria
-C) Endoplasmic Reticulum
-D) Golgi Apparatus
-Answer: B
-Explanation:
-- Core Concept: Mitochondria are known as the powerhouses of eukaryotic cells.
-- Mechanism: They carry out the citric acid cycle and oxidative phosphorylation to produce ATP.
-- Distractor Check: Ribosomes synthesize proteins, whereas the Golgi apparatus modifies and packages molecules.
-Conclusion: Option B is correct.
+   A) Ribosome
+   B) Mitochondria
+   C) Endoplasmic Reticulum
+   D) Golgi Apparatus
+   Answer: B
+   Explanation: **Core Concept:**
+Mitochondria are known as the powerhouses of eukaryotic cells.
+**Key Reason:**
+They carry out the citric acid (Krebs) cycle and oxidative phosphorylation to produce the bulk of cellular ATP.
+**Distractor Analysis:**
+Ribosomes synthesize polypeptides, whereas the Golgi apparatus packages and routes secretory proteins.
+**Answer:** Option B (Mitochondria)
 
 2. In flowering plants, where do the light-dependent reactions of photosynthesis take place?
-A) Thylakoid membranes
-B) Stroma
-C) Outer chloroplast membrane
-D) Cytosol
-Answer: A
-Explanation:
-- Core Concept: Light-dependent reactions require chlorophyll pigments located within the thylakoid membrane.
-- Mechanism: Photons are absorbed to split water and generate ATP and NADPH.
-- Distractor Check: The Calvin cycle takes place in the stroma.
-Conclusion: Option A is correct.`;
+   A) Thylakoid membranes
+   B) Stroma
+   C) Outer chloroplast membrane
+   D) Cytosol
+   Answer: A
+   Explanation: **Core Concept:**
+Light-dependent reactions require embedded chlorophyll pigment complexes and electron transport chains.
+**Key Reason:**
+These photophosphorylation complexes are embedded inside the thylakoid membranes of the chloroplast.
+**Distractor Analysis:**
+The light-independent Calvin cycle takes place in the fluid stroma.
+**Answer:** Option A (Thylakoid membranes)`;
     }
   }, [subjectType]);
 
@@ -280,7 +428,7 @@ Conclusion: Option A is correct.`;
                 </span>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Generate tailored prompts for ChatGPT, Claude, Gemini, or DeepSeek
+                Step-wise math & science exam prompts for ChatGPT, Claude, Gemini & DeepSeek
               </p>
             </div>
           </div>
@@ -318,8 +466,8 @@ Conclusion: Option A is correct.`;
             </span>
             <div className="flex items-center gap-1.5 flex-wrap">
               {[
+                { id: 'physics', label: 'Physics (Mechanics)' },
                 { id: 'math12', label: 'Grade 12 Math' },
-                { id: 'physics', label: 'Physics' },
                 { id: 'chemistry', label: 'Chemistry' },
                 { id: 'freshman', label: 'Freshman Math' },
                 { id: 'biology', label: 'Biology' },
@@ -363,13 +511,13 @@ Conclusion: Option A is correct.`;
                       ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950'
                       : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
                   }`}>
-                    Vertical Steps
+                    No Numbers in Explanations
                   </span>
                 </div>
                 <p className={`text-[11px] mt-1 leading-relaxed ${
                   subjectType === 'calculation' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500 dark:text-zinc-400'
                 }`}>
-                  Enforces vertical step-by-step mathematical explanations and LaTeX notation.
+                  Vertical steps using **Formula:**, **Calculation:**, and **Answer:** with KaTeX display formulas.
                 </p>
               </div>
             </button>
@@ -398,13 +546,13 @@ Conclusion: Option A is correct.`;
                       ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950'
                       : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
                   }`}>
-                    No LaTeX
+                    Conceptual
                   </span>
                 </div>
                 <p className={`text-[11px] mt-1 leading-relaxed ${
                   subjectType === 'theory' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500 dark:text-zinc-400'
                 }`}>
-                  Focuses on clear definitions, mechanisms, and real-world conceptual understanding.
+                  Focuses on core concepts, key reasons, and distractor analysis without numbered lists.
                 </p>
               </div>
             </button>
@@ -420,7 +568,7 @@ Conclusion: Option A is correct.`;
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g. Grade 12 Physics"
+                placeholder="e.g. Physics"
                 className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
               />
             </div>
@@ -449,7 +597,7 @@ Conclusion: Option A is correct.`;
                 type="text"
                 value={topics}
                 onChange={(e) => setTopics(e.target.value)}
-                placeholder="e.g. limits, derivatives, quadratic equations, matrices"
+                placeholder="e.g. Classical Mechanics, Kinetic Energy, Newton Laws, Free Fall"
                 className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
               />
             </div>
@@ -501,12 +649,18 @@ Conclusion: Option A is correct.`;
               </div>
             </div>
 
+            {/* Difficulty Level with Dynamic Directive Handling */}
             <div>
-              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
-                Difficulty Level
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200">
+                  Difficulty Level
+                </label>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${difficultyConfig.badgeColor}`}>
+                  {difficultyConfig.label}
+                </span>
+              </div>
               <div className="flex items-center gap-1.5">
-                {(['Standard', 'Challenging', 'Introductory'] as const).map((lvl) => (
+                {(['Easy', 'Medium', 'Hard'] as const).map((lvl) => (
                   <button
                     key={lvl}
                     type="button"
@@ -514,44 +668,139 @@ Conclusion: Option A is correct.`;
                     className={`flex-1 py-1.5 rounded-full border text-xs font-semibold cursor-pointer transition shadow-2xs ${
                       difficulty === lvl
                         ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold border-transparent'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
+                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
                     }`}
                   >
                     {lvl}
                   </button>
                 ))}
               </div>
+              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 leading-tight">
+                {difficultyConfig.summary}
+              </p>
             </div>
           </div>
 
-          {/* View Selector: Master Prompt vs .txt Output Preview */}
+          {/* Interactive Pro Guide: How to Make Professional Questions with Brief Prompts */}
+          <div className="p-4 rounded-[22px] bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-blue-500/10 border border-amber-500/20 dark:border-amber-500/30 space-y-2">
+            <button
+              type="button"
+              onClick={() => setShowProTips((prev) => !prev)}
+              className="w-full flex items-center justify-between text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <Lightbulb className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs text-zinc-900 dark:text-white flex items-center gap-2">
+                    <span>💡 Pro Ideas: How to Create Professional Questions with Brief Prompts</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
+                      Exam Quality
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    4 golden rules to force AI models to write high-rigor, step-wise exam questions
+                  </p>
+                </div>
+              </div>
+              <div className="p-1 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">
+                {showProTips ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
+            </button>
+
+            {showProTips && (
+              <div className="pt-2 border-t border-amber-500/20 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-zinc-700 dark:text-zinc-300 animate-in fade-in duration-200">
+                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-[#0c182b]/70 border border-amber-500/20 space-y-0.5">
+                  <span className="font-bold text-amber-800 dark:text-amber-300 block">1. Anchor the Standard</span>
+                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    Explicitly specify &quot;Ethiopian Grade 12 National Exam&quot; or &quot;Freshman Remedial&quot;. This immediately calibrates mathematical depth.
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-[#0c182b]/70 border border-amber-500/20 space-y-0.5">
+                  <span className="font-bold text-amber-800 dark:text-amber-300 block">2. Strictly Ban Step Numbers</span>
+                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    Instruct: &quot;Never write 1. Formula 2. Calculation; only use bold headers: **Formula:**, **Calculation:**, **Answer:**&quot;.
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-[#0c182b]/70 border border-amber-500/20 space-y-0.5">
+                  <span className="font-bold text-amber-800 dark:text-amber-300 block">3. Mandate KaTeX Display Math</span>
+                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    Enforce <code className="font-mono text-zinc-900 dark:text-white">\[ ... \]</code> for equations and <code className="font-mono text-zinc-900 dark:text-white">\( ... \)</code> for variables and units so calculations render vertically.
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-[#0c182b]/70 border border-amber-500/20 space-y-0.5">
+                  <span className="font-bold text-amber-800 dark:text-amber-300 block">4. Target Realistic Distractor Traps</span>
+                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    Tell the AI: &quot;Options B, C, D must reflect common mistakes (e.g. forgetting 1/2 in kinetic energy, sign errors, or missed unit conversions)&quot;.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* View Selector: Master Prompt vs .txt Output Preview + Brief vs Detailed */}
           <div className="pt-2 space-y-2">
-            <div className="flex items-center justify-between border-b border-white/60 dark:border-white/10 pb-2">
-              <div className="flex items-center gap-1.5 p-1 rounded-full bg-zinc-100 dark:bg-zinc-800/80 border border-white/60 dark:border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setActiveView('prompt')}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                    activeView === 'prompt'
-                      ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                      : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Code className="w-3.5 h-3.5" />
-                  <span>AI Prompt</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveView('txt_preview')}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                    activeView === 'txt_preview'
-                      ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                      : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Expected .txt Result</span>
-                </button>
+            <div className="flex items-center justify-between flex-wrap gap-2 border-b border-white/60 dark:border-white/10 pb-2">
+              <div className="flex items-center gap-2">
+                {/* Main View Tabs */}
+                <div className="flex items-center gap-1.5 p-1 rounded-full bg-zinc-100 dark:bg-zinc-800/80 border border-white/60 dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('prompt')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                      activeView === 'prompt'
+                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Code className="w-3.5 h-3.5" />
+                    <span>AI Prompt</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('txt_preview')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                      activeView === 'txt_preview'
+                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Expected .txt Result</span>
+                  </button>
+                </div>
+
+                {/* Brief vs Detailed Toggle (Only in Prompt view) */}
+                {activeView === 'prompt' && (
+                  <div className="flex items-center gap-1 p-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60">
+                    <button
+                      type="button"
+                      onClick={() => setPromptStyle('brief')}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                        promptStyle === 'brief'
+                          ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                          : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                      }`}
+                      title="Concise high-impact prompt"
+                    >
+                      <Zap className="w-3 h-3 text-amber-500" />
+                      <span>Brief Prompt</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPromptStyle('detailed')}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                        promptStyle === 'detailed'
+                          ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                          : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                      }`}
+                      title="Full pedagogical master prompt"
+                    >
+                      <span>Full Rubric</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               <button
@@ -559,7 +808,7 @@ Conclusion: Option A is correct.`;
                 onClick={handleCopy}
                 className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-xs active:scale-98"
               >
-                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied ? 'Copied to Clipboard!' : 'Copy Prompt'}</span>
               </button>
             </div>
@@ -569,15 +818,16 @@ Conclusion: Option A is correct.`;
               <div className="space-y-1.5">
                 <textarea
                   id="generated-prompt-textarea"
-                  rows={8}
+                  rows={9}
                   readOnly
                   value={generatedPrompt}
                   className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 select-all focus:outline-hidden shadow-xs"
                 />
-                <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1">
-                  <span>Works with ChatGPT, Claude, Gemini, and DeepSeek.</span>
-                  <span className="text-zinc-900 dark:text-white font-medium">
-                    ✓ Clean plain text format ready for instant import
+                <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1 flex-wrap gap-2">
+                  <span>Works seamlessly with ChatGPT, Claude, Gemini, and DeepSeek.</span>
+                  <span className="text-zinc-900 dark:text-white font-medium flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    Clean plain text format ready for instant import
                   </span>
                 </div>
               </div>
@@ -587,13 +837,13 @@ Conclusion: Option A is correct.`;
             {activeView === 'txt_preview' && (
               <div className="space-y-1.5">
                 <textarea
-                  rows={8}
+                  rows={9}
                   readOnly
                   value={sampleTxtPreview}
                   className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 select-all focus:outline-hidden shadow-xs"
                 />
                 <p className="text-[11px] text-zinc-500 px-1">
-                  Notice how each math question has vertical step-wise calculations on separate lines.
+                  Notice how each math question has vertical step-wise calculations using <strong>**Formula:**</strong>, <strong>**Calculation:**</strong>, and <strong>**Answer:**</strong> without numbered steps.
                 </p>
               </div>
             )}
