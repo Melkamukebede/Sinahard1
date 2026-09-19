@@ -192,55 +192,52 @@ export const stripExamHeader = (raw: string): string => {
   return cleaned;
 };
 
-// Robust plain text parser supporting numbered questions, options A-D, answer keys, and explanations
+// Robust plain text parser supporting numbered questions, options A-D, answer keys, and vertical step-wise explanations
 const parsePlainTextRobust = (raw: string): Question[] => {
   const questions: Question[] = [];
-  const cleanContent = stripExamHeader(raw);
+  const cleanContent = stripExamHeader(raw).trim();
+  if (!cleanContent) return questions;
 
-  let rawBlocks = cleanContent.trim().split(/\n\s*\n+/);
-  // If questions are single-spaced, split by question boundary
-  if (rawBlocks.length <= 1 && /\n\s*(?:question\s*\d+[:\.]?|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s+/i.test(cleanContent)) {
-    rawBlocks = cleanContent.trim().split(/\n(?=\s*(?:question\s*\d+[:\.]?|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s+)/i);
+  // Split into question blocks.
+  // If questions are numbered (e.g. "1. ", "Question 1:", "Q1:", "1) "), split by question boundaries.
+  // This preserves all vertical step-wise derivation lines and empty lines within each question!
+  let rawBlocks: string[] = [];
+  const hasNumberedQuestions = /(?:^|\n)\s*(?:question\s*\d+[:\.]?|\bq\d+[:\.\)]|\d+[\.\)]|\#+\s*\d+[\.\)])\s+/i.test(cleanContent);
+
+  if (hasNumberedQuestions) {
+    const splitRegex = /(?:^|\n)(?=\s*(?:question\s*\d+[:\.]?|\bq\d+[:\.\)]|\d+[\.\)]|\#+\s*\d+[\.\)])\s+)/i;
+    rawBlocks = cleanContent.split(splitRegex).map((b) => b.trim()).filter(Boolean);
+  } else {
+    rawBlocks = cleanContent.split(/\n\s*\n+/).map((b) => b.trim()).filter(Boolean);
   }
 
   rawBlocks.forEach((block) => {
-    const lines = block
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean);
+    const lines = block.split('\n');
     if (!lines.length) return;
 
-    let text = '';
-    let lineIndex = 0;
-
-    const firstLine = lines[0];
-    const headerMatch = firstLine.match(/^(?:question\s*\d+[:\.]?|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s*(.*)/i);
-    if (headerMatch) {
-      text = headerMatch[1].trim() || firstLine;
-      lineIndex = 1;
-    } else {
-      text = firstLine;
-      lineIndex = 1;
-    }
-
-    while (
-      lineIndex < lines.length &&
-      !/^[A-D1-4][\)\.\:\-]/i.test(lines[lineIndex]) &&
-      !/^\([A-D1-4]\)/i.test(lines[lineIndex]) &&
-      !/^(?:answer|ans|correct|explanation|explain):/i.test(lines[lineIndex])
-    ) {
-      text += ' ' + lines[lineIndex];
-      lineIndex++;
-    }
-
+    const textLines: string[] = [];
     const options: string[] = [];
     let correct = -1;
-    let explanation = '';
+    const explanationLines: string[] = [];
+    let inExplanation = false;
+    let foundFirstOption = false;
 
-    for (let i = lineIndex; i < lines.length; i++) {
-      const line = lines[i];
+    // Check first line for question number (e.g. "1. Find the...", "Question 1: ...")
+    const firstLine = lines[0].trim();
+    const headerMatch = firstLine.match(/^(?:question\s*\d+[:\.]?|\bq\d+[:\.\)]|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s*(.*)/i);
+    if (headerMatch) {
+      if (headerMatch[1].trim()) {
+        textLines.push(headerMatch[1].trim());
+      }
+    } else {
+      textLines.push(firstLine);
+    }
 
-      const ansMatch = line.match(/^(?:answer|ans|correct(?:\s*answer)?|key)\s*[:\-\=]\s*\(?([A-D1-4])\)?/i);
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      // Check for Answer key line (e.g. "Answer: B", "Ans: C", "Correct: A")
+      const ansMatch = line.match(/^(?:answer|ans|correct(?:\s*answer)?|key)\s*[:\-\=]\s*\(?([A-D1-4])\)?(?:\s*[\.\)]|\s*$|\s+.*)/i);
       if (ansMatch) {
         const char = ansMatch[1].toUpperCase();
         if (['A', 'B', 'C', 'D'].includes(char)) {
@@ -252,14 +249,20 @@ const parsePlainTextRobust = (raw: string): Question[] => {
         continue;
       }
 
-      const expMatch = line.match(/^(?:explanation|explain|reasoning|\/\/|note|reason)\s*[:\-\=]\s*(.*)/i);
+      // Check for Explanation header (e.g. "Explanation:", "Explain:", "Solution:")
+      const expMatch = line.match(/^(?:explanation|explain|reasoning|\/\/|solution|steps?)\s*[:\-\=]\s*(.*)/i);
       if (expMatch) {
-        explanation = expMatch[1].trim();
+        inExplanation = true;
+        if (expMatch[1].trim()) {
+          explanationLines.push(expMatch[1].trim());
+        }
         continue;
       }
 
+      // Check for Option line: A) ..., A. ..., (A) ..., 1) ...
       const optMatch = line.match(/^(?:\(([A-D1-4])\)|([A-D1-4])[\)\.\:\-])\s*(.*)/i);
-      if (optMatch) {
+      if (!inExplanation && optMatch) {
+        foundFirstOption = true;
         const char = (optMatch[1] || optMatch[2]).toUpperCase();
         let letterIdx = ['A', 'B', 'C', 'D'].indexOf(char);
         if (letterIdx === -1) {
@@ -276,22 +279,38 @@ const parsePlainTextRobust = (raw: string): Question[] => {
         }
 
         options.push(optText);
-      } else if (explanation) {
-        explanation += ' ' + line;
+        continue;
+      }
+
+      if (inExplanation) {
+        // Collect all vertical steps and equations
+        if (line) {
+          explanationLines.push(line);
+        } else if (explanationLines.length > 0 && explanationLines[explanationLines.length - 1] !== '') {
+          explanationLines.push('');
+        }
+      } else if (!foundFirstOption) {
+        // Multi-line question prompt text before options begin
+        if (line) {
+          textLines.push(line);
+        }
       }
     }
 
-    if (text.trim() && options.length >= 2) {
+    const fullText = textLines.join(' ').trim();
+    const fullExplanation = explanationLines.join('\n').trim();
+
+    if (fullText && options.length >= 2) {
       while (options.length < 4) {
         options.push(`Option ${String.fromCharCode(65 + options.length)}`);
       }
 
       questions.push({
         id: 'q_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-        text: text.trim(),
+        text: fullText,
         options: options.slice(0, 4),
         correct: correct >= 0 && correct < 4 ? correct : 0,
-        explanation: explanation.trim(),
+        explanation: fullExplanation,
       });
     }
   });
@@ -418,6 +437,7 @@ OUTPUT RULES:
   // Paste Text view internal state
   const [pasteRawText, setPasteRawText] = useState('');
   const [previewQuestions, setPreviewQuestions] = useState<Question[]>([]);
+  const [showAllPreview, setShowAllPreview] = useState<boolean>(false);
   const [parsingError, setParsingError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -988,7 +1008,7 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
 
                   <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800">
                     <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 mb-1">
-                      <span className="w-4 h-4 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-400 text-[10px] flex items-center justify-center font-bold">2</span>
+                      <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] flex items-center justify-center font-bold">2</span>
                       <span>Copy & Paste from AI</span>
                     </div>
                     <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
@@ -998,7 +1018,7 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
 
                   <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800">
                     <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 mb-1">
-                      <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] flex items-center justify-center font-bold">3</span>
+                      <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] flex items-center justify-center font-bold">3</span>
                       <span>Import .txt Files</span>
                     </div>
                     <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
@@ -1017,11 +1037,11 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
               </div>
 
               {/* Ready to Use AI Prompt */}
-              <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/20 space-y-2">
+              <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Bot className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                    <span className="font-bold text-purple-900 dark:text-purple-200 text-xs">
+                    <Bot className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span className="font-bold text-zinc-900 dark:text-white text-xs">
                       Ready-To-Use AI Prompt
                     </span>
                   </div>
@@ -1032,11 +1052,11 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
                       setCopiedPrompt(true);
                       setTimeout(() => setCopiedPrompt(false), 2000);
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-[10px] flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                    className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[10px] flex items-center gap-1 cursor-pointer transition shadow-2xs"
                   >
                     {copiedPrompt ? (
                       <>
-                        <Check className="w-3 h-3 text-emerald-300" />
+                        <Check className="w-3 h-3 text-emerald-200" />
                         <span>Copied!</span>
                       </>
                     ) : (
@@ -1219,7 +1239,7 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
           {/* Header Row: Clean title without clutter */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                 <ClipboardPaste className="w-4 h-4" />
               </div>
               <div>
@@ -1256,6 +1276,27 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
                 <Clipboard className="w-3.5 h-3.5" />
                 <span>Paste Clipboard</span>
               </button>
+
+              {/* Add Question Manually Template */}
+              <button
+                type="button"
+                onClick={() => {
+                  const nextNum = previewQuestions.length + 1;
+                  const newQTemplate = `\n\n${nextNum}. Question text goes here\nA) Option A\nB) Option B\nC) Option C\nD) Option D\nAnswer: A\nExplanation:\nStep 1: First step of solution.\nStep 2: Second step of solution.\nConclusion: Option A is correct.`;
+                  setPasteRawText((prev) => (prev ? prev.trimEnd() + newQTemplate : newQTemplate.trimStart()));
+                  setTimeout(() => {
+                    if (textareaRef.current) {
+                      textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+                      textareaRef.current.focus();
+                    }
+                  }, 100);
+                }}
+                className="px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition"
+                title="Add a question template to edit manually"
+              >
+                <Plus className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>+ Add Question</span>
+              </button>
             </div>
 
             {/* Presets & Clear */}
@@ -1276,7 +1317,7 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
                 className="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-semibold cursor-pointer transition flex items-center gap-1.5"
                 title="Insert standard exam format sample with header metadata"
               >
-                <FileCode className="w-3.5 h-3.5 text-blue-500" />
+                <FileCode className="w-3.5 h-3.5 text-zinc-500" />
                 <span>Grammar Sample</span>
               </button>
 
@@ -1294,45 +1335,45 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
 
           {/* Extracted Exam Details Indicator Card */}
           {(extractedMeta.name || extractedMeta.subject || extractedMeta.grade || extractedMeta.difficulty || extractedMeta.timeLimit || extractedMeta.passingScore) && (
-            <div className="p-3.5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/60 space-y-2">
+            <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
-                  <FileCheck2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                  <FileCheck2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Detected Exam Header Details
                 </span>
-                <span className="text-[10px] text-blue-600 dark:text-blue-400">
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
                   Auto-applies when continuing
                 </span>
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
                 {extractedMeta.name && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-900/60 text-zinc-800 dark:text-zinc-200 font-medium">
-                    <strong className="text-blue-600 dark:text-blue-400">Exam:</strong> {extractedMeta.name}
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium">
+                    <strong className="text-emerald-600 dark:text-emerald-400">Exam:</strong> {extractedMeta.name}
                   </span>
                 )}
                 {extractedMeta.subject && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-900/60 text-zinc-800 dark:text-zinc-200 font-medium">
-                    <strong className="text-blue-600 dark:text-blue-400">Subject:</strong> {extractedMeta.subject}
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium">
+                    <strong className="text-emerald-600 dark:text-emerald-400">Subject:</strong> {extractedMeta.subject}
                   </span>
                 )}
                 {extractedMeta.grade && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold">
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold">
                     <strong className="text-emerald-600 dark:text-emerald-400">Level:</strong> {extractedMeta.grade}
                   </span>
                 )}
                 {extractedMeta.difficulty && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-900/60 text-zinc-800 dark:text-zinc-200 font-medium">
-                    <strong className="text-blue-600 dark:text-blue-400">Difficulty:</strong> {extractedMeta.difficulty}
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium">
+                    <strong className="text-emerald-600 dark:text-emerald-400">Difficulty:</strong> {extractedMeta.difficulty}
                   </span>
                 )}
                 {extractedMeta.timeLimit && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-900/60 text-zinc-800 dark:text-zinc-200 font-medium">
-                    <strong className="text-blue-600 dark:text-blue-400">Time Limit:</strong> {extractedMeta.timeLimit} min
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium">
+                    <strong className="text-emerald-600 dark:text-emerald-400">Time Limit:</strong> {extractedMeta.timeLimit} min
                   </span>
                 )}
                 {extractedMeta.passingScore && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-900/60 text-zinc-800 dark:text-zinc-200 font-medium">
-                    <strong className="text-blue-600 dark:text-blue-400">Passing Score:</strong> {extractedMeta.passingScore}%
+                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium">
+                    <strong className="text-emerald-600 dark:text-emerald-400">Passing Score:</strong> {extractedMeta.passingScore}%
                   </span>
                 )}
               </div>
@@ -1446,17 +1487,28 @@ Passing Score: 70%
           {previewQuestions.length > 0 && (
             <div className="space-y-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <BookOpen className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Parsed Questions Preview ({previewQuestions.length})</span>
-                </h3>
-                <span className="text-[11px] text-zinc-400">
-                  KaTeX math formulas rendered live
-                </span>
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                    Questions Preview
+                  </h3>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
+                    Showing {showAllPreview ? previewQuestions.length : Math.min(3, previewQuestions.length)} of {previewQuestions.length}
+                  </span>
+                </div>
+                {previewQuestions.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllPreview(!showAllPreview)}
+                    className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                  >
+                    {showAllPreview ? 'Show Less (First 3)' : `Show All (${previewQuestions.length})`}
+                  </button>
+                )}
               </div>
 
               <div className="max-h-72 overflow-y-auto space-y-2.5 pr-1">
-                {previewQuestions.map((q, idx) => {
+                {(showAllPreview ? previewQuestions : previewQuestions.slice(0, 3)).map((q, idx) => {
                   const isLocked = !isPremium && idx >= maxImportQuestions;
                   return (
                     <div
@@ -1469,7 +1521,7 @@ Passing Score: 70%
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="font-semibold text-zinc-900 dark:text-white flex items-start gap-2">
-                          <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-[11px] shrink-0">
+                          <span className="px-2 py-0.5 rounded-md bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold text-[11px] shrink-0">
                             Q{idx + 1}
                           </span>
                           <div className="leading-relaxed">
@@ -1478,7 +1530,7 @@ Passing Score: 70%
                         </div>
 
                         {isLocked && (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold text-[10px] shrink-0 flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] shrink-0 flex items-center gap-1">
                             <Crown className="w-3 h-3" />
                             <span>Requires Premium</span>
                           </span>
@@ -1510,9 +1562,11 @@ Passing Score: 70%
                       </div>
 
                       {q.explanation && (
-                        <div className="mt-2 pl-7 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-start gap-1.5">
-                          <span className="font-semibold text-blue-500 shrink-0">Explanation:</span>
-                          <div>
+                        <div className="mt-2.5 pl-7 text-[11px] text-zinc-600 dark:text-zinc-300 flex items-start gap-2">
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                            Explanation:
+                          </span>
+                          <div className="leading-relaxed whitespace-pre-line">
                             <MathRenderer text={q.explanation} />
                           </div>
                         </div>
@@ -1520,6 +1574,19 @@ Passing Score: 70%
                     </div>
                   );
                 })}
+
+                {!showAllPreview && previewQuestions.length > 3 && (
+                  <div className="p-2.5 text-center rounded-xl bg-zinc-100 dark:bg-zinc-800/60 text-xs text-zinc-500">
+                    Showing first 3 sample questions.{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowAllPreview(true)}
+                      className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer ml-1"
+                    >
+                      Show all {previewQuestions.length} questions
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1552,7 +1619,7 @@ Passing Score: 70%
                   <button
                     type="button"
                     onClick={() => handleImportParsedQuestions(true)}
-                    className="px-4 py-2 rounded-full border border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-xs font-bold transition cursor-pointer"
+                    className="px-4 py-2 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-xs font-bold transition cursor-pointer"
                   >
                     Review First {maxImportQuestions}
                   </button>
@@ -1561,7 +1628,7 @@ Passing Score: 70%
                     <button
                       type="button"
                       onClick={onOpenSubscriptionModal}
-                      className="px-5 py-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                      className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
                     >
                       <Crown className="w-4 h-4" />
                       <span>Upgrade for All {previewQuestions.length}</span>
@@ -1602,7 +1669,7 @@ Passing Score: 70%
                         };
                         onOpenDatabaseUpload(examData);
                       }}
-                      className="px-4 py-2.5 rounded-full border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+                      className="px-4 py-2.5 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
                       title="Upload questions directly to Cloud Firestore"
                     >
                       <CloudUpload className="w-3.5 h-3.5" />
@@ -1616,7 +1683,7 @@ Passing Score: 70%
                     onClick={() => handleImportParsedQuestions(false)}
                     className={`px-5 py-2.5 rounded-full font-bold text-xs flex items-center gap-1.5 transition shadow-xs ${
                       previewQuestions.length > 0
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'
                         : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed'
                     }`}
                   >
@@ -1906,20 +1973,20 @@ Passing Score: 70%
               <button
                 type="button"
                 onClick={() => setCreationMode('paste')}
-                className="px-3 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center gap-1.5 hover:bg-blue-500/20 cursor-pointer transition"
+                className="px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer transition"
                 title="Open Paste Text editor workspace"
               >
-                <FileText className="w-3.5 h-3.5" />
+                <FileText className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                 <span>Paste Text</span>
               </button>
 
               <button
                 type="button"
                 onClick={onOpenProfessorModal}
-                className="px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold text-xs flex items-center gap-1.5 hover:bg-purple-500/20 cursor-pointer"
-                title="Generate prompt"
+                className="px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer transition"
+                title="Generate AI prompt"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>AI Prompt</span>
               </button>
 

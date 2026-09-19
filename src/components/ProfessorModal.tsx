@@ -431,24 +431,49 @@ Conclusion: Option A is correct.`;
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
-                Number of Questions
-              </label>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+                  Question Count (Preset or enter manually)
+                </label>
+                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  {totalQuestions} Questions
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
                 {[5, 10, 15, 20].map((num) => (
                   <button
                     key={num}
                     type="button"
                     onClick={() => setTotalQuestions(num)}
-                    className={`flex-1 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer transition ${
+                    className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer transition ${
                       totalQuestions === num
                         ? 'bg-emerald-500 text-zinc-950 font-bold border-emerald-500'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300'
+                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                     }`}
                   >
                     {num} Qs
                   </button>
                 ))}
+                <div className="flex items-center gap-1 flex-1 min-w-[85px]">
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={totalQuestions}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val) && val > 0) {
+                        setTotalQuestions(Math.min(100, Math.max(1, val)));
+                      } else if (e.target.value === '') {
+                        setTotalQuestions(1);
+                      }
+                    }}
+                    placeholder="Custom"
+                    className="w-full px-2 py-1.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-medium focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40 text-center"
+                    title="Enter any number of questions manually"
+                  />
+                  <span className="text-[10px] text-zinc-400 shrink-0">custom</span>
+                </div>
               </div>
             </div>
 

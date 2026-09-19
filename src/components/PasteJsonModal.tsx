@@ -85,98 +85,119 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
       .join('\n');
   };
 
-  // Helper: parse plain text questions
+  // Helper: parse plain text questions supporting vertical step-wise explanations
   const parsePlainText = (raw: string): Question[] => {
     const questions: Question[] = [];
-    // Split by questions separated by blank lines or numbered headers
-    const rawBlocks = raw.trim().split(/\n\s*\n+/);
+    const cleanContent = raw.trim();
+    if (!cleanContent) return questions;
+
+    let rawBlocks: string[] = [];
+    const hasNumberedQuestions = /(?:^|\n)\s*(?:question\s*\d+[:\.]?|\bq\d+[:\.\)]|\d+[\.\)]|\#+\s*\d+[\.\)])\s+/i.test(cleanContent);
+
+    if (hasNumberedQuestions) {
+      const splitRegex = /(?:^|\n)(?=\s*(?:question\s*\d+[:\.]?|\bq\d+[:\.\)]|\d+[\.\)]|\#+\s*\d+[\.\)])\s+)/i;
+      rawBlocks = cleanContent.split(splitRegex).map((b) => b.trim()).filter(Boolean);
+    } else {
+      rawBlocks = cleanContent.split(/\n\s*\n+/).map((b) => b.trim()).filter(Boolean);
+    }
 
     rawBlocks.forEach((block) => {
-      const lines = block
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean);
+      const lines = block.split('\n');
       if (!lines.length) return;
 
-      // Extract question text from first line(s)
-      let text = '';
-      let lineIndex = 0;
-
-      // Check if first line is a question header
-      const firstLine = lines[0];
-      const headerMatch = firstLine.match(/^(?:question\s*\d+[:\.]?|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s*(.*)/i);
-      if (headerMatch) {
-        text = headerMatch[1].trim() || firstLine;
-        lineIndex = 1;
-      } else {
-        text = firstLine;
-        lineIndex = 1;
-      }
-
-      // If question text continues on next line before options A-D
-      while (
-        lineIndex < lines.length &&
-        !/^[A-D][\)\.\:\-]/i.test(lines[lineIndex]) &&
-        !/^\([A-D]\)/i.test(lines[lineIndex]) &&
-        !/^(?:answer|ans|correct|explanation|explain):/i.test(lines[lineIndex])
-      ) {
-        text += ' ' + lines[lineIndex];
-        lineIndex++;
-      }
-
+      const textLines: string[] = [];
       const options: string[] = [];
       let correct = -1;
-      let explanation = '';
+      const explanationLines: string[] = [];
+      let inExplanation = false;
+      let foundFirstOption = false;
 
-      for (let i = lineIndex; i < lines.length; i++) {
-        const line = lines[i];
+      const firstLine = lines[0].trim();
+      const headerMatch = firstLine.match(/^(?:question\s*\d+[:\.]?|\bq\d+[:\.\)]|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s*(.*)/i);
+      if (headerMatch) {
+        if (headerMatch[1].trim()) {
+          textLines.push(headerMatch[1].trim());
+        }
+      } else {
+        textLines.push(firstLine);
+      }
 
-        // Check for Answer key line (e.g., "Answer: B", "Ans: C", "Correct: A")
-        const ansMatch = line.match(/^(?:answer|ans|correct(?:\s*answer)?|key)\s*[:\-\=]\s*([A-D])/i);
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // Check for Answer key line
+        const ansMatch = line.match(/^(?:answer|ans|correct(?:\s*answer)?|key)\s*[:\-\=]\s*\(?([A-D1-4])\)?(?:\s*[\.\)]|\s*$|\s+.*)/i);
         if (ansMatch) {
           const letter = ansMatch[1].toUpperCase();
-          correct = ['A', 'B', 'C', 'D'].indexOf(letter);
+          if (['A', 'B', 'C', 'D'].includes(letter)) {
+            correct = ['A', 'B', 'C', 'D'].indexOf(letter);
+          } else {
+            const num = parseInt(letter, 10) - 1;
+            if (num >= 0 && num < 4) correct = num;
+          }
           continue;
         }
 
         // Check for Explanation line
-        const expMatch = line.match(/^(?:explanation|explain|reasoning|\/\/|note)\s*[:\-\=]\s*(.*)/i);
+        const expMatch = line.match(/^(?:explanation|explain|reasoning|\/\/|solution|steps?)\s*[:\-\=]\s*(.*)/i);
         if (expMatch) {
-          explanation = expMatch[1].trim();
+          inExplanation = true;
+          if (expMatch[1].trim()) {
+            explanationLines.push(expMatch[1].trim());
+          }
           continue;
         }
 
-        // Check for Option line: A) text, A. text, (A) text
-        const optMatch = line.match(/^(?:\(([A-D])\)|([A-D])[\)\.\:\-])\s*(.*)/i);
-        if (optMatch) {
+        // Check for Option line
+        const optMatch = line.match(/^(?:\(([A-D1-4])\)|([A-D1-4])[\)\.\:\-])\s*(.*)/i);
+        if (!inExplanation && optMatch) {
+          foundFirstOption = true;
           const letter = (optMatch[1] || optMatch[2]).toUpperCase();
+          let letterIdx = ['A', 'B', 'C', 'D'].indexOf(letter);
+          if (letterIdx === -1) {
+            letterIdx = parseInt(letter, 10) - 1;
+          }
           let optText = optMatch[3].trim();
 
-          // Check if marked with asterisk (e.g. "9.8 m/s²*")
           if (optText.endsWith('*')) {
             optText = optText.slice(0, -1).trim();
-            correct = ['A', 'B', 'C', 'D'].indexOf(letter);
+            if (letterIdx >= 0 && letterIdx < 4) correct = letterIdx;
           } else if (optText.includes('[correct]') || optText.includes('(correct)')) {
             optText = optText.replace(/\[correct\]|\(correct\)/gi, '').trim();
-            correct = ['A', 'B', 'C', 'D'].indexOf(letter);
+            if (letterIdx >= 0 && letterIdx < 4) correct = letterIdx;
           }
 
           options.push(optText);
+          continue;
+        }
+
+        if (inExplanation) {
+          if (line) {
+            explanationLines.push(line);
+          } else if (explanationLines.length > 0 && explanationLines[explanationLines.length - 1] !== '') {
+            explanationLines.push('');
+          }
+        } else if (!foundFirstOption) {
+          if (line) {
+            textLines.push(line);
+          }
         }
       }
 
-      if (text.trim() && options.length >= 2) {
-        // Pad options to 4 if only 2 or 3 exist
+      const fullText = textLines.join(' ').trim();
+      const fullExplanation = explanationLines.join('\n').trim();
+
+      if (fullText && options.length >= 2) {
         while (options.length < 4) {
           options.push(`Option ${String.fromCharCode(65 + options.length)}`);
         }
 
         questions.push({
           id: 'q_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-          text: text.trim(),
+          text: fullText,
           options: options.slice(0, 4),
-          correct: correct >= 0 ? correct : 0,
-          explanation: explanation.trim(),
+          correct: correct >= 0 && correct < 4 ? correct : 0,
+          explanation: fullExplanation,
         });
       }
     });

@@ -121,7 +121,7 @@ OUTPUT RULES:
           {/* Way 2: Copy & Paste from AI */}
           <div className="p-4 sm:p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800 flex flex-col justify-between space-y-3">
             <div className="space-y-2">
-              <div className="w-7 h-7 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-xs">
+              <div className="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
                 2
               </div>
               <h3 className="font-bold text-sm text-zinc-900 dark:text-white">
@@ -134,7 +134,7 @@ OUTPUT RULES:
             <button
               type="button"
               onClick={onOpenPasteModal}
-              className="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
+              className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
             >
               <FileCode className="w-3.5 h-3.5" />
               <span>Paste AI Questions</span>
@@ -144,7 +144,7 @@ OUTPUT RULES:
           {/* Way 3: Import from Files */}
           <div className="p-4 sm:p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800 flex flex-col justify-between space-y-3">
             <div className="space-y-2">
-              <div className="w-7 h-7 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
+              <div className="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
                 3
               </div>
               <h3 className="font-bold text-sm text-zinc-900 dark:text-white">
@@ -159,7 +159,7 @@ OUTPUT RULES:
               onClick={onOpenPasteModal}
               className="w-full py-2 px-3 rounded-xl bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center justify-center gap-1.5 transition cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5 text-blue-500" />
+              <Download className="w-3.5 h-3.5 text-zinc-500" />
               <span>Import .txt File</span>
             </button>
           </div>
@@ -196,7 +196,7 @@ OUTPUT RULES:
       <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0b1322] border border-zinc-200/80 dark:border-zinc-800 shadow-xs space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-xs uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider">
               <Bot className="w-4 h-4" />
               <span>Ready-To-Use AI Prompt</span>
             </div>
@@ -215,7 +215,7 @@ OUTPUT RULES:
               setCopiedPrompt(true);
               setTimeout(() => setCopiedPrompt(false), 2000);
             }}
-            className="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
           >
             {copiedPrompt ? (
               <>
