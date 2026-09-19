@@ -373,7 +373,7 @@ function MainApp() {
     .map((e) => e.catalogId || e.id);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-[#060d18] text-zinc-900 dark:text-zinc-100 transition-colors font-['DM_Sans',sans-serif] selection:bg-emerald-500 selection:text-zinc-950">
+    <div className="min-h-screen bg-transparent text-zinc-900 dark:text-zinc-100 transition-colors font-['Plus_Jakarta_Sans',sans-serif] selection:bg-emerald-500 selection:text-zinc-950 relative">
       {/* Navigation Bar */}
       <Navbar
         activeTab={activeTab}

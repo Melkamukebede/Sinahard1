@@ -67,26 +67,30 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   const isCloudSynced = Boolean(user && user.uid !== 'guest' && !user.isAnonymous);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
       />
 
       <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
         <div
           id="app-drawer-panel"
-          className="w-screen max-w-sm bg-white dark:bg-[#070e1a] border-l border-zinc-200/80 dark:border-white/10 shadow-2xl flex flex-col transition-transform animate-in slide-in-from-right duration-300 ease-out"
+          className="relative w-screen max-w-sm bg-white/95 dark:bg-[#070e1a]/95 backdrop-blur-2xl border-l border-white/60 dark:border-white/10 shadow-2xl flex flex-col transition-transform animate-in slide-in-from-right duration-300 ease-out overflow-hidden"
         >
-          {/* Drawer Header */}
-          <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/80 dark:bg-[#0d1829]/80 backdrop-blur-md">
+          {/* Subtle Atmospheric Ambient Glow */}
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-12 -left-24 w-64 h-64 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Drawer Header - Frosted Glass Bar */}
+          <div className="relative px-5 py-4 border-b border-white/60 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500 text-zinc-950 flex items-center justify-center font-bold">
-                <GraduationCap className="w-5 h-5" />
+              <div className="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold shadow-2xs">
+                <GraduationCap className="w-4 h-4 stroke-[2]" />
               </div>
               <div>
-                <h3 className="font-bold text-sm font-['Syne',sans-serif] text-zinc-900 dark:text-white">
+                <h3 className="font-bold text-sm font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
                   ExamMaster Menu
                 </h3>
                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -106,19 +110,19 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
           </div>
 
           {/* Drawer Body */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-5">
-            {/* User Account / Profile Card */}
-            <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 space-y-3">
+          <div className="relative flex-1 overflow-y-auto p-5 space-y-4">
+            {/* User Account / Profile Porcelain Card */}
+            <div className="p-4 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-3">
               <div className="flex items-center gap-3">
                 {user?.photoURL ? (
                   <img
                     src={user.photoURL}
                     alt={user.displayName || 'User'}
-                    className="w-10 h-10 rounded-full border border-emerald-500 object-cover"
+                    className="w-10 h-10 rounded-full border border-white/80 dark:border-white/20 object-cover shadow-2xs"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-sm border border-emerald-500/30">
+                  <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-bold flex items-center justify-center text-sm border border-white/80 dark:border-white/10 shadow-2xs">
                     {user?.displayName?.charAt(0) || 'S'}
                   </div>
                 )}
@@ -137,8 +141,8 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                       </>
                     ) : (
                       <>
-                        <CloudOff className="w-3 h-3 text-blue-500" />
-                        <span className="text-blue-600 dark:text-blue-400 font-medium">
+                        <CloudOff className="w-3 h-3 text-zinc-400" />
+                        <span className="text-zinc-500 dark:text-zinc-400 font-medium">
                           Local Guest Storage
                         </span>
                       </>
@@ -147,7 +151,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+              <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between">
                 {isCloudSynced ? (
                   <button
                     type="button"
@@ -165,7 +169,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                       onClose();
                       signInWithGoogle();
                     }}
-                    className="w-full py-1.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition"
+                    className="w-full py-2 px-4 rounded-full bg-zinc-950 dark:bg-white hover:opacity-90 text-white dark:text-zinc-950 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
                   >
                     <LogIn className="w-3.5 h-3.5" />
                     Sign In with Google
@@ -174,9 +178,9 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
               </div>
             </div>
 
-            {/* Specialized Tools & AI Utilities */}
-            <div className="space-y-1.5">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 px-1 mb-2">
+            {/* Specialized Tools & Utilities */}
+            <div className="space-y-2">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 px-1">
                 Tools & Utilities
               </div>
 
@@ -188,16 +192,16 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   onClose();
                   onOpenSubscriptionModal();
                 }}
-                className="w-full flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-transparent hover:from-amber-500/25 border border-amber-500/30 text-left transition cursor-pointer group"
+                className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-zinc-950 flex items-center justify-center font-bold shadow-xs">
-                    <Crown className="w-4 h-4 stroke-[2.5]" />
+                  <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
+                    <Crown className="w-4 h-4 stroke-[2]" />
                   </div>
                   <div>
                     <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       <span>Premium Subscription</span>
-                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                         ETB
                       </span>
                     </div>
@@ -206,7 +210,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                     </div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-transform" />
               </button>
 
               {/* Admin Payment Verification (Melkamu / Admin) */}
@@ -218,16 +222,16 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                     onClose();
                     onNavigateToAdminSubs();
                   }}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-left transition cursor-pointer group"
+                  className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center font-bold shadow-xs">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
                       <ShieldCheck className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                         <span>Payment Verification</span>
-                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                           Admin
                         </span>
                       </div>
@@ -236,7 +240,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                       </div>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+                  <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               )}
 
@@ -249,16 +253,16 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                     onClose();
                     onOpenDatabaseUpload();
                   }}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-left transition cursor-pointer group"
+                  className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center font-bold shadow-xs">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
                       <CloudUpload className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                         <span>Cloud Firestore Upload</span>
-                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                           Admin
                         </span>
                       </div>
@@ -267,7 +271,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                       </div>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+                  <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               )}
 
@@ -278,37 +282,35 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   onClose();
                   onOpenNotificationsModal();
                 }}
-                className="w-full flex items-center justify-between p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-800 text-left transition cursor-pointer group"
+                className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="relative w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <div className="relative w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center shadow-2xs">
                     <Bell className="w-4 h-4" />
                     {unreadAlertsCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-zinc-950 font-bold text-[9px] flex items-center justify-center">
-                        {unreadAlertsCount}
-                      </span>
+                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500" />
                     )}
                   </div>
                   <div>
                     <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                       <span>Study Cadence & Push</span>
                       {dailyReminderEnabled && (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold">
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold border border-zinc-200 dark:border-zinc-700">
                           Daily
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-zinc-500">
+                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
                       Reminders & browser alerts
                     </div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors" />
+                <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
 
             {/* Data & Backup Tools */}
-            <div className="space-y-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+            <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
               <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 px-1">
                 Data & Management
               </div>
@@ -317,45 +319,45 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 <button
                   type="button"
                   onClick={onExportAllData}
-                  className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-left transition cursor-pointer"
+                  className="p-3 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 hover:border-zinc-300 dark:hover:border-zinc-700 text-left shadow-xs active:scale-98 transition cursor-pointer"
                   title="Export complete backup as JSON"
                 >
-                  <Download className="w-4 h-4 text-emerald-500 mb-1" />
+                  <Download className="w-4 h-4 text-zinc-700 dark:text-zinc-300 mb-1" />
                   <div className="text-xs font-bold text-zinc-900 dark:text-white">Backup JSON</div>
-                  <div className="text-[10px] text-zinc-500">Export data</div>
+                  <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Export data</div>
                 </button>
 
                 <button
                   type="button"
                   onClick={onResetDefaultExams}
-                  className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-left transition cursor-pointer"
+                  className="p-3 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 hover:border-zinc-300 dark:hover:border-zinc-700 text-left shadow-xs active:scale-98 transition cursor-pointer"
                   title="Restore default sample curriculum exams"
                 >
-                  <RotateCcw className="w-4 h-4 text-amber-500 mb-1" />
+                  <RotateCcw className="w-4 h-4 text-zinc-700 dark:text-zinc-300 mb-1" />
                   <div className="text-xs font-bold text-zinc-900 dark:text-white">Reset Samples</div>
-                  <div className="text-[10px] text-zinc-500">Restore default</div>
+                  <div className="text-[10px] text-zinc-500 dark:text-zinc-400">Restore default</div>
                 </button>
               </div>
             </div>
           </div>
 
           {/* Drawer Footer with Theme Toggle */}
-          <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/90 dark:bg-[#0d1829]/90 backdrop-blur-md flex items-center justify-between">
+          <div className="p-4 border-t border-white/60 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-xs transition cursor-pointer"
               >
                 {isDark ? (
                   <>
-                    <Sun className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Switch to Light Mode</span>
+                    <Sun className="w-3.5 h-3.5 text-zinc-200" />
+                    <span>Light Mode</span>
                   </>
                 ) : (
                   <>
-                    <Moon className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Switch to Dark Mode</span>
+                    <Moon className="w-3.5 h-3.5 text-zinc-700" />
+                    <span>Dark Mode</span>
                   </>
                 )}
               </button>

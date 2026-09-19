@@ -14,15 +14,12 @@ import {
   BookMarked,
   ArrowUpDown,
   RotateCcw,
-  Download,
   FileDown,
   CheckCircle,
   Layers,
   CloudDownload,
-  GraduationCap,
   CloudUpload,
   Cloud,
-  Database,
 } from 'lucide-react';
 import { Exam, AppUser } from '../types';
 
@@ -72,7 +69,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
     [exams]
   );
 
-  // Dynamically extract subjects and counts from exams
+  // Dynamically extract subjects and counts
   const subjectCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     exams.forEach((e) => {
@@ -100,22 +97,23 @@ export const FilesView: React.FC<FilesViewProps> = ({
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = { calculation: 0, theory: 0 };
     exams.forEach((e) => {
-      const t = e.subjectType === 'calculation' ? 'calculation' : 'theory';
-      counts[t] = (counts[t] || 0) + 1;
+      if (e.subjectType === 'calculation') counts.calculation++;
+      else counts.theory++;
     });
     return counts;
   }, [exams]);
 
-  // Count active filters
+  // Active filters count
   const activeFiltersCount = useMemo(() => {
     let count = 0;
-    if (searchTerm.trim() !== '') count++;
     if (selectedSubject !== 'All') count++;
     if (selectedDifficulty !== 'All') count++;
     if (selectedType !== 'All') count++;
     if (durationFilter !== 'all') count++;
+    if (sourceFilter !== 'all') count++;
+    if (searchTerm.trim() !== '') count++;
     return count;
-  }, [searchTerm, selectedSubject, selectedDifficulty, selectedType, durationFilter]);
+  }, [selectedSubject, selectedDifficulty, selectedType, durationFilter, sourceFilter, searchTerm]);
 
   const handleResetFilters = () => {
     setSearchTerm('');
@@ -123,30 +121,26 @@ export const FilesView: React.FC<FilesViewProps> = ({
     setSelectedDifficulty('All');
     setSelectedType('All');
     setDurationFilter('all');
+    setSourceFilter('all');
   };
 
-  // Export individual exam as cleanly formatted .txt file
-  const handleExportTxt = (exam: Exam, e?: React.MouseEvent) => {
-    e?.stopPropagation();
+  // Export as .txt
+  const handleExportTxt = (exam: Exam, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       const lines: string[] = [];
       lines.push('================================================================');
       lines.push(`EXAM: ${exam.name}`);
       lines.push(`Subject: ${exam.subject || 'General'}`);
       lines.push(`Difficulty: ${exam.difficulty || 'Medium'}`);
-      lines.push(`Subject Type: ${exam.subjectType === 'calculation' ? 'Math / Calculations' : 'Theory & Concepts'}`);
-      lines.push(`Time Limit: ${exam.timeLimit || 20} minutes`);
-      lines.push(`Passing Score: ${exam.passingScore || 70}%`);
-      lines.push(`Total Questions: ${exam.questions?.length || 0}`);
-      if (exam.description) {
-        lines.push(`Description: ${exam.description}`);
-      }
-      lines.push(`Generated: ${new Date().toLocaleString()}`);
+      lines.push(`Subject Type: ${exam.subjectType === 'calculation' ? 'Formulas & Calculations' : 'Theory & Concepts'}`);
+      lines.push(`Time Limit: ${exam.timeLimit} minutes`);
+      lines.push(`Passing Score: ${exam.passingScore}%`);
       lines.push('================================================================\n');
 
-      (exam.questions || []).forEach((q, idx) => {
+      exam.questions.forEach((q, idx) => {
         lines.push(`${idx + 1}. ${q.text}`);
-        (q.options || []).forEach((opt, optIdx) => {
+        q.options.forEach((opt, optIdx) => {
           const letter = String.fromCharCode(65 + optIdx);
           lines.push(`   ${letter}) ${opt}`);
         });
@@ -230,10 +224,10 @@ export const FilesView: React.FC<FilesViewProps> = ({
       // 'newest' default
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     });
-  }, [exams, searchTerm, selectedSubject, selectedDifficulty, selectedType, durationFilter, sortBy]);
+  }, [exams, searchTerm, selectedSubject, selectedDifficulty, selectedType, durationFilter, sourceFilter, sortBy]);
 
   return (
-    <div className="space-y-5 pb-14">
+    <div className="space-y-6 pb-20 max-w-6xl mx-auto">
       {/* Toast feedback */}
       <AnimatePresence>
         {copiedNotification && (
@@ -241,275 +235,276 @@ export const FilesView: React.FC<FilesViewProps> = ({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="fixed top-20 right-6 z-50 px-4 py-2.5 rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-bold shadow-xl flex items-center gap-2 border border-white/20"
+            className="fixed top-20 right-6 z-50 px-4 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold shadow-xl flex items-center gap-2 border border-white/20"
           >
-            <CheckCircle className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
+            <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-600" />
             <span>{copiedNotification}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
-            <BookOpen className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-extrabold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
-                Exams Repository
-              </h1>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold">
-                {filteredExams.length} of {exams.length}
-              </span>
+      {/* ─────────────────────────────────────────────────────────────
+          LAYER 1: TRANSLUCENT CONTAINER (Header & Filter Actions)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="relative rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 p-5 sm:p-7 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-5 overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+        {/* Subtle Atmospheric Ambient Glow */}
+        <div className="absolute -top-24 -right-24 w-80 h-80 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Top Header Row */}
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center shadow-xs border border-white/80 dark:border-white/10">
+              <BookOpen className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
             </div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Your personal library of user-crafted and official downloaded curriculum exams
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
+                  Exams Repository
+                </h1>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold border border-zinc-200 dark:border-zinc-700">
+                  {filteredExams.length} of {exams.length}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Your personal library of user-crafted and downloaded curriculum exams
+              </p>
+            </div>
+          </div>
+
+          {/* Action Controls & Sort */}
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            {onOpenCuratedCatalogModal && (
+              <button
+                type="button"
+                onClick={onOpenCuratedCatalogModal}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-950 dark:bg-white hover:bg-black dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs transition cursor-pointer shadow-xs active:scale-98"
+                title={user?.grade ? `Download exams filtered for Grade ${user.grade}` : 'Browse official curriculum exams'}
+              >
+                <CloudDownload className="w-3.5 h-3.5" />
+                <span>Download Exams {user?.grade ? `(G${user.grade})` : ''}</span>
+              </button>
+            )}
+
+            {onCreateNew && (
+              <button
+                type="button"
+                onClick={onCreateNew}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 border border-white/80 dark:border-white/10 font-semibold text-xs cursor-pointer transition shadow-xs active:scale-98"
+              >
+                <span>+ Create</span>
+              </button>
+            )}
+
+            {isAdmin && onOpenDatabaseUpload && exams.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onOpenDatabaseUpload(exams[0])}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 border border-white/80 dark:border-white/10 font-semibold text-xs cursor-pointer transition shadow-xs active:scale-98"
+                title="Upload questions to Cloud Firestore"
+              >
+                <CloudUpload className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
+                <span>Upload</span>
+              </button>
+            )}
+
+            {/* Sort selector */}
+            <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400 bg-white dark:bg-[#0c182b] px-3 py-1.5 rounded-full border border-white/80 dark:border-white/10 shadow-xs">
+              <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="bg-transparent text-xs font-semibold text-zinc-800 dark:text-zinc-200 cursor-pointer focus:outline-none"
+              >
+                <option value="newest">Newest First</option>
+                <option value="questions">Most Questions</option>
+                <option value="duration">Longest Duration</option>
+                <option value="name">Title (A - Z)</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Action Controls & Sort */}
-        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          {onOpenCuratedCatalogModal && (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={onOpenCuratedCatalogModal}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm shadow-emerald-600/20 cursor-pointer transition active:scale-95"
-              title={user?.grade ? `Download exams filtered for Grade ${user.grade}` : "Browse official curriculum exams"}
-            >
-              <CloudDownload className="w-4 h-4 text-emerald-100" />
-              <span>
-                Download Exams {user?.grade ? `(Grade ${user.grade})` : ''}
-              </span>
-            </motion.button>
-          )}
+        {/* Source Tabs */}
+        <div className="relative z-10 flex items-center gap-2 p-1 rounded-full bg-white/70 dark:bg-zinc-900/60 border border-white/80 dark:border-white/10 w-full sm:w-fit overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setSourceFilter('all')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+              sourceFilter === 'all'
+                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+            }`}
+          >
+            <span>All Exams</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+              {exams.length}
+            </span>
+          </button>
 
-          {onCreateNew && (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={onCreateNew}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs cursor-pointer transition"
-            >
-              <span>+ Create</span>
-            </motion.button>
-          )}
+          <button
+            type="button"
+            onClick={() => setSourceFilter('user_created')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+              sourceFilter === 'user_created'
+                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-zinc-500" />
+            <span>User Created</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+              {userCreatedCount}
+            </span>
+          </button>
 
-          {isAdmin && onOpenDatabaseUpload && exams.length > 0 && (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={() => onOpenDatabaseUpload(exams[0])}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-bold text-xs cursor-pointer transition shadow-2xs"
-              title="Upload questions to Cloud Firestore"
-            >
-              <CloudUpload className="w-3.5 h-3.5" />
-              <span>Upload to Firestore</span>
-            </motion.button>
-          )}
+          <button
+            type="button"
+            onClick={() => setSourceFilter('downloaded')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+              sourceFilter === 'downloaded'
+                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+            }`}
+          >
+            <CloudDownload className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Downloaded Official</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+              {downloadedCount}
+            </span>
+          </button>
+        </div>
 
-          {/* Sort selector */}
-          <div className="flex items-center gap-1.5 text-xs text-zinc-500 bg-white dark:bg-[#0c1626] px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700/80">
-            <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="bg-transparent text-xs font-semibold text-zinc-800 dark:text-zinc-200 cursor-pointer focus:outline-none"
-            >
-              <option value="newest">Newest First</option>
-              <option value="questions">Most Questions</option>
-              <option value="duration">Longest Duration</option>
-              <option value="name">Title (A - Z)</option>
-            </select>
+        {/* ─────────────────────────────────────────────────────────
+            LAYER 2: FILTER PANEL (Elevated Porcelain Card)
+        ───────────────────────────────────────────────────────── */}
+        <div className="relative z-10 p-4 sm:p-5 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-3.5">
+          {/* Search Input Bar */}
+          <div className="relative">
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              id="fileSearchInput"
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search exams by title, keywords, or topics..."
+              className="w-full pl-10 pr-14 py-2.5 text-xs sm:text-sm rounded-full bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 transition"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
           </div>
-        </div>
-      </div>
 
-      {/* Dual Exam Architecture Source Tabs */}
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-zinc-100/90 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/60 w-full sm:w-fit overflow-x-auto">
-        <button
-          type="button"
-          onClick={() => setSourceFilter('all')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-            sourceFilter === 'all'
-              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
-              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
-          }`}
-        >
-          <span>All Exams</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200 dark:bg-zinc-700 font-semibold">
-            {exams.length}
-          </span>
-        </button>
+          {/* Dropdown Filters Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+            {/* 1. Subject Dropdown */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                <Filter className="w-3 h-3 text-zinc-500" />
+                <span>Subject</span>
+              </label>
+              <select
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
+              >
+                <option value="All">All Subjects ({exams.length})</option>
+                {dynamicSubjects
+                  .filter((s) => s !== 'All')
+                  .map((subj) => (
+                    <option key={subj} value={subj}>
+                      {subj} ({subjectCounts[subj] || 0})
+                    </option>
+                  ))}
+              </select>
+            </div>
 
-        <button
-          type="button"
-          onClick={() => setSourceFilter('user_created')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-            sourceFilter === 'user_created'
-              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
-              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5 text-blue-500" />
-          <span>User Created</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold">
-            {userCreatedCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setSourceFilter('downloaded')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-            sourceFilter === 'downloaded'
-              ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
-              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
-          }`}
-        >
-          <CloudDownload className="w-3.5 h-3.5 text-emerald-500" />
-          <span>Downloaded Official</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
-            {downloadedCount}
-          </span>
-        </button>
-      </div>
-
-      {/* Material Design 3 Dropdown Filter Panel */}
-      <div className="p-4 sm:p-5 rounded-[24px] bg-white dark:bg-[#0c1626] border border-zinc-200/80 dark:border-white/10 shadow-xs space-y-3.5">
-        {/* Search Input Bar */}
-        <div className="relative">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            id="fileSearchInput"
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search exams by title, keywords, or topics..."
-            className="w-full pl-10 pr-14 py-2.5 text-xs sm:text-sm rounded-2xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/80 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition"
-          />
-          {searchTerm && (
-            <button
-              type="button"
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
-        {/* Material Design 3 Dropdown Filters Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-          {/* 1. Subject Dropdown */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-              <Filter className="w-3 h-3 text-emerald-500" />
-              <span>Subject</span>
-            </label>
-            <select
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-            >
-              <option value="All">All Subjects ({exams.length})</option>
-              {dynamicSubjects
-                .filter((s) => s !== 'All')
-                .map((subj) => (
-                  <option key={subj} value={subj}>
-                    {subj} ({subjectCounts[subj] || 0})
+            {/* 2. Difficulty Dropdown */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                <Award className="w-3 h-3 text-zinc-500" />
+                <span>Difficulty</span>
+              </label>
+              <select
+                value={selectedDifficulty}
+                onChange={(e) => setSelectedDifficulty(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
+              >
+                <option value="All">All Difficulties</option>
+                {['Easy', 'Medium', 'Hard'].map((diff) => (
+                  <option key={diff} value={diff}>
+                    {diff} ({difficultyCounts[diff] || 0})
                   </option>
                 ))}
-            </select>
+              </select>
+            </div>
+
+            {/* 3. Type Dropdown */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                <Calculator className="w-3 h-3 text-zinc-500" />
+                <span>Content Type</span>
+              </label>
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
+              >
+                <option value="All">All Question Types</option>
+                <option value="calculation">Formulas / Calculations ({typeCounts.calculation || 0})</option>
+                <option value="theory">Concepts / Theory ({typeCounts.theory || 0})</option>
+              </select>
+            </div>
+
+            {/* 4. Duration Dropdown */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                <Clock className="w-3 h-3 text-zinc-500" />
+                <span>Duration</span>
+              </label>
+              <select
+                value={durationFilter}
+                onChange={(e) => setDurationFilter(e.target.value as DurationFilter)}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
+              >
+                <option value="all">All Durations</option>
+                <option value="quick">Quick (≤ 15 mins)</option>
+                <option value="medium">Standard (15 - 30 mins)</option>
+                <option value="long">Extended (&gt; 30 mins)</option>
+              </select>
+            </div>
           </div>
 
-          {/* 2. Difficulty Dropdown */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-              <Award className="w-3 h-3 text-blue-500" />
-              <span>Difficulty</span>
-            </label>
-            <select
-              value={selectedDifficulty}
-              onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-            >
-              <option value="All">All Difficulties</option>
-              {['Easy', 'Medium', 'Hard'].map((diff) => (
-                <option key={diff} value={diff}>
-                  {diff} ({difficultyCounts[diff] || 0})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 3. Type Dropdown */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-              <Calculator className="w-3 h-3 text-purple-500" />
-              <span>Content Type</span>
-            </label>
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-            >
-              <option value="All">All Question Types</option>
-              <option value="calculation">Formulas / Calculations ({typeCounts.calculation || 0})</option>
-              <option value="theory">Concepts / Theory ({typeCounts.theory || 0})</option>
-            </select>
-          </div>
-
-          {/* 4. Duration Dropdown */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
-              <Clock className="w-3 h-3 text-amber-500" />
-              <span>Duration</span>
-            </label>
-            <select
-              value={durationFilter}
-              onChange={(e) => setDurationFilter(e.target.value as DurationFilter)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-            >
-              <option value="all">All Durations</option>
-              <option value="quick">Quick (≤ 15 mins)</option>
-              <option value="medium">Standard (15 - 30 mins)</option>
-              <option value="long">Extended (&gt; 30 mins)</option>
-            </select>
-          </div>
+          {/* Filter Summary & Quick Reset */}
+          {activeFiltersCount > 0 && (
+            <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+              <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                Active filters applied ({activeFiltersCount})
+              </span>
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer transition"
+              >
+                <RotateCcw className="w-3 h-3 text-zinc-500" />
+                <span>Reset Filters</span>
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* Filter Summary & Quick Reset */}
-        {activeFiltersCount > 0 && (
-          <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Active filters applied ({activeFiltersCount})
-            </span>
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="text-[11px] font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1 cursor-pointer transition"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset Filters</span>
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Exam Grid with Advanced Motion Layout */}
+      {/* ─────────────────────────────────────────────────────────────
+          LAYER 1 CONTAINER: EXAMS REPOSITORY GRID (Layer 2 porcelain cards)
+      ───────────────────────────────────────────────────────────── */}
       {filteredExams.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-12 px-4 bg-white dark:bg-[#0c1626] border border-zinc-200/80 dark:border-white/10 rounded-[24px]"
-        >
+        <div className="text-center py-14 px-4 rounded-[32px] bg-white/40 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-xs">
           <BookOpen className="w-8 h-8 text-zinc-400 mx-auto mb-2 opacity-50" />
           <h3 className="text-sm font-bold text-zinc-900 dark:text-white">No matching exams found</h3>
           <p className="text-xs text-zinc-500 mt-0.5">
@@ -519,35 +514,29 @@ export const FilesView: React.FC<FilesViewProps> = ({
             <button
               type="button"
               onClick={handleResetFilters}
-              className="mt-3.5 px-4 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer transition"
+              className="mt-3.5 px-5 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer transition shadow-xs"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Clear All Filters</span>
             </button>
           )}
-        </motion.div>
+        </div>
       ) : (
-        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence mode="popLayout">
             {filteredExams.map((exam) => {
               const isCalculation = exam.subjectType === 'calculation';
               const isCurated = Boolean(exam.isDownloaded || exam.sourceType === 'curated_catalog');
-              const diffColor =
-                exam.difficulty === 'Easy'
-                  ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
-                  : exam.difficulty === 'Medium'
-                  ? 'text-amber-700 dark:text-amber-300 bg-amber-500/15 border-amber-500/30'
-                  : 'text-rose-700 dark:text-rose-300 bg-rose-500/15 border-rose-500/30';
 
               return (
                 <motion.div
                   layout
                   key={exam.id}
-                  initial={{ opacity: 0, y: 14 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.96 }}
-                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                  className="group flex flex-col justify-between p-5 rounded-[24px] bg-white dark:bg-[#0c1626] border border-zinc-200/80 dark:border-white/10 hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all shadow-xs hover:shadow-md"
+                  whileHover={{ y: -3, transition: { duration: 0.2 } }}
+                  className="group flex flex-col justify-between p-5 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 transition-all shadow-xs hover:shadow-md"
                 >
                   <div>
                     {/* Card Top Badges */}
@@ -558,53 +547,53 @@ export const FilesView: React.FC<FilesViewProps> = ({
                         </span>
                         {isCurated ? (
                           <span
-                            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                            className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700"
                             title="Official Downloaded Curriculum Exam"
                           >
-                            <CloudDownload className="w-3 h-3 text-emerald-500" />
+                            <CloudDownload className="w-3 h-3 text-zinc-600 dark:text-zinc-400" />
                             <span>Official</span>
                             {exam.grade && <span className="opacity-80">· G{exam.grade}</span>}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                            <Layers className="w-2.5 h-2.5" />
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                            <Layers className="w-2.5 h-2.5 text-zinc-500" />
                             <span>User Created</span>
                           </span>
                         )}
                         {exam.isUploadedToCloud && (
                           <span
-                            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                            className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700"
                             title={`Uploaded to database storage (${exam.cloudStorageEngine || 'firestore'})`}
                           >
-                            <Cloud className="w-2.5 h-2.5 text-emerald-500" />
+                            <Cloud className="w-2.5 h-2.5 text-zinc-500" />
                             <span>Cloud Stored</span>
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${diffColor}`}>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                           {exam.difficulty}
                         </span>
                         {isCalculation ? (
                           <span
                             title="Formulas & Calculations"
-                            className="p-1 rounded-md bg-blue-500/10 text-blue-500"
+                            className="p-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
                           >
-                            <Calculator className="w-3.5 h-3.5" />
+                            <Calculator className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                           </span>
                         ) : (
                           <span
                             title="Conceptual Reasoning"
-                            className="p-1 rounded-md bg-purple-500/10 text-purple-500"
+                            className="p-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
                           >
-                            <BookMarked className="w-3.5 h-3.5" />
+                            <BookMarked className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                           </span>
                         )}
                       </div>
                     </div>
 
                     {/* Title */}
-                    <h3 className="font-bold text-sm sm:text-base font-['Syne',sans-serif] text-zinc-900 dark:text-white mb-2 group-hover:text-emerald-500 transition-colors line-clamp-2 leading-snug">
+                    <h3 className="font-bold text-sm sm:text-base font-['Outfit',sans-serif] text-zinc-900 dark:text-white mb-2 transition-colors line-clamp-2 leading-snug">
                       {exam.name}
                     </h3>
 
@@ -628,59 +617,47 @@ export const FilesView: React.FC<FilesViewProps> = ({
                   {/* Card Action Toolbar */}
                   <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
                     <div className="flex items-center gap-1">
-                      {/* For user-created exams: allow Edit in wizard and Export as .txt */}
                       {!isCurated && (
                         <>
                           <button
                             type="button"
                             onClick={() => onEditExam(exam)}
-                            className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                            className="p-2 rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
                             title="Edit Exam in Wizard"
                             aria-label="Edit Exam"
                           >
-                            <Edit className="w-3.5 h-3.5" />
+                            <Edit className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                           </button>
 
                           {isAdmin && onOpenDatabaseUpload && (
                             <button
                               type="button"
                               onClick={() => onOpenDatabaseUpload(exam)}
-                              className="p-2 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition cursor-pointer"
+                              className="p-2 rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
                               title="Upload to Cloud Firestore Database"
                               aria-label="Upload to Cloud Firestore Database"
                             >
-                              <CloudUpload className="w-3.5 h-3.5" />
+                              <CloudUpload className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                             </button>
                           )}
 
                           <button
                             type="button"
                             onClick={(e) => handleExportTxt(exam, e)}
-                            className="p-2 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition cursor-pointer"
+                            className="p-2 rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
                             title="Export as .txt file"
                             aria-label="Export as text file"
                           >
-                            <FileDown className="w-3.5 h-3.5" />
+                            <FileDown className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                           </button>
                         </>
                       )}
 
-                      {/* For official downloaded exams: show subtle curated standard badge */}
-                      {isCurated && (
-                        <div
-                          className="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 text-zinc-500 dark:text-zinc-400 text-[10px] font-semibold flex items-center gap-1"
-                          title="Downloaded official curriculum exam (protected source)"
-                        >
-                          <CloudDownload className="w-3 h-3 text-emerald-500" />
-                          <span>Curated Standard</span>
-                        </div>
-                      )}
-
-                      {/* Delete Exam (available for both user-created and downloaded copies) */}
+                      {/* Delete Exam */}
                       <button
                         type="button"
                         onClick={() => onDeleteExam(exam.id)}
-                        className="p-2 rounded-xl text-zinc-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
+                        className="p-2 rounded-full text-zinc-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
                         title={isCurated ? 'Remove from your downloaded exams' : 'Delete Exam'}
                         aria-label="Delete Exam"
                       >
@@ -688,26 +665,23 @@ export const FilesView: React.FC<FilesViewProps> = ({
                       </button>
                     </div>
 
-                    {/* Start Practice Action */}
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
+                    {/* Start Practice Action: System Capsule Button */}
+                    <button
                       type="button"
                       onClick={() => onStartPractice(exam)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs transition cursor-pointer shadow-xs"
+                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-zinc-950 dark:bg-white hover:bg-black dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs transition cursor-pointer shadow-xs active:scale-98"
                       title="Start Timed Practice"
                     >
                       <Play className="w-3 h-3 fill-current" />
                       <span>Practice</span>
-                    </motion.button>
+                    </button>
                   </div>
                 </motion.div>
               );
             })}
           </AnimatePresence>
-        </motion.div>
+        </div>
       )}
     </div>
   );
 };
-

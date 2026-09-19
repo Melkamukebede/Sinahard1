@@ -825,133 +825,130 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
   // 1. Initial Selection Screen: "Manual" or "Paste Text File"
   if (creationMode === 'select') {
     return (
-      <div className="max-w-2xl mx-auto space-y-6 pb-12">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <FileText className="w-4 h-4" />
-            </div>
-            <div>
-              <h1 className="text-xl font-extrabold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
-                Create Exam
-              </h1>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Choose how you would like to compose your exam
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white px-3 py-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-          >
-            Cancel
-          </button>
-        </div>
-
-        {/* Freemium Tier Status Info Card */}
-        {userTier && (
-          <div
-            className={`p-4 rounded-2xl border flex items-center justify-between gap-3 text-xs ${
-              userTier.isPremium
-                ? 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300'
-                : userTier.isTrial
-                ? 'bg-blue-500/10 border-blue-500/30 text-blue-800 dark:text-blue-300'
-                : 'bg-zinc-100 dark:bg-zinc-800/80 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <Crown className="w-4 h-4 shrink-0" />
+      <div className="max-w-2xl mx-auto pb-16">
+        <div className="rounded-[32px] sm:rounded-[38px] bg-white/40 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/60 dark:border-white/10 p-6 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center shadow-xs border border-white/80 dark:border-white/10">
+                <FileText className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+              </div>
               <div>
-                <span className="font-bold block">
-                  {userTier.isPremium
-                    ? '👑 Premium Scholar Active'
-                    : userTier.isTrial
-                    ? `🎁 3-Day Welcome Trial Active (${userTier.trialDaysRemaining} days remaining)`
-                    : userTier.isGuest
-                    ? '👤 Guest Mode (Local Storage)'
-                    : '🎓 Free Student Tier (Cloud Synced)'}
-                </span>
-                <span className="text-[11px] opacity-85">
-                  {userTier.isPremium
-                    ? 'Create & import unlimited questions with full step-by-step LaTeX math solutions.'
-                    : userTier.isTrial
-                    ? `Up to ${userTier.maxQuestionsPerExam} questions per exam and full import support.`
-                    : userTier.isGuest
-                    ? `Up to ${userTier.maxQuestionsPerExam} questions per exam. Sign in to activate your 3-Day Welcome Trial (50 questions)!`
-                    : `Up to ${userTier.maxQuestionsPerExam} questions per exam. Upgrade for unlimited bulk imports.`}
-                </span>
+                <h1 className="text-xl sm:text-2xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
+                  Create Exam
+                </h1>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Choose how you would like to compose your exam
+                </p>
               </div>
             </div>
 
-            {!userTier.isPremium && onOpenSubscriptionModal && (
-              <button
-                type="button"
-                onClick={onOpenSubscriptionModal}
-                className="px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold text-[11px] shrink-0 cursor-pointer shadow-xs transition"
-              >
-                Upgrade in ETB
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={onCancel}
+              className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white px-4 py-1.5 rounded-full bg-white/80 dark:bg-zinc-800/80 border border-white/60 dark:border-white/10 transition cursor-pointer shadow-xs"
+            >
+              Cancel
+            </button>
           </div>
-        )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-          {/* Option A: Manual Creation */}
-          <button
-            type="button"
-            onClick={() => {
-              setCreationMode('manual');
-              setCurrentStep(1);
-            }}
-            className="p-6 rounded-[24px] bg-white dark:bg-[#0c1626] border border-zinc-200/80 dark:border-white/10 hover:border-emerald-500/50 hover:shadow-md transition text-left group cursor-pointer flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                <Edit3 className="w-6 h-6" />
+          {/* Freemium Tier Status Info Card */}
+          {userTier && (
+            <div
+              className={`p-4 rounded-[22px] border flex items-center justify-between gap-3 text-xs bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 shadow-xs`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shrink-0">
+                  <Crown className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+                </div>
+                <div>
+                  <span className="font-bold block text-zinc-900 dark:text-white">
+                    {userTier.isPremium
+                      ? 'Premium Scholar Active'
+                      : userTier.isTrial
+                      ? `3-Day Welcome Trial Active (${userTier.trialDaysRemaining} days remaining)`
+                      : userTier.isGuest
+                      ? 'Guest Mode (Local Storage)'
+                      : 'Free Student Tier (Cloud Synced)'}
+                  </span>
+                  <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    {userTier.isPremium
+                      ? 'Create & import unlimited questions with full step-by-step LaTeX math solutions.'
+                      : userTier.isTrial
+                      ? `Up to ${userTier.maxQuestionsPerExam} questions per exam and full import support.`
+                      : userTier.isGuest
+                      ? `Up to ${userTier.maxQuestionsPerExam} questions per exam. Sign in to activate your 3-Day Welcome Trial!`
+                      : `Up to ${userTier.maxQuestionsPerExam} questions per exam. Upgrade for unlimited bulk imports.`}
+                  </span>
+                </div>
               </div>
-              <h2 className="text-base font-bold font-['Syne',sans-serif] text-zinc-900 dark:text-white mb-1">
-                Manual
-              </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Step-by-step wizard to specify exam details, questions, options, and solutions manually.
-              </p>
-            </div>
-            <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              <span>Start wizard</span>
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </button>
 
-          {/* Option B: Question Text Editor */}
-          <button
-            type="button"
-            onClick={() => {
-              setCreationMode('paste');
-            }}
-            className="p-6 rounded-[24px] bg-white dark:bg-[#0c1626] border border-zinc-200/80 dark:border-white/10 hover:border-blue-500/50 hover:shadow-md transition text-left group cursor-pointer flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                <FileText className="w-6 h-6" />
+              {!userTier.isPremium && onOpenSubscriptionModal && (
+                <button
+                  type="button"
+                  onClick={onOpenSubscriptionModal}
+                  className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs shrink-0 cursor-pointer shadow-xs transition"
+                >
+                  Upgrade in ETB
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            {/* Option A: Manual Creation */}
+            <button
+              type="button"
+              onClick={() => {
+                setCreationMode('manual');
+                setCurrentStep(1);
+              }}
+              className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 hover:shadow-md transition text-left group cursor-pointer flex flex-col justify-between shadow-xs"
+            >
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                  <Edit3 className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+                </div>
+                <h2 className="text-base font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white mb-1">
+                  Manual
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  Step-by-step wizard to specify exam details, questions, options, and solutions manually.
+                </p>
               </div>
-              <h2 className="text-base font-bold font-['Syne',sans-serif] text-zinc-900 dark:text-white mb-1">
-                Question Text Editor
-              </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Import .txt files, type or paste questions directly with real-time formatting and parsing.
-              </p>
-            </div>
-            <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400">
-              <span>Open editor</span>
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </button>
-        </div>
+              <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-white">
+                <span>Start wizard</span>
+                <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </button>
 
-        {/* Interactive Tips for Creating Questions */}
-        <div className="rounded-3xl bg-white dark:bg-[#0c1626] border border-zinc-200/80 dark:border-white/10 shadow-xs overflow-hidden">
+            {/* Option B: Question Text Editor */}
+            <button
+              type="button"
+              onClick={() => {
+                setCreationMode('paste');
+              }}
+              className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 hover:shadow-md transition text-left group cursor-pointer flex flex-col justify-between shadow-xs"
+            >
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                  <FileText className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+                </div>
+                <h2 className="text-base font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white mb-1">
+                  Question Text Editor
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  Import .txt files, type or paste questions directly with real-time formatting and parsing.
+                </p>
+              </div>
+              <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-white">
+                <span>Open editor</span>
+                <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </button>
+          </div>
+
+          {/* Interactive Tips for Creating Questions */}
+          <div className="rounded-3xl bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs overflow-hidden">
           <div className="p-5 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80">
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
@@ -1123,6 +1120,7 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
           )}
         </div>
       </div>
+      </div>
     );
   }
 
@@ -1131,127 +1129,132 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
     const isExceedingLimit = !isPremium && previewQuestions.length > maxImportQuestions;
 
     return (
-      <div className="max-w-4xl mx-auto space-y-5 pb-12">
-        {/* Hidden File Input for .txt import */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".txt"
-          className="hidden"
-          onChange={handleFileChange}
-        />
+      <div className="max-w-4xl mx-auto pb-16 font-['Plus_Jakarta_Sans',sans-serif]">
+        <div className="relative rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 p-5 sm:p-7 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-5 overflow-hidden">
+          {/* Atmospheric Ambient Glows */}
+          <div className="absolute -top-24 -right-24 w-80 h-80 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top Header */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => setCreationMode('select')}
-              className="p-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition cursor-pointer"
-              title="Back to options"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <div>
-              <h1 className="text-xl font-extrabold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
-                Question Text Editor
-              </h1>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Import .txt files or type & paste questions directly with real-time formatting
-              </p>
-            </div>
-          </div>
+          {/* Hidden File Input for .txt import */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt"
+            className="hidden"
+            onChange={handleFileChange}
+          />
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setCreationMode('manual')}
-              className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-            >
-              Switch to Manual
-            </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white px-3 py-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-
-        {/* System Messages */}
-        {errorMsg && (
-          <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMsg}</span>
-            </div>
-            <button type="button" onClick={() => setErrorMsg(null)} className="cursor-pointer p-1 hover:opacity-75">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
-        {successMsg && (
-          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-              {successMsg}
-            </span>
-            <button type="button" onClick={() => setSuccessMsg(null)} className="cursor-pointer p-1 hover:opacity-75">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
-        {/* TOP SECTION: Exam Professor Button */}
-        <div className="p-4 sm:p-5 rounded-[24px] bg-emerald-500/10 border border-emerald-500/20 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-sm font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white flex items-center gap-2">
-                <span>Exam Professor</span>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                  AI Prompt Builder
-                </span>
-              </div>
-              <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-0.5">
-                Generate tailored .txt exam prompts for ChatGPT, Claude, Gemini, or DeepSeek.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onOpenProfessorModal}
-            className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs shrink-0"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Open Exam Professor</span>
-          </button>
-        </div>
-
-        {/* BOTTOM SECTION: Integrated Text Editor & Bulk Parser Workspace */}
-        <div className="p-5 rounded-[24px] bg-white dark:bg-[#0d1829] border border-zinc-200/80 dark:border-white/10 shadow-xs space-y-4">
-          {/* Header Row: Clean title without clutter */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <ClipboardPaste className="w-4 h-4" />
-              </div>
+          {/* Top Header */}
+          <div className="relative flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCreationMode('select')}
+                className="p-2 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 transition cursor-pointer shadow-xs active:scale-98"
+                title="Back to options"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
               <div>
-                <h2 className="text-sm font-bold text-zinc-900 dark:text-white">
+                <h1 className="text-xl sm:text-2xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
                   Questions Text Editor
-                </h2>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Type, paste, or import questions with exam header details (EXAM, Subject, Time Limit, etc.)
+                </h1>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Import .txt files or type & paste questions directly with real-time formatting
                 </p>
               </div>
             </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCreationMode('manual')}
+                className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] transition cursor-pointer shadow-xs active:scale-98"
+              >
+                Switch to Manual
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white px-4 py-2 rounded-full hover:bg-white/60 dark:hover:bg-zinc-800 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
+
+          {/* System Messages */}
+          {errorMsg && (
+            <div className="relative p-3.5 rounded-[20px] bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+              <button type="button" onClick={() => setErrorMsg(null)} className="cursor-pointer p-1 hover:opacity-75">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="relative p-3.5 rounded-[20px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                {successMsg}
+              </span>
+              <button type="button" onClick={() => setSuccessMsg(null)} className="cursor-pointer p-1 hover:opacity-75">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* TOP SECTION: Exam Professor Banner */}
+          <div className="relative p-5 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+              </div>
+              <div>
+                <div className="text-sm font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white flex items-center gap-2">
+                  <span>Exam Professor</span>
+                  <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                    AI Prompt Builder
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Generate tailored .txt exam prompts for ChatGPT, Claude, Gemini, or DeepSeek.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onOpenProfessorModal}
+              className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs shrink-0 active:scale-98"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Open Exam Professor</span>
+            </button>
+          </div>
+
+          {/* BOTTOM SECTION: Integrated Text Editor & Bulk Parser Workspace */}
+          <div className="relative p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4">
+            {/* Header Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
+                  <ClipboardPaste className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-zinc-900 dark:text-white">
+                    Questions Text Editor
+                  </h2>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Type, paste, or import questions with exam header details (EXAM, Subject, Time Limit, etc.)
+                  </p>
+                </div>
+              </div>
+            </div>
 
           {/* Action Bar: Import .txt, Paste Clipboard, Sample Preset */}
           <div className="flex flex-wrap items-center justify-between gap-2.5">
@@ -1260,7 +1263,7 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
               <button
                 type="button"
                 onClick={handleTriggerFileInput}
-                className="px-3.5 py-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+                className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition shadow-xs active:scale-98"
                 title="Import .txt file with exam details and questions directly into editor"
               >
                 <FileUp className="w-3.5 h-3.5" />
@@ -1270,7 +1273,7 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
               <button
                 type="button"
                 onClick={handlePasteFromClipboard}
-                className="px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition"
+                className="px-3.5 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition shadow-2xs active:scale-98"
                 title="Paste from clipboard"
               >
                 <Clipboard className="w-3.5 h-3.5" />
@@ -1291,10 +1294,10 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
                     }
                   }, 100);
                 }}
-                className="px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition"
+                className="px-3.5 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition shadow-2xs active:scale-98"
                 title="Add a question template to edit manually"
               >
-                <Plus className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <Plus className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
                 <span>+ Add Question</span>
               </button>
             </div>
@@ -1304,17 +1307,17 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
               <button
                 type="button"
                 onClick={handleInsertFreshmanMathSample}
-                className="px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs font-bold cursor-pointer transition flex items-center gap-1.5 shadow-2xs"
+                className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-xs font-semibold cursor-pointer transition flex items-center gap-1.5 shadow-2xs active:scale-98"
                 title="Insert 5 Freshman Applied Mathematics I exam questions"
               >
-                <FileCode className="w-3.5 h-3.5 text-emerald-500" />
+                <FileCode className="w-3.5 h-3.5 text-zinc-500" />
                 <span>Freshman Math (5 Qs)</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleInsertSampleText}
-                className="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-semibold cursor-pointer transition flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-xs font-semibold cursor-pointer transition flex items-center gap-1.5 shadow-2xs active:scale-98"
                 title="Insert standard exam format sample with header metadata"
               >
                 <FileCode className="w-3.5 h-3.5 text-zinc-500" />
@@ -1325,7 +1328,7 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
                 <button
                   type="button"
                   onClick={() => setPasteRawText('')}
-                  className="px-2.5 py-1.5 rounded-full text-rose-500 hover:bg-rose-500/10 text-xs font-semibold cursor-pointer transition ml-1"
+                  className="px-3 py-1.5 rounded-full text-rose-500 hover:bg-rose-500/10 text-xs font-semibold cursor-pointer transition ml-1"
                 >
                   Clear All
                 </button>
@@ -1335,10 +1338,10 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
 
           {/* Extracted Exam Details Indicator Card */}
           {(extractedMeta.name || extractedMeta.subject || extractedMeta.grade || extractedMeta.difficulty || extractedMeta.timeLimit || extractedMeta.passingScore) && (
-            <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 space-y-2">
+            <div className="p-4 rounded-[22px] bg-zinc-50/70 dark:bg-white/[0.02] border border-white/80 dark:border-white/10 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                  <FileCheck2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                  <FileCheck2 className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
                   Detected Exam Header Details
                 </span>
                 <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
@@ -1347,33 +1350,33 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
                 {extractedMeta.name && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium">
-                    <strong className="text-emerald-600 dark:text-emerald-400">Exam:</strong> {extractedMeta.name}
+                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
+                    <strong className="text-zinc-900 dark:text-white">Exam:</strong> {extractedMeta.name}
                   </span>
                 )}
                 {extractedMeta.subject && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium">
-                    <strong className="text-emerald-600 dark:text-emerald-400">Subject:</strong> {extractedMeta.subject}
+                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
+                    <strong className="text-zinc-900 dark:text-white">Subject:</strong> {extractedMeta.subject}
                   </span>
                 )}
                 {extractedMeta.grade && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold">
-                    <strong className="text-emerald-600 dark:text-emerald-400">Level:</strong> {extractedMeta.grade}
+                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-900 dark:text-white font-bold shadow-2xs">
+                    <strong className="text-zinc-900 dark:text-white">Level:</strong> {extractedMeta.grade}
                   </span>
                 )}
                 {extractedMeta.difficulty && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium">
-                    <strong className="text-emerald-600 dark:text-emerald-400">Difficulty:</strong> {extractedMeta.difficulty}
+                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
+                    <strong className="text-zinc-900 dark:text-white">Difficulty:</strong> {extractedMeta.difficulty}
                   </span>
                 )}
                 {extractedMeta.timeLimit && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium">
-                    <strong className="text-emerald-600 dark:text-emerald-400">Time Limit:</strong> {extractedMeta.timeLimit} min
+                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
+                    <strong className="text-zinc-900 dark:text-white">Time Limit:</strong> {extractedMeta.timeLimit} min
                   </span>
                 )}
                 {extractedMeta.passingScore && (
-                  <span className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium">
-                    <strong className="text-emerald-600 dark:text-emerald-400">Passing Score:</strong> {extractedMeta.passingScore}%
+                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
+                    <strong className="text-zinc-900 dark:text-white">Passing Score:</strong> {extractedMeta.passingScore}%
                   </span>
                 )}
               </div>
@@ -1411,7 +1414,7 @@ Passing Score: 70%
    D) is living
    Answer: B
    Explanation: The simple past is used for a completed period of time.`}
-              className="w-full px-4 py-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/30 leading-relaxed shadow-inner"
+              className="w-full px-4 py-3.5 rounded-[22px] bg-white/70 dark:bg-[#08101d] border border-white/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 font-mono text-xs focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 leading-relaxed shadow-xs"
             />
           </div>
 
@@ -1426,13 +1429,13 @@ Passing Score: 70%
             {/* Questions count badge */}
             <div className="flex items-center gap-2">
               {previewQuestions.length > 0 ? (
-                <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                <span className="px-3.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs flex items-center gap-1.5 shadow-2xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>{previewQuestions.length} Questions Detected</span>
                 </span>
               ) : pasteRawText.trim() ? (
-                <span className="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold text-xs flex items-center gap-1.5">
-                  <AlertCircle className="w-3.5 h-3.5" />
+                <span className="px-3.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 font-bold text-xs flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                   <span>Scanning format...</span>
                 </span>
               ) : null}
@@ -1441,7 +1444,7 @@ Passing Score: 70%
 
           {/* Parsing error alert */}
           {parsingError && pasteRawText.trim() && (
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2">
+            <div className="p-3.5 rounded-[20px] bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
               <span>{parsingError}</span>
             </div>
@@ -1449,15 +1452,15 @@ Passing Score: 70%
 
           {/* Freemium / Trial Limit Warning Banner */}
           {isExceedingLimit && (
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-4 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-1">
-                <div className="flex items-center gap-1.5 font-bold text-xs text-amber-800 dark:text-amber-200">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-amber-700 dark:text-amber-300">
                   <Crown className="w-4 h-4 text-amber-500 shrink-0" />
                   <span>
                     Questions Cap Reached ({previewQuestions.length} detected vs. {maxImportQuestions} allowed)
                   </span>
                 </div>
-                <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                   Your current {userTier?.isTrial ? '3-Day Trial' : userTier?.isGuest ? 'Guest' : 'Free'} plan allows up to {maxImportQuestions} imported questions per exam. Upgrade to Premium in ETB for unlimited questions!
                 </p>
               </div>
@@ -1466,7 +1469,7 @@ Passing Score: 70%
                 <button
                   type="button"
                   onClick={() => handleImportParsedQuestions(true)}
-                  className="px-3.5 py-1.5 rounded-full bg-amber-500 text-zinc-950 font-bold text-xs hover:bg-amber-400 transition cursor-pointer shadow-xs"
+                  className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs hover:bg-zinc-800 dark:hover:bg-zinc-100 transition cursor-pointer shadow-xs active:scale-98"
                 >
                   Import First {maxImportQuestions}
                 </button>
@@ -1474,7 +1477,7 @@ Passing Score: 70%
                   <button
                     type="button"
                     onClick={onOpenSubscriptionModal}
-                    className="px-3.5 py-1.5 rounded-full border border-amber-500/40 bg-white dark:bg-zinc-800 text-amber-600 dark:text-amber-300 font-bold text-xs hover:bg-amber-50 dark:hover:bg-zinc-700 transition cursor-pointer"
+                    className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-800 dark:text-zinc-200 font-bold text-xs hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
                   >
                     Upgrade in ETB
                   </button>
@@ -1488,11 +1491,11 @@ Passing Score: 70%
             <div className="space-y-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <BookOpen className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                   <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
                     Questions Preview
                   </h3>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold border border-zinc-200 dark:border-zinc-700">
                     Showing {showAllPreview ? previewQuestions.length : Math.min(3, previewQuestions.length)} of {previewQuestions.length}
                   </span>
                 </div>
@@ -1500,7 +1503,7 @@ Passing Score: 70%
                   <button
                     type="button"
                     onClick={() => setShowAllPreview(!showAllPreview)}
-                    className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                    className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white cursor-pointer"
                   >
                     {showAllPreview ? 'Show Less (First 3)' : `Show All (${previewQuestions.length})`}
                   </button>
@@ -1513,15 +1516,15 @@ Passing Score: 70%
                   return (
                     <div
                       key={idx}
-                      className={`p-3.5 rounded-2xl border text-xs transition ${
+                      className={`p-4 rounded-[22px] border text-xs transition shadow-xs ${
                         isLocked
                           ? 'bg-zinc-50/50 dark:bg-zinc-900/30 border-zinc-200/50 dark:border-zinc-800/50 opacity-60'
-                          : 'bg-zinc-50 dark:bg-zinc-900/70 border-zinc-200 dark:border-zinc-800'
+                          : 'bg-zinc-50/70 dark:bg-[#091322] border-white/80 dark:border-white/10'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="font-semibold text-zinc-900 dark:text-white flex items-start gap-2">
-                          <span className="px-2 py-0.5 rounded-md bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold text-[11px] shrink-0">
+                          <span className="px-2.5 py-0.5 rounded-full bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold text-[11px] shrink-0">
                             Q{idx + 1}
                           </span>
                           <div className="leading-relaxed">
@@ -1530,7 +1533,7 @@ Passing Score: 70%
                         </div>
 
                         {isLocked && (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] shrink-0 flex items-center gap-1">
+                          <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[10px] shrink-0 flex items-center gap-1 border border-amber-500/20">
                             <Crown className="w-3 h-3" />
                             <span>Requires Premium</span>
                           </span>
@@ -1543,10 +1546,10 @@ Passing Score: 70%
                           return (
                             <div
                               key={optIdx}
-                              className={`px-2.5 py-1.5 rounded-xl border flex items-center gap-2 ${
+                              className={`px-3 py-2 rounded-xl border flex items-center gap-2 ${
                                 isCorrect
-                                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-semibold'
-                                  : 'bg-white dark:bg-zinc-800/60 border-zinc-200/70 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400'
+                                  ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold border-transparent shadow-xs'
+                                  : 'bg-white dark:bg-zinc-800/60 border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300'
                               }`}
                             >
                               <span className="font-mono text-[10px] font-bold">
@@ -1555,7 +1558,7 @@ Passing Score: 70%
                               <div className="truncate flex-1">
                                 <MathRenderer text={opt} />
                               </div>
-                              {isCorrect && <Check className="w-3 h-3 text-emerald-500 shrink-0 ml-auto" />}
+                              {isCorrect && <Check className="w-3 h-3 text-emerald-400 shrink-0 ml-auto" />}
                             </div>
                           );
                         })}
@@ -1563,7 +1566,7 @@ Passing Score: 70%
 
                       {q.explanation && (
                         <div className="mt-2.5 pl-7 text-[11px] text-zinc-600 dark:text-zinc-300 flex items-start gap-2">
-                          <span className="font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                          <span className="font-semibold text-zinc-900 dark:text-white shrink-0">
                             Explanation:
                           </span>
                           <div className="leading-relaxed whitespace-pre-line">
@@ -1576,12 +1579,12 @@ Passing Score: 70%
                 })}
 
                 {!showAllPreview && previewQuestions.length > 3 && (
-                  <div className="p-2.5 text-center rounded-xl bg-zinc-100 dark:bg-zinc-800/60 text-xs text-zinc-500">
+                  <div className="p-3 text-center rounded-[18px] bg-zinc-100 dark:bg-zinc-800/60 text-xs text-zinc-500">
                     Showing first 3 sample questions.{' '}
                     <button
                       type="button"
                       onClick={() => setShowAllPreview(true)}
-                      className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer ml-1"
+                      className="font-semibold text-zinc-900 dark:text-white hover:underline cursor-pointer ml-1"
                     >
                       Show all {previewQuestions.length} questions
                     </button>
@@ -1597,7 +1600,7 @@ Passing Score: 70%
               <button
                 type="button"
                 onClick={() => setCreationMode('manual')}
-                className="px-4 py-2 rounded-full border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition w-full sm:w-auto text-center"
+                className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-600 dark:text-zinc-400 text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition shadow-xs active:scale-98 w-full sm:w-auto text-center"
               >
                 Switch to Manual
               </button>
@@ -1609,7 +1612,7 @@ Passing Score: 70%
                   <button
                     type="button"
                     onClick={() => handleInstantSaveFromPaste(true)}
-                    className="px-4 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+                    className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
                     title="Save first questions directly to local library and update app instantly"
                   >
                     <Save className="w-4 h-4" />
@@ -1619,7 +1622,7 @@ Passing Score: 70%
                   <button
                     type="button"
                     onClick={() => handleImportParsedQuestions(true)}
-                    className="px-4 py-2 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-xs font-bold transition cursor-pointer"
+                    className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-xs font-bold transition cursor-pointer shadow-xs active:scale-98"
                   >
                     Review First {maxImportQuestions}
                   </button>
@@ -1628,7 +1631,7 @@ Passing Score: 70%
                     <button
                       type="button"
                       onClick={onOpenSubscriptionModal}
-                      className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                      className="px-5 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition active:scale-98"
                     >
                       <Crown className="w-4 h-4" />
                       <span>Upgrade for All {previewQuestions.length}</span>
@@ -1641,7 +1644,7 @@ Passing Score: 70%
                     <button
                       type="button"
                       onClick={() => handleInstantSaveFromPaste(false)}
-                      className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+                      className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition shadow-xs cursor-pointer active:scale-98"
                       title="Directly save to local storage and add to app instantly"
                     >
                       <Save className="w-4 h-4" />
@@ -1669,7 +1672,7 @@ Passing Score: 70%
                         };
                         onOpenDatabaseUpload(examData);
                       }}
-                      className="px-4 py-2.5 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+                      className="px-4 py-2.5 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] font-bold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-xs active:scale-98"
                       title="Upload questions directly to Cloud Firestore"
                     >
                       <CloudUpload className="w-3.5 h-3.5" />
@@ -1681,9 +1684,9 @@ Passing Score: 70%
                     type="button"
                     disabled={previewQuestions.length === 0}
                     onClick={() => handleImportParsedQuestions(false)}
-                    className={`px-5 py-2.5 rounded-full font-bold text-xs flex items-center gap-1.5 transition shadow-xs ${
+                    className={`px-5 py-2.5 rounded-full font-bold text-xs flex items-center gap-1.5 transition shadow-xs active:scale-98 ${
                       previewQuestions.length > 0
-                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'
+                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 cursor-pointer'
                         : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed'
                     }`}
                   >
@@ -1702,106 +1705,108 @@ Passing Score: 70%
           </div>
         </div>
       </div>
+      </div>
     );
   }
 
   // 3. Manual Wizard Flow (Steps 1 to 4)
   return (
-    <div className="max-w-4xl mx-auto space-y-5 pb-12">
-      {/* Hidden File Input for .txt import */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".txt"
-        className="hidden"
-        onChange={handleFileChange}
-      />
+    <div className="max-w-4xl mx-auto pb-16">
+      <div className="rounded-[32px] sm:rounded-[38px] bg-white/40 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/60 dark:border-white/10 p-5 sm:p-7 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-5">
+        {/* Hidden File Input for .txt import */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".txt"
+          className="hidden"
+          onChange={handleFileChange}
+        />
 
-      {/* Top Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-            <FileText className="w-4 h-4" />
+        {/* Top Header */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center shadow-xs border border-white/80 dark:border-white/10">
+              <FileText className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
+                {initialExam ? 'Edit Exam' : 'Create Exam'}
+              </h1>
+              {initialExam && (
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Updating &ldquo;{name || initialExam.name}&rdquo;
+                </p>
+              )}
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-extrabold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
-              {initialExam ? 'Edit Exam' : 'Create Exam'}
-            </h1>
+
+          <div className="flex items-center gap-2">
+            {!initialExam && (
+              <button
+                type="button"
+                onClick={() => setCreationMode('select')}
+                className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white px-4 py-1.5 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800/80 transition cursor-pointer shadow-xs"
+              >
+                Change Mode
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onCancel}
+              className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white px-3.5 py-1.5 rounded-full hover:bg-white/60 dark:hover:bg-zinc-800 transition cursor-pointer"
+            >
+              Cancel
+            </button>
             {initialExam && (
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Updating &ldquo;{name || initialExam.name}&rdquo;
-              </p>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="px-4 py-1.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                title="Save changes to this exam"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Save Changes</span>
+              </button>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {!initialExam && (
-            <button
-              type="button"
-              onClick={() => setCreationMode('select')}
-              className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-            >
-              Change Mode
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white px-3 py-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-          >
-            Cancel
-          </button>
-          {initialExam && (
-            <button
-              type="button"
-              onClick={handleSave}
-              className="px-4 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
-              title="Save changes to this exam"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>Save Changes</span>
-            </button>
-          )}
+        {/* Stepper Navigation: Capsule pill bar */}
+        <div className="p-1.5 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
+          <div className="grid grid-cols-4 gap-1">
+            {[
+              { step: 1, label: 'Details', icon: BookOpen },
+              { step: 2, label: `Questions (${questions.length})`, icon: HelpCircle },
+              { step: 3, label: 'Settings', icon: Settings },
+              { step: 4, label: 'Review', icon: CheckCircle2 },
+            ].map(({ step, label, icon: Icon }) => {
+              const isActive = currentStep === step;
+              const isDone = currentStep > step;
+              return (
+                <button
+                  key={step}
+                  type="button"
+                  onClick={() => {
+                    if (step === 1) setCurrentStep(1);
+                    else if (step === 2 && validateStep1()) setCurrentStep(2);
+                    else if (step === 3 && validateStep1() && validateStep2()) setCurrentStep(3);
+                    else if (step === 4 && validateStep1() && validateStep2()) setCurrentStep(4);
+                  }}
+                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-full transition cursor-pointer text-xs font-semibold ${
+                    isActive
+                      ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                      : isDone
+                      ? 'text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
+                      : 'text-zinc-400 dark:text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
-
-      {/* Stepper Navigation */}
-      <div className="p-2 rounded-2xl bg-white dark:bg-[#0d1829] border border-zinc-200/80 dark:border-white/10 shadow-xs">
-        <div className="grid grid-cols-4 gap-1.5">
-          {[
-            { step: 1, label: 'Details', icon: BookOpen },
-            { step: 2, label: `Questions (${questions.length})`, icon: HelpCircle },
-            { step: 3, label: 'Settings', icon: Settings },
-            { step: 4, label: 'Review', icon: CheckCircle2 },
-          ].map(({ step, label, icon: Icon }) => {
-            const isActive = currentStep === step;
-            const isDone = currentStep > step;
-            return (
-              <button
-                key={step}
-                type="button"
-                onClick={() => {
-                  if (step === 1) setCurrentStep(1);
-                  else if (step === 2 && validateStep1()) setCurrentStep(2);
-                  else if (step === 3 && validateStep1() && validateStep2()) setCurrentStep(3);
-                  else if (step === 4 && validateStep1() && validateStep2()) setCurrentStep(4);
-                }}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl transition cursor-pointer text-xs font-semibold ${
-                  isActive
-                    ? 'bg-emerald-500 text-zinc-950 font-bold shadow-xs'
-                    : isDone
-                    ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200'
-                    : 'text-zinc-400 dark:text-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       {/* Messages */}
       {errorMsg && (
@@ -1827,7 +1832,7 @@ Passing Score: 70%
 
       {/* Step 1: Details */}
       {currentStep === 1 && (
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#0d1829] border border-zinc-200/80 dark:border-white/10 shadow-xs space-y-4">
+        <div className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
@@ -1839,7 +1844,7 @@ Passing Score: 70%
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Calculus: Limits & Derivatives"
-                className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
 
@@ -1853,7 +1858,7 @@ Passing Score: 70%
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="e.g. Mathematics, Physics, Chemistry"
-                className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
           </div>
@@ -1867,7 +1872,7 @@ Passing Score: 70%
                 id="exam-difficulty"
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as DifficultyLevel)}
-                className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 cursor-pointer"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 cursor-pointer"
               >
                 <option value="Easy">Easy</option>
                 <option value="Medium">Medium</option>
@@ -1886,7 +1891,7 @@ Passing Score: 70%
                 max="180"
                 value={timeLimit}
                 onChange={(e) => setTimeLimit(Number(e.target.value))}
-                className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
           </div>
@@ -1901,7 +1906,7 @@ Passing Score: 70%
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Exam instructions or syllabus goals..."
-              className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
+              className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
             />
           </div>
 
@@ -1911,7 +1916,7 @@ Passing Score: 70%
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="px-4 py-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs transition"
+                  className="px-4 py-2 rounded-full bg-white/80 dark:bg-zinc-800 border border-white/60 dark:border-white/10 hover:bg-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>Save Changes</span>
@@ -1921,7 +1926,7 @@ Passing Score: 70%
             <button
               type="button"
               onClick={handleNext}
-              className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
             >
               <span>Next: Questions</span>
               <ChevronRight className="w-4 h-4" />
@@ -1932,7 +1937,7 @@ Passing Score: 70%
 
       {/* Step 2: Questions Editor */}
       {currentStep === 2 && (
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#0d1829] border border-zinc-200/80 dark:border-white/10 shadow-xs space-y-4">
+        <div className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4">
           {/* Action Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <div className="flex items-center gap-2">
@@ -2208,7 +2213,7 @@ Passing Score: 70%
               <button
                 type="button"
                 onClick={handleNext}
-                className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
               >
                 <span>Next: Settings</span>
                 <ChevronRight className="w-4 h-4" />
@@ -2220,7 +2225,7 @@ Passing Score: 70%
 
       {/* Step 3: Settings */}
       {currentStep === 3 && (
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#0d1829] border border-zinc-200/80 dark:border-white/10 shadow-xs space-y-4">
+        <div className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
@@ -2233,7 +2238,7 @@ Passing Score: 70%
                 max="100"
                 value={passingScore}
                 onChange={(e) => setPassingScore(Number(e.target.value))}
-                className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
 
@@ -2245,7 +2250,7 @@ Passing Score: 70%
                 id="exam-subjecttype"
                 value={subjectType}
                 onChange={(e) => setSubjectType(e.target.value as SubjectType)}
-                className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 cursor-pointer"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 cursor-pointer"
               >
                 <option value="theory">Theory & Concepts</option>
                 <option value="calculation">Mathematical Calculations</option>
@@ -2257,7 +2262,7 @@ Passing Score: 70%
             <button
               type="button"
               onClick={() => setCurrentStep(2)}
-              className="px-4 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Back</span>
@@ -2267,7 +2272,7 @@ Passing Score: 70%
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="px-4 py-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs transition"
+                  className="px-4 py-2 rounded-full bg-white/80 dark:bg-zinc-800 border border-white/60 dark:border-white/10 hover:bg-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>Save Changes</span>
@@ -2276,7 +2281,7 @@ Passing Score: 70%
               <button
                 type="button"
                 onClick={() => setCurrentStep(4)}
-                className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
               >
                 <span>Next: Review</span>
                 <ChevronRight className="w-4 h-4" />
@@ -2288,7 +2293,7 @@ Passing Score: 70%
 
       {/* Step 4: Review & Save */}
       {currentStep === 4 && (
-        <div className="p-5 rounded-3xl bg-white dark:bg-[#0d1829] border border-zinc-200/80 dark:border-white/10 shadow-xs space-y-4">
+        <div className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4">
           {/* Exam Summary Header */}
           <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2">
             <h3 className="text-lg font-bold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
@@ -2335,7 +2340,7 @@ Passing Score: 70%
             <button
               type="button"
               onClick={() => setCurrentStep(3)}
-              className="px-4 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Back</span>
@@ -2345,7 +2350,7 @@ Passing Score: 70%
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-4 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 font-semibold text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 hover:bg-white/60 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white font-semibold text-xs cursor-pointer transition"
               >
                 Cancel
               </button>
@@ -2370,10 +2375,10 @@ Passing Score: 70%
                     };
                     onOpenDatabaseUpload(examData);
                   }}
-                  className="px-4 py-2 rounded-full border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                  className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
                   title="Upload questions to Cloud Firestore"
                 >
-                  <CloudUpload className="w-4 h-4" />
+                  <CloudUpload className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
                   <span>Upload to Firestore</span>
                 </button>
               )}
@@ -2382,7 +2387,7 @@ Passing Score: 70%
                 id="saveExamBtn"
                 type="button"
                 onClick={handleSave}
-                className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
               >
                 <Save className="w-4 h-4" />
                 <span>{initialExam ? 'Save Changes' : 'Save Exam'}</span>
@@ -2391,6 +2396,7 @@ Passing Score: 70%
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

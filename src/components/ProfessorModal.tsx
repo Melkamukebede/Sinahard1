@@ -254,24 +254,28 @@ Conclusion: Option A is correct.`;
   return (
     <div
       id="professor-modal-overlay"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150 font-['Plus_Jakarta_Sans',sans-serif]"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-md animate-in fade-in duration-150 font-['Plus_Jakarta_Sans',sans-serif]"
     >
       <div
         id="professor-modal-container"
-        className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-[#0b1322] border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden text-zinc-900 dark:text-white"
+        className="relative w-full max-w-3xl max-h-[92vh] flex flex-col rounded-[32px] bg-white/95 dark:bg-[#070e1a]/95 border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl"
       >
-        {/* Header - Calm & Focused */}
-        <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/70 dark:bg-zinc-900/50">
+        {/* Subtle Atmospheric Ambient Glow */}
+        <div className="absolute top-0 right-1/4 w-80 h-80 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Header - Frosted Glass Bar */}
+        <div className="relative px-6 py-4 border-b border-white/60 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-              <Sparkles className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center shadow-2xs">
+              <Sparkles className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-base font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
                   Exam Professor
                 </h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold border border-zinc-200 dark:border-zinc-700">
                   AI Prompt Builder
                 </span>
               </div>
@@ -288,29 +292,29 @@ Conclusion: Option A is correct.`;
             className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
             aria-label="Close Professor Modal"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
-          {/* Calm Hint Banner: AI must create .txt file */}
-          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-zinc-700 dark:text-zinc-300 flex items-start gap-2.5">
-            <HelpCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+        <div className="relative flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+          {/* Porcelain Hint Banner */}
+          <div className="p-4 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex items-start gap-3">
+            <HelpCircle className="w-4 h-4 text-zinc-600 dark:text-zinc-400 shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <span className="font-bold text-zinc-900 dark:text-white block">
-                Hint: AI must create plain .txt content
+                Direct AI Integration
               </span>
-              <p className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400">
-                Copy this prompt, send it to any AI (ChatGPT, Claude, Gemini, DeepSeek), and paste the resulting text straight back into the Question Text Editor.
+              <p className="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+                Copy this prompt, send it to any AI (ChatGPT, Claude, Gemini, DeepSeek), and paste the resulting plain text straight back into the Question Text Editor.
               </p>
             </div>
           </div>
 
           {/* Quick Curriculum Presets */}
           <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold text-zinc-500 block">
-              Quick Presets:
+            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 px-1 block">
+              Curriculum Presets:
             </span>
             <div className="flex items-center gap-1.5 flex-wrap">
               {[
@@ -325,7 +329,7 @@ Conclusion: Option A is correct.`;
                   key={p.id}
                   type="button"
                   onClick={() => applyPreset(p.id as any)}
-                  className="px-2.5 py-1 rounded-xl text-xs bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 cursor-pointer transition"
+                  className="px-3 py-1.5 rounded-full text-xs bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 shadow-2xs active:scale-98 cursor-pointer transition"
                 >
                   {p.label}
                 </button>
@@ -338,23 +342,33 @@ Conclusion: Option A is correct.`;
             <button
               type="button"
               onClick={() => setSubjectType('calculation')}
-              className={`p-3.5 rounded-2xl border text-left transition cursor-pointer flex items-start gap-3 ${
+              className={`p-4 rounded-[22px] border text-left transition cursor-pointer flex items-start gap-3 shadow-xs active:scale-98 ${
                 subjectType === 'calculation'
-                  ? 'bg-emerald-500/10 border-emerald-500/50 ring-2 ring-emerald-500/20'
-                  : 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'
+                  ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent'
+                  : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
               }`}
             >
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                subjectType === 'calculation'
+                  ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950'
+                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white'
+              }`}>
                 <Calculator className="w-4 h-4" />
               </div>
               <div>
-                <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                  <span>Math & Science</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold">
+                <div className="font-bold flex items-center gap-1.5">
+                  <span className={subjectType === 'calculation' ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}>Math & Science</span>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold ${
+                    subjectType === 'calculation'
+                      ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
+                  }`}>
                     Vertical Steps
                   </span>
                 </div>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                <p className={`text-[11px] mt-1 leading-relaxed ${
+                  subjectType === 'calculation' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500 dark:text-zinc-400'
+                }`}>
                   Enforces vertical step-by-step mathematical explanations and LaTeX notation.
                 </p>
               </div>
@@ -363,33 +377,43 @@ Conclusion: Option A is correct.`;
             <button
               type="button"
               onClick={() => setSubjectType('theory')}
-              className={`p-3.5 rounded-2xl border text-left transition cursor-pointer flex items-start gap-3 ${
+              className={`p-4 rounded-[22px] border text-left transition cursor-pointer flex items-start gap-3 shadow-xs active:scale-98 ${
                 subjectType === 'theory'
-                  ? 'bg-emerald-500/10 border-emerald-500/50 ring-2 ring-emerald-500/20'
-                  : 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'
+                  ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent'
+                  : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
               }`}
             >
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                subjectType === 'theory'
+                  ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950'
+                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white'
+              }`}>
                 <BookOpen className="w-4 h-4" />
               </div>
               <div>
-                <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                  <span>Theory & Concepts</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-semibold">
+                <div className="font-bold flex items-center gap-1.5">
+                  <span className={subjectType === 'theory' ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}>Theory & Concepts</span>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold ${
+                    subjectType === 'theory'
+                      ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
+                  }`}>
                     No LaTeX
                   </span>
                 </div>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                <p className={`text-[11px] mt-1 leading-relaxed ${
+                  subjectType === 'theory' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500 dark:text-zinc-400'
+                }`}>
                   Focuses on clear definitions, mechanisms, and real-world conceptual understanding.
                 </p>
               </div>
             </button>
           </div>
 
-          {/* Core Configuration Inputs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Core Configuration Inputs Porcelain Card */}
+          <div className="p-5 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
                 Subject Name
               </label>
               <input
@@ -397,18 +421,18 @@ Conclusion: Option A is correct.`;
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="e.g. Grade 12 Physics"
-                className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40"
+                className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
                 Academic Level
               </label>
               <select
                 value={eduLevel}
                 onChange={(e) => setEduLevel(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40"
+                className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
               >
                 <option value="Grade 9-10 (Secondary)">Grade 9-10 (Secondary)</option>
                 <option value="Grade 11-12 / National Exam">Grade 11-12 / National Exam</option>
@@ -418,7 +442,7 @@ Conclusion: Option A is correct.`;
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
                 Topics or Syllabus Chapters
               </label>
               <input
@@ -426,16 +450,16 @@ Conclusion: Option A is correct.`;
                 value={topics}
                 onChange={(e) => setTopics(e.target.value)}
                 placeholder="e.g. limits, derivatives, quadratic equations, matrices"
-                className="w-full px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40"
+                className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-                  Question Count (Preset or enter manually)
+                <label className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200">
+                  Question Count
                 </label>
-                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="text-[11px] font-bold text-zinc-900 dark:text-white">
                   {totalQuestions} Questions
                 </span>
               </div>
@@ -445,13 +469,13 @@ Conclusion: Option A is correct.`;
                     key={num}
                     type="button"
                     onClick={() => setTotalQuestions(num)}
-                    className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer transition ${
+                    className={`px-3 py-1.5 rounded-full border text-xs font-semibold cursor-pointer transition shadow-2xs ${
                       totalQuestions === num
-                        ? 'bg-emerald-500 text-zinc-950 font-bold border-emerald-500'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold border-transparent'
+                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                     }`}
                   >
-                    {num} Qs
+                    {num}
                   </button>
                 ))}
                 <div className="flex items-center gap-1 flex-1 min-w-[85px]">
@@ -469,7 +493,7 @@ Conclusion: Option A is correct.`;
                       }
                     }}
                     placeholder="Custom"
-                    className="w-full px-2 py-1.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-medium focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40 text-center"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-medium focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 text-center"
                     title="Enter any number of questions manually"
                   />
                   <span className="text-[10px] text-zinc-400 shrink-0">custom</span>
@@ -478,7 +502,7 @@ Conclusion: Option A is correct.`;
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
                 Difficulty Level
               </label>
               <div className="flex items-center gap-1.5">
@@ -487,10 +511,10 @@ Conclusion: Option A is correct.`;
                     key={lvl}
                     type="button"
                     onClick={() => setDifficulty(lvl)}
-                    className={`flex-1 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer transition ${
+                    className={`flex-1 py-1.5 rounded-full border text-xs font-semibold cursor-pointer transition shadow-2xs ${
                       difficulty === lvl
-                        ? 'bg-emerald-500 text-zinc-950 font-bold border-emerald-500'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300'
+                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold border-transparent'
+                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
                     }`}
                   >
                     {lvl}
@@ -502,14 +526,14 @@ Conclusion: Option A is correct.`;
 
           {/* View Selector: Master Prompt vs .txt Output Preview */}
           <div className="pt-2 space-y-2">
-            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-between border-b border-white/60 dark:border-white/10 pb-2">
+              <div className="flex items-center gap-1.5 p-1 rounded-full bg-zinc-100 dark:bg-zinc-800/80 border border-white/60 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => setActiveView('prompt')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
                     activeView === 'prompt'
-                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold'
+                      ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
                       : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
                   }`}
                 >
@@ -519,9 +543,9 @@ Conclusion: Option A is correct.`;
                 <button
                   type="button"
                   onClick={() => setActiveView('txt_preview')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
                     activeView === 'txt_preview'
-                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold'
+                      ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
                       : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
                   }`}
                 >
@@ -533,7 +557,7 @@ Conclusion: Option A is correct.`;
               <button
                 type="button"
                 onClick={handleCopy}
-                className="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-xs"
+                className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-xs active:scale-98"
               >
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied ? 'Copied to Clipboard!' : 'Copy Prompt'}</span>
@@ -548,11 +572,11 @@ Conclusion: Option A is correct.`;
                   rows={8}
                   readOnly
                   value={generatedPrompt}
-                  className="w-full p-3.5 font-mono text-xs leading-relaxed rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 select-all focus:outline-hidden"
+                  className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 select-all focus:outline-hidden shadow-xs"
                 />
                 <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1">
                   <span>Works with ChatGPT, Claude, Gemini, and DeepSeek.</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  <span className="text-zinc-900 dark:text-white font-medium">
                     ✓ Clean plain text format ready for instant import
                   </span>
                 </div>
@@ -566,7 +590,7 @@ Conclusion: Option A is correct.`;
                   rows={8}
                   readOnly
                   value={sampleTxtPreview}
-                  className="w-full p-3.5 font-mono text-xs leading-relaxed rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 select-all focus:outline-hidden"
+                  className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 select-all focus:outline-hidden shadow-xs"
                 />
                 <p className="text-[11px] text-zinc-500 px-1">
                   Notice how each math question has vertical step-wise calculations on separate lines.
@@ -577,7 +601,7 @@ Conclusion: Option A is correct.`;
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3.5 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/50 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-white/60 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-zinc-500">
             <span className="hidden sm:inline">
               1. Copy Prompt → 2. Ask AI → 3. Paste into Question Text Editor
@@ -592,7 +616,7 @@ Conclusion: Option A is correct.`;
               id="professor-footer-close-btn"
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 font-semibold text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+              className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-600 dark:text-zinc-400 font-semibold text-xs hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer shadow-xs transition"
             >
               Close
             </button>
@@ -608,7 +632,7 @@ Conclusion: Option A is correct.`;
                   onGoToPaste();
                 }
               }}
-              className="px-4 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/20 transition-all hover:gap-2"
+              className="px-5 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
             >
               <span>Next: Question Text Editor</span>
               <ArrowRight className="w-3.5 h-3.5" />

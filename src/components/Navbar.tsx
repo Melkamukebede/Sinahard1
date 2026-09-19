@@ -75,75 +75,75 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/85 dark:bg-[#070e1a]/85 border-b border-zinc-200/80 dark:border-white/10 transition-colors">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-2xl bg-white/70 dark:bg-[#070e1a]/85 border-b border-white/60 dark:border-white/10 transition-colors shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
         {/* Brand */}
         <div
           onClick={() => onTabChange('home')}
           className="flex items-center gap-2.5 cursor-pointer select-none group"
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-blue-500 flex items-center justify-center text-zinc-950 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-            <GraduationCap className="w-5 h-5 text-zinc-950 stroke-[2.2]" />
+          <div className="w-9 h-9 rounded-xl bg-zinc-950 dark:bg-white flex items-center justify-center text-white dark:text-zinc-950 shadow-xs group-hover:scale-105 transition-transform">
+            <GraduationCap className="w-5 h-5 stroke-[2.2]" />
           </div>
           <div className="flex flex-col">
-            <span className="font-['Syne',sans-serif] font-extrabold text-lg tracking-tight bg-gradient-to-r from-emerald-500 via-teal-400 to-blue-500 bg-clip-text text-transparent">
-              ExamMaster <span className="text-xs uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 ml-1">Pro</span>
+            <span className="font-['Outfit',sans-serif] font-bold text-lg tracking-tight text-zinc-900 dark:text-white flex items-center">
+              ExamMaster <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 ml-1.5">Pro</span>
             </span>
           </div>
         </div>
 
         {/* Center Nav Tabs */}
-        <nav className="hidden md:flex items-center p-1 rounded-full bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-sm">
+        <nav className="hidden md:flex items-center p-1 rounded-full bg-white/70 dark:bg-[#0c182b]/80 backdrop-blur-md border border-white/80 dark:border-white/10 text-xs sm:text-sm shadow-xs">
           <button
             id="nav-tab-home"
             type="button"
             onClick={() => onTabChange('home')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-medium transition cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold transition cursor-pointer active:scale-98 ${
               activeTab === 'home'
-                ? 'bg-emerald-500 text-zinc-950 font-bold shadow-sm shadow-emerald-500/20'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
-            <LayoutDashboard className="w-4 h-4" />
+            <LayoutDashboard className="w-3.5 h-3.5" />
             Home
           </button>
           <button
             id="nav-tab-files"
             type="button"
             onClick={() => onTabChange('files')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-medium transition cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold transition cursor-pointer active:scale-98 ${
               activeTab === 'files'
-                ? 'bg-emerald-500 text-zinc-950 font-bold shadow-sm shadow-emerald-500/20'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-3.5 h-3.5" />
             Exams
           </button>
           <button
             id="nav-tab-results"
             type="button"
             onClick={() => onTabChange('results')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-medium transition cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold transition cursor-pointer active:scale-98 ${
               activeTab === 'results'
-                ? 'bg-emerald-500 text-zinc-950 font-bold shadow-sm shadow-emerald-500/20'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
-            <BarChart3 className="w-4 h-4" />
+            <BarChart3 className="w-3.5 h-3.5" />
             Results
           </button>
           <button
             id="nav-tab-create"
             type="button"
             onClick={() => onTabChange('create')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-medium transition cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold transition cursor-pointer active:scale-98 ${
               activeTab === 'create'
-                ? 'bg-emerald-500 text-zinc-950 font-bold shadow-sm shadow-emerald-500/20'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
-            <PlusCircle className="w-4 h-4" />
+            <PlusCircle className="w-3.5 h-3.5" />
             Create
           </button>
 
@@ -153,10 +153,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               id="nav-tab-admin-subs"
               type="button"
               onClick={() => onTabChange('admin-subs')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full font-medium transition cursor-pointer text-xs ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-semibold transition cursor-pointer text-xs active:scale-98 ${
                 activeTab === 'admin-subs'
-                  ? 'bg-amber-500 text-zinc-950 font-bold shadow-sm shadow-amber-500/20'
-                  : 'text-amber-600 dark:text-amber-400 hover:text-amber-700'
+                  ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -172,18 +172,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             id="theme-toggle-btn"
             type="button"
             onClick={toggleTheme}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/90 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700/80 transition cursor-pointer shadow-xs"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-100 border border-white/80 dark:border-white/10 transition cursor-pointer shadow-xs active:scale-98"
             title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             aria-label="Toggle theme"
           >
             {isDark ? (
               <>
-                <Sun className="w-4 h-4 text-amber-400" />
+                <Sun className="w-3.5 h-3.5 text-zinc-200" />
                 <span className="hidden sm:inline">Light</span>
               </>
             ) : (
               <>
-                <Moon className="w-4 h-4 text-indigo-600" />
+                <Moon className="w-3.5 h-3.5 text-zinc-700" />
                 <span className="hidden sm:inline">Dark</span>
               </>
             )}
@@ -194,11 +194,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             id="drawer-toggle-btn"
             type="button"
             onClick={onOpenDrawer}
-            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/90 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700/80 transition cursor-pointer shadow-xs"
+            className="relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-100 border border-white/80 dark:border-white/10 transition cursor-pointer shadow-xs active:scale-98"
             title="Open Utilities & Tools Drawer"
             aria-label="Open Drawer Menu"
           >
-            <Menu className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />
+            <Menu className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
             <span className="hidden sm:inline">Menu</span>
             {unreadAlertsCount > 0 && (
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -213,7 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition cursor-pointer"
+                className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
               >
                 {user.photoURL ? (
                   <img
@@ -222,15 +222,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="w-6 h-6 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-6 h-6 rounded-full bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center justify-center">
+                  <div className="w-6 h-6 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center justify-center">
                     {user.displayName?.charAt(0) || 'U'}
                   </div>
                 )}
-                <span className="text-xs font-semibold max-w-[90px] truncate text-emerald-700 dark:text-emerald-400">
+                <span className="text-xs font-semibold max-w-[90px] truncate text-zinc-800 dark:text-zinc-200">
                   {user.displayName || 'Student'}
                 </span>
                 {user.grade && (
-                  <span className="hidden sm:inline-block text-[10px] font-extrabold px-1.5 py-0.2 rounded-md bg-emerald-600 text-white">
+                  <span className="hidden sm:inline-block text-[10px] font-extrabold px-1.5 py-0.2 rounded-md bg-zinc-950 dark:bg-white text-white dark:text-zinc-950">
                     G-{user.grade}
                   </span>
                 )}
@@ -238,18 +238,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl py-2 z-50 text-sm animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-4 py-2 border-b border-zinc-100 dark:border-zinc-800 space-y-1">
+                <div className="absolute right-0 mt-2 w-64 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xl py-2 z-50 text-sm animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-4 py-2 border-b border-zinc-100 dark:border-zinc-800/80 space-y-1">
                     <p className="font-bold text-zinc-900 dark:text-white truncate">
                       {user.displayName || 'Student'}
                     </p>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user.email}</p>
                     <div className="pt-1 flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                         Grade {user.grade || '12'}
                       </span>
                       {user.stream && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
                           {user.stream}
                         </span>
                       )}
@@ -267,9 +267,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setShowUserMenu(false);
                       openRegistrationModal();
                     }}
-                    className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 flex items-center gap-2 cursor-pointer transition text-xs font-semibold"
+                    className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/[0.04] flex items-center gap-2 cursor-pointer transition text-xs font-semibold"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-emerald-500" />
+                    <Edit3 className="w-3.5 h-3.5 text-zinc-500" />
                     <span>Edit Student Profile / Grade</span>
                   </button>
 
@@ -279,7 +279,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       signOut();
                       setShowUserMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer transition text-xs"
+                    className="w-full px-4 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer transition text-xs font-semibold"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     Sign Out
@@ -292,16 +292,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 pl-2.5 pr-3 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition cursor-pointer"
+                className="flex items-center gap-2 pl-2.5 pr-3 py-1 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
                 title="Guest Mode active (Local Storage)"
               >
-                <div className="w-5 h-5 rounded-full bg-blue-500 text-white font-bold text-[10px] flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-[10px] flex items-center justify-center">
                   {user.displayName?.charAt(0) || 'G'}
                 </div>
-                <span className="text-xs font-semibold max-w-[80px] truncate text-blue-700 dark:text-blue-400">
+                <span className="text-xs font-semibold max-w-[80px] truncate text-zinc-800 dark:text-zinc-200">
                   {user.displayName}
                 </span>
-                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
                   G-{user.grade || '12'}
                 </span>
               </button>
@@ -310,7 +310,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id="register-btn-guest"
                 type="button"
                 onClick={openRegistrationModal}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition cursor-pointer shadow-xs active:scale-95"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 transition cursor-pointer shadow-xs active:scale-98"
                 title="Register with Google Account"
               >
                 <UserPlus className="w-3.5 h-3.5" />
@@ -318,8 +318,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 top-10 mt-1 w-64 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl py-2 z-50 text-sm">
-                  <div className="px-4 py-2 border-b border-zinc-100 dark:border-zinc-800 space-y-1">
+                <div className="absolute right-0 top-10 mt-1 w-64 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xl py-2 z-50 text-sm">
+                  <div className="px-4 py-2 border-b border-zinc-100 dark:border-zinc-800/80 space-y-1">
                     <p className="font-semibold text-zinc-900 dark:text-white truncate">
                       {user.displayName}
                     </p>
@@ -334,9 +334,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setShowUserMenu(false);
                       openRegistrationModal();
                     }}
-                    className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 flex items-center gap-2 cursor-pointer transition text-xs font-semibold"
+                    className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/[0.04] flex items-center gap-2 cursor-pointer transition text-xs font-semibold"
                   >
-                    <UserPlus className="w-3.5 h-3.5 text-emerald-500" />
+                    <UserPlus className="w-3.5 h-3.5 text-zinc-500" />
                     Register / Connect Google Account
                   </button>
                   <button
@@ -345,9 +345,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setShowUserMenu(false);
                       setManualNoticeOpen(true);
                     }}
-                    className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 flex items-center gap-2 cursor-pointer transition text-xs"
+                    className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/[0.04] flex items-center gap-2 cursor-pointer transition text-xs"
                   >
-                    <UserIcon className="w-3.5 h-3.5 text-blue-500" />
+                    <UserIcon className="w-3.5 h-3.5 text-zinc-500" />
                     Quick Guest Name Entry
                   </button>
                 </div>
@@ -358,7 +358,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               id="register-btn-main"
               type="button"
               onClick={openRegistrationModal}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition cursor-pointer shadow-sm shadow-emerald-600/25 active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 transition cursor-pointer shadow-xs active:scale-98"
               title="Register your student profile with Google Account to tailor exams"
             >
               <UserPlus className="w-3.5 h-3.5 stroke-[2.2]" />
@@ -378,12 +378,12 @@ export const Navbar: React.FC<NavbarProps> = ({
       />
 
       {/* Mobile Tab Navigation */}
-      <div className="md:hidden flex items-center justify-around px-2 py-1 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/90 text-xs">
+      <div className="md:hidden flex items-center justify-around px-2 py-1.5 border-t border-white/60 dark:border-white/10 bg-white/85 dark:bg-[#070e1a]/95 backdrop-blur-xl text-xs">
         <button
           type="button"
           onClick={() => onTabChange('home')}
-          className={`flex flex-col items-center py-1 px-2 rounded-lg ${
-            activeTab === 'home' ? 'text-emerald-500 font-bold' : 'text-zinc-500'
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition ${
+            activeTab === 'home' ? 'text-zinc-950 dark:text-white font-bold' : 'text-zinc-500'
           }`}
         >
           <LayoutDashboard className="w-4 h-4" />
@@ -392,8 +392,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           type="button"
           onClick={() => onTabChange('files')}
-          className={`flex flex-col items-center py-1 px-2 rounded-lg ${
-            activeTab === 'files' ? 'text-emerald-500 font-bold' : 'text-zinc-500'
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition ${
+            activeTab === 'files' ? 'text-zinc-950 dark:text-white font-bold' : 'text-zinc-500'
           }`}
         >
           <BookOpen className="w-4 h-4" />
@@ -402,8 +402,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           type="button"
           onClick={() => onTabChange('results')}
-          className={`flex flex-col items-center py-1 px-2 rounded-lg ${
-            activeTab === 'results' ? 'text-emerald-500 font-bold' : 'text-zinc-500'
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition ${
+            activeTab === 'results' ? 'text-zinc-950 dark:text-white font-bold' : 'text-zinc-500'
           }`}
         >
           <BarChart3 className="w-4 h-4" />
@@ -412,8 +412,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           type="button"
           onClick={() => onTabChange('create')}
-          className={`flex flex-col items-center py-1 px-2 rounded-lg ${
-            activeTab === 'create' ? 'text-emerald-500 font-bold' : 'text-zinc-500'
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition ${
+            activeTab === 'create' ? 'text-zinc-950 dark:text-white font-bold' : 'text-zinc-500'
           }`}
         >
           <PlusCircle className="w-4 h-4" />
@@ -422,8 +422,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           type="button"
           onClick={onOpenSubscriptionModal}
-          className={`flex flex-col items-center py-1 px-2 rounded-lg ${
-            isPremiumActive ? 'text-amber-500 font-bold' : 'text-zinc-500'
+          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition ${
+            isPremiumActive ? 'text-zinc-950 dark:text-white font-bold' : 'text-zinc-500'
           }`}
         >
           <Crown className="w-4 h-4" />

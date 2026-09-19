@@ -155,20 +155,20 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-xl rounded-3xl bg-white dark:bg-[#0b1424] border border-zinc-200 dark:border-white/10 shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col"
+        className="relative w-full max-w-xl rounded-[32px] bg-white/95 dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col backdrop-blur-2xl"
       >
         {/* Header Bar */}
-        <div className="px-6 py-4.5 border-b border-zinc-100 dark:border-white/10 bg-gradient-to-r from-emerald-500/10 via-zinc-50 to-blue-500/10 dark:from-emerald-950/40 dark:via-[#0c1626] dark:to-blue-950/30 flex items-center justify-between">
+        <div className="px-6 py-4.5 border-b border-zinc-100 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner">
-              <GraduationCap className="w-5 h-5 stroke-[2.2]" />
+            <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white flex items-center justify-center shadow-2xs border border-white/80 dark:border-white/10">
+              <GraduationCap className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-extrabold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
+                <h2 className="text-base font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
                   Student Registration
                 </h2>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                <span className="text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                   Grade Tailored
                 </span>
               </div>
@@ -183,7 +183,7 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
             className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
             aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -431,11 +431,11 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
             </div>
 
             {/* Submit Bar */}
-            <div className="pt-2 flex items-center justify-between gap-3 border-t border-zinc-100 dark:border-zinc-800">
+            <div className="pt-2 flex items-center justify-between gap-3 border-t border-zinc-100 dark:border-white/10">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition cursor-pointer"
+                className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-xs font-semibold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition cursor-pointer shadow-xs"
               >
                 Cancel
               </button>
@@ -443,23 +443,23 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer flex items-center gap-2 ${
+                className={`px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs shadow-xs transition cursor-pointer active:scale-98 flex items-center gap-2 ${
                   isSubmitting ? 'opacity-70 cursor-wait' : ''
                 }`}
               >
                 {savedSuccess ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                     <span>Profile Saved!</span>
                   </>
                 ) : isSubmitting ? (
                   <>
-                    <div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                    <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
                     <span>Saving Registration...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <Sparkles className="w-4 h-4 text-zinc-400" />
                     <span>Save & Filter Grade {grade} Exams</span>
                   </>
                 )}

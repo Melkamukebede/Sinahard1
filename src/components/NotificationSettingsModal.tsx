@@ -55,15 +55,15 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-[#070e1a] border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden text-zinc-900 dark:text-white">
+      <div className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-[32px] bg-white/95 dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-[#0d1829]">
+        <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02]">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-              <Bell className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center shadow-2xs">
+              <Bell className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
             </div>
             <div>
-              <h3 className="font-bold text-base font-['Syne',sans-serif]">Push & Study Notifications</h3>
+              <h3 className="font-bold text-base font-['Outfit',sans-serif]">Push & Study Notifications</h3>
               <p className="text-xs text-zinc-500">Configure browser push alerts and study cadence</p>
             </div>
           </div>
@@ -72,21 +72,21 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
             onClick={onClose}
             className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Permission Status Banner */}
-          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4">
+          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {permission === 'granted' ? (
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
+                <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
               ) : (
-                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+                <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
                   <ShieldAlert className="w-5 h-5" />
                 </div>
               )}
@@ -108,7 +108,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
               <button
                 type="button"
                 onClick={requestPermission}
-                className="px-4 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs cursor-pointer transition shadow-md shadow-emerald-500/20"
+                className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs cursor-pointer transition shadow-xs active:scale-98"
               >
                 Enable Push Alerts
               </button>
@@ -116,11 +116,11 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
           </div>
 
           {/* Daily Study Schedule */}
-          <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-4">
+          <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-sm text-zinc-900 dark:text-white flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-emerald-500" />
+                  <Clock className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
                   Daily Practice Reminder
                 </h4>
                 <p className="text-xs text-zinc-500 mt-0.5">
@@ -136,7 +136,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                   onChange={(e) => setReminderEnabled(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500" />
+                <div className="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-zinc-900 dark:peer-checked:bg-white" />
               </label>
             </div>
 
@@ -152,7 +152,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                 <button
                   type="button"
                   onClick={handleSaveReminder}
-                  className="px-4 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs cursor-pointer transition shadow-sm"
+                  className="px-4 py-1.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs cursor-pointer transition shadow-xs"
                 >
                   Save Time
                 </button>
@@ -164,9 +164,9 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
               <button
                 type="button"
                 onClick={handleSendTest}
-                className="px-3.5 py-1.5 rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition"
               >
-                {testSent ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Send className="w-3.5 h-3.5" />}
+                {testSent ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Send className="w-3.5 h-3.5 text-zinc-500" />}
                 {testSent ? 'Test Alert Sent!' : 'Send Test Notification'}
               </button>
             </div>
@@ -201,12 +201,12 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                     className={`p-3 rounded-xl border transition cursor-pointer text-xs space-y-1 ${
                       alert.read
                         ? 'bg-zinc-50/50 dark:bg-zinc-900/40 border-zinc-200/50 dark:border-zinc-800/50 opacity-70'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-emerald-500/30 font-medium'
+                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 font-medium'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                        {!alert.read && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
+                        {!alert.read && <span className="w-2 h-2 rounded-full bg-zinc-900 dark:bg-white" />}
                         {alert.title}
                       </span>
                       <span className="text-[10px] text-zinc-400">
@@ -222,11 +222,11 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#0d1829] flex justify-end">
+        <div className="px-6 py-4 border-t border-zinc-100 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs cursor-pointer shadow-md shadow-emerald-500/20"
+            className="px-6 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs cursor-pointer shadow-xs active:scale-98 transition"
           >
             Done
           </button>

@@ -193,13 +193,13 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
-        <div className="w-full max-w-4xl h-[94vh] max-h-[850px] bg-white dark:bg-[#070e1a] border border-zinc-200 dark:border-emerald-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-white">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="w-full max-w-4xl h-[94vh] max-h-[850px] bg-white/95 dark:bg-[#0c182b] border border-white/80 dark:border-white/10 rounded-[32px] shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
           {/* Header Bar */}
-          <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4 bg-zinc-50/80 dark:bg-[#0d1829]/80 backdrop-blur-md">
+          <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between gap-4 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <h2 className="font-['Syne',sans-serif] font-bold text-sm sm:text-base text-zinc-900 dark:text-white truncate">
+              <h2 className="font-['Outfit',sans-serif] font-bold text-sm sm:text-base text-zinc-900 dark:text-white truncate">
                 {exam.name}
               </h2>
             </div>
@@ -211,22 +211,22 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 type="button"
                 onClick={togglePause}
                 title="Click or press Space to pause/resume"
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer border select-none ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer border select-none shadow-xs ${
                   isPaused
                     ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 animate-pulse'
                     : timeLeft <= 60
                     ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 animate-pulse'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700'
+                    : 'bg-white/80 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-200 border-white/60 dark:border-white/10'
                 }`}
               >
                 {isPaused ? (
                   <>
-                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <Play className="w-3.5 h-3.5 fill-current text-amber-600" />
                     <span>PAUSED</span>
                   </>
                 ) : (
                   <>
-                    <Clock className="w-3.5 h-3.5" />
+                    <Clock className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                     <span>{formatTimer(timeLeft)}</span>
                     <Pause className="w-3 h-3 opacity-60 ml-0.5" />
                   </>
@@ -237,25 +237,25 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800 transition cursor-pointer"
+                className="p-2 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-800">
+          <div className="w-full h-1 bg-zinc-100 dark:bg-zinc-800/60">
             <div
-              className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-blue-500 transition-all duration-300 ease-out"
+              className="h-full bg-zinc-900 dark:bg-white transition-all duration-300 ease-out"
               style={{ width: `${progressPct}%` }}
             />
           </div>
 
           {/* Subheader Tracker */}
-          <div className="px-6 py-2 bg-zinc-100/60 dark:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+          <div className="px-6 py-2.5 bg-zinc-50/50 dark:bg-white/[0.02] border-b border-zinc-100 dark:border-white/10 flex items-center justify-between text-xs text-zinc-500">
+            <span className="font-semibold text-zinc-800 dark:text-zinc-200">
               Question {currentIndex + 1} of {exam.questions.length}
             </span>
             <span>
@@ -267,31 +267,31 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
           <div className="flex-1 overflow-y-auto p-6 relative">
             {isPaused ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                <div className="w-16 h-16 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4 border border-amber-500/20">
-                  <Pause className="w-8 h-8" />
+                <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center mb-4 border border-zinc-200 dark:border-zinc-700">
+                  <Pause className="w-8 h-8 text-zinc-700 dark:text-zinc-300" />
                 </div>
-                <h3 className="text-xl font-bold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
+                <h3 className="text-xl font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
                   Practice Paused
                 </h3>
-                <p className="text-sm text-zinc-500 max-w-sm mt-1 mb-6">
+                <p className="text-xs text-zinc-500 max-w-sm mt-1 mb-6">
                   The exam timer is stopped. Questions are blurred to maintain testing integrity.
                 </p>
                 <button
                   type="button"
                   onClick={togglePause}
-                  className="px-6 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-sm inline-flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20 transition"
+                  className="px-6 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs inline-flex items-center gap-2 cursor-pointer shadow-xs active:scale-98 transition"
                 >
-                  <Play className="w-4 h-4 fill-current" />
+                  <Play className="w-3.5 h-3.5 fill-current" />
                   Resume Exam
                 </button>
                 <span className="text-xs text-zinc-400 mt-2">or press Space key</span>
               </div>
             ) : (
-              <div className="max-w-3xl mx-auto space-y-6">
-                {/* Question Text */}
-                <div className="p-6 rounded-2xl bg-zinc-50 dark:bg-[#0d1829] border border-zinc-200 dark:border-zinc-800">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-2">
-                    <HelpCircle className="w-4 h-4" />
+              <div className="max-w-3xl mx-auto space-y-5">
+                {/* Question Text Porcelain Card */}
+                <div className="p-6 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2.5">
+                    <HelpCircle className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                     <span>Question {currentIndex + 1}</span>
                   </div>
                   <div className="text-base sm:text-lg font-medium text-zinc-900 dark:text-zinc-100 leading-relaxed">
@@ -300,7 +300,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 </div>
 
                 {/* Options List */}
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {currentQuestion.options.map((optionText, optIndex) => {
                     const isSelected = userAnswers[currentIndex] === optIndex;
                     const letter = String.fromCharCode(65 + optIndex);
@@ -309,22 +309,22 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                       <div
                         key={optIndex}
                         onClick={() => handleSelectOption(optIndex)}
-                        className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                        className={`flex items-center gap-3.5 p-4 rounded-[20px] border transition-all cursor-pointer select-none ${
                           isSelected
-                            ? 'bg-emerald-500/10 border-emerald-500 text-zinc-900 dark:text-white shadow-sm'
-                            : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-emerald-500/40 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/60'
+                            ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
+                            : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700 shadow-xs'
                         }`}
                       >
                         <div
                           className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
                             isSelected
-                              ? 'bg-emerald-500 text-zinc-950 shadow-sm'
-                              : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                              ? 'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white shadow-2xs'
+                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
                           }`}
                         >
                           {letter}
                         </div>
-                        <div className="flex-1 text-sm sm:text-base leading-relaxed">
+                        <div className="flex-1 text-sm sm:text-base leading-relaxed font-normal">
                           <MathRenderer content={optionText} inline />
                         </div>
                       </div>
@@ -334,9 +334,9 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
                 {/* Answer Reveal Panel (Study Mode) */}
                 {isRevealed && (
-                  <div className="p-5 rounded-2xl bg-emerald-500/10 border-l-4 border-emerald-500 text-zinc-900 dark:text-white space-y-3 animate-in fade-in">
+                  <div className="p-5 rounded-[22px] bg-emerald-500/10 border border-emerald-500/20 text-zinc-900 dark:text-white space-y-3 animate-in fade-in">
                     <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                      <CheckCircle2 className="w-5 h-5" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                       <span>
                         Correct Answer: {String.fromCharCode(65 + currentQuestion.correct)}. {currentQuestion.options[currentQuestion.correct]}
                       </span>
@@ -356,12 +356,12 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
           </div>
 
           {/* Footer Controls */}
-          <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/90 dark:bg-[#0d1829]/90 backdrop-blur-md flex items-center justify-between gap-2">
+          <div className="px-6 py-4 border-t border-zinc-100 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md flex items-center justify-between gap-2">
             <button
               type="button"
               disabled={currentIndex === 0}
               onClick={handlePrev}
-              className="px-4 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+              className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-white dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-xs"
             >
               <ChevronLeft className="w-4 h-4" />
               Previous
@@ -371,16 +371,16 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               <button
                 type="button"
                 onClick={() => setIsRevealed(!isRevealed)}
-                className="px-3.5 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold text-xs flex items-center gap-1.5 hover:bg-emerald-500/20 transition cursor-pointer"
+                className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-white transition cursor-pointer shadow-xs"
               >
                 {isRevealed ? (
                   <>
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                     Hide Answer
                   </>
                 ) : (
                   <>
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                     Reveal Answer
                   </>
                 )}
@@ -389,7 +389,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               <button
                 type="button"
                 onClick={handleNext}
-                className="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-emerald-500/20"
+                className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
               >
                 {isLastQuestion ? (
                   <>

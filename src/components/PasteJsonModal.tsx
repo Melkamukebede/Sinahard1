@@ -309,17 +309,17 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-[28px] bg-white dark:bg-[#081120] border border-zinc-200 dark:border-white/10 shadow-2xl overflow-hidden text-zinc-900 dark:text-white"
+          className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-[32px] bg-white/95 dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl"
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800/80 flex items-center justify-between bg-zinc-50/90 dark:bg-[#0c1626]/90">
+          <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02]">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
-                <FileText className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white flex items-center justify-center border border-white/80 dark:border-white/10 shadow-2xs">
+                <FileText className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-base font-['Syne',sans-serif]">
+                  <h3 className="font-bold text-base font-['Outfit',sans-serif]">
                     Paste as Text File / Questions
                   </h3>
                   {userTier && (
@@ -557,11 +557,11 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/90 dark:bg-[#0c1626]/90 flex items-center justify-between flex-wrap gap-3">
+          <div className="px-6 py-4 border-t border-zinc-100 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] flex items-center justify-between flex-wrap gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 font-semibold text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition"
+              className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold text-xs hover:bg-white dark:hover:bg-zinc-700 cursor-pointer transition shadow-xs"
             >
               Cancel
             </button>
@@ -576,36 +576,32 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
                         onClose();
                         onOpenSubscriptionModal();
                       }}
-                      className="px-4 py-2.5 rounded-full bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm transition"
+                      className="px-4 py-2 rounded-full bg-white/80 dark:bg-zinc-800 border border-white/60 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
                     >
-                      <Crown className="w-3.5 h-3.5" />
+                      <Crown className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                       <span>Upgrade for All {previewQuestions.length} Questions</span>
                     </button>
                   )}
 
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                  <button
                     type="button"
                     onClick={() => handleApply(true)}
-                    className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/20 transition"
+                    className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Import First {maxLimit} Questions</span>
-                  </motion.button>
+                  </button>
                 </>
               ) : (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                <button
                   type="button"
                   disabled={previewQuestions.length === 0}
                   onClick={() => handleApply(false)}
-                  className="px-6 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-950 font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-500/20 transition"
+                  className="px-6 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-xs active:scale-98 transition"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Import {previewQuestions.length} Questions</span>
-                </motion.button>
+                </button>
               )}
             </div>
           </div>

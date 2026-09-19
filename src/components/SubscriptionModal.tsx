@@ -430,24 +430,28 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-2xl my-8 rounded-[28px] bg-white dark:bg-[#0c1626] border border-zinc-200/90 dark:border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-md overflow-y-auto font-['Plus_Jakarta_Sans',sans-serif]">
+      <div className="relative w-full max-w-2xl my-6 rounded-[32px] bg-white/95 dark:bg-[#070e1a]/95 border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200">
+        {/* Subtle Atmospheric Ambient Glow */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
         {/* Modal Header */}
-        <div className="relative px-6 pt-6 pb-4 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-transparent border-b border-zinc-200/80 dark:border-white/10 flex items-start justify-between">
+        <div className="relative px-6 pt-6 pb-4 bg-white/60 dark:bg-white/[0.02] border-b border-white/60 dark:border-white/10 flex items-start justify-between backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-zinc-950 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Crown className="w-6 h-6 stroke-[2.2]" />
+            <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white flex items-center justify-center shadow-2xs border border-white/80 dark:border-white/10">
+              <Crown className="w-6 h-6 stroke-[2]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-black font-['Syne',sans-serif] text-zinc-900 dark:text-white">
+                <h2 className="text-xl font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
                   ExamMaster Premium
                 </h2>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                <span className="text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                   Ethiopian Birr (ETB)
                 </span>
               </div>
-              <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-0.5">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                 Unlock full exam downloads, LaTeX math step-by-step solutions, and grade categories
               </p>
             </div>
@@ -458,20 +462,20 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             onClick={onClose}
             className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Current Active Status Alert */}
         {isActive && activeSubscription && (
-          <div className="mx-6 mt-4 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3">
+          <div className="mx-6 mt-4 p-4 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
               <div>
-                <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                <p className="text-xs font-bold text-zinc-900 dark:text-white">
                   Active Premium Subscription
                 </p>
-                <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                   Plan: {activeSubscription.planDuration} • Valid until:{' '}
                   {activeSubscription.expiresAt
                     ? new Date(activeSubscription.expiresAt).toLocaleDateString()
@@ -479,16 +483,16 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </p>
               </div>
             </div>
-            <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-500 text-zinc-950">
+            <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs">
               Verified
             </span>
           </div>
         )}
 
-        <div className="p-6 space-y-6">
+        <div className="relative p-6 space-y-5">
           {/* Plan Duration Selector */}
           <div>
-            <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block mb-2.5">
+            <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 block mb-2.5">
               1. Choose Duration
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -499,26 +503,30 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     key={plan.id}
                     type="button"
                     onClick={() => handleSelectPlan(plan)}
-                    className={`relative p-3.5 rounded-2xl text-left border transition cursor-pointer flex flex-col justify-between ${
+                    className={`relative p-3.5 rounded-[22px] text-left border transition cursor-pointer flex flex-col justify-between shadow-xs active:scale-98 ${
                       isSelected
-                        ? 'bg-amber-500/10 border-amber-500 dark:border-amber-400 shadow-sm'
-                        : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent'
+                        : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
                     }`}
                   >
                     {plan.badge && (
-                      <span className="absolute -top-2.5 right-2 text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500 text-zinc-950 shadow-xs">
+                      <span className={`absolute -top-2.5 right-2 text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs ${
+                        isSelected
+                          ? 'bg-amber-400 text-zinc-950'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
+                      }`}>
                         {plan.badge}
                       </span>
                     )}
                     <div>
-                      <span className="text-xs font-bold text-zinc-900 dark:text-white block">
+                      <span className={`text-xs font-bold block ${isSelected ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}`}>
                         {plan.durationLabel}
                       </span>
-                      <span className="text-[11px] text-zinc-500">{plan.name}</span>
+                      <span className={`text-[11px] ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500'}`}>{plan.name}</span>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-zinc-200/50 dark:border-zinc-800/50">
-                      <span className="text-base font-extrabold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
-                        {plan.priceETB} <span className="text-[11px] font-semibold text-zinc-500">ETB</span>
+                    <div className={`mt-3 pt-2 border-t ${isSelected ? 'border-white/20 dark:border-zinc-300' : 'border-zinc-100 dark:border-zinc-800/60'}`}>
+                      <span className={`text-base font-extrabold font-['Outfit',sans-serif] ${isSelected ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}`}>
+                        {plan.priceETB} <span className={`text-[11px] font-semibold ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500'}`}>ETB</span>
                       </span>
                     </div>
                   </button>
@@ -529,7 +537,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
           {/* Payment Method Selector */}
           <div>
-            <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block mb-2.5">
+            <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 block mb-2.5">
               2. Choose Payment Method
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -551,24 +559,24 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       setActiveTxRef(null);
                       setErrorMsg(null);
                     }}
-                    className={`p-3 rounded-2xl text-left border transition cursor-pointer flex items-center gap-2.5 ${
+                    className={`p-3 rounded-[22px] text-left border transition cursor-pointer flex items-center gap-2.5 shadow-xs active:scale-98 ${
                       isSelected
-                        ? 'bg-emerald-500/10 border-emerald-500 dark:border-emerald-400 text-zinc-900 dark:text-white shadow-xs'
-                        : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
+                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent'
+                        : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
                     }`}
                   >
                     <div
                       className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
                         isSelected
-                          ? 'bg-emerald-500 text-zinc-950 font-bold'
-                          : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
+                          ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950 font-bold'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
                       }`}
                     >
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-bold block truncate">{m.name}</span>
-                      <span className="text-[10px] text-zinc-500 block truncate">{m.desc}</span>
+                      <span className={`text-xs font-bold block truncate ${isSelected ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}`}>{m.name}</span>
+                      <span className={`text-[10px] block truncate ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500'}`}>{m.desc}</span>
                     </div>
                   </button>
                 );
@@ -576,12 +584,12 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             </div>
           </div>
 
-          {/* Payment Account Details Box */}
-          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-3">
+          {/* Payment Account Details Box - Porcelain Container */}
+          <div className="p-4 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-3">
             {paymentMethod === 'telebirr' && (
               <div className="space-y-3">
                 {/* Telebirr Mode Switcher with Coming Soon for API */}
-                <div className="flex items-center gap-2 p-1 bg-zinc-200/70 dark:bg-zinc-800/80 rounded-xl">
+                <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-full border border-white/60 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => {
@@ -589,9 +597,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       setCheckoutUrl(null);
                       setActiveTxRef(null);
                     }}
-                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-1.5 px-3 rounded-full text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
                       telebirrMode === 'manual'
-                        ? 'bg-emerald-600 text-white shadow-xs'
+                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
                         : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                     }`}
                   >
@@ -605,41 +613,41 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       setCheckoutUrl(null);
                       setActiveTxRef(null);
                     }}
-                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-1.5 px-3 rounded-full text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
                       telebirrMode === 'gateway'
-                        ? 'bg-emerald-600 text-white shadow-xs'
+                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
                         : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                     }`}
                   >
-                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                    <Clock className="w-3.5 h-3.5 text-zinc-500" />
                     <span>Telebirr Direct API</span>
-                    <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 ml-0.5">
-                      Coming Soon
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 ml-0.5">
+                      Pending
                     </span>
                   </button>
                 </div>
 
                 {telebirrMode === 'gateway' ? (
-                  <div className="space-y-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
+                  <div className="space-y-3 p-3.5 rounded-[20px] bg-white/70 dark:bg-zinc-900/50 border border-white/60 dark:border-white/10">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                        <span className="text-xs font-bold text-amber-950 dark:text-amber-200">
-                          Telebirr Direct API Gateway — Coming Soon
+                        <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
+                        <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                          Telebirr Direct API Gateway — Pending Activation
                         </span>
                       </div>
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
                         Pending TIN Approval
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
                       Direct automated Telebirr checkout integration is currently waiting for merchant Tax Identification Number (TIN) &amp; Ethio Telecom enterprise verification.
                     </p>
 
-                    <div className="p-2.5 rounded-lg bg-white/70 dark:bg-zinc-900/70 border border-amber-500/20 space-y-1.5">
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800 space-y-1.5">
                       <div className="text-[11px] font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                        <Sparkles className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
                         <span>Recommended Instant Alternative:</span>
                       </div>
                       <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
@@ -648,12 +656,12 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       </p>
                     </div>
 
-                    {/* Developer Preview & Test Portal (for testing ahead of live launch) */}
+                    {/* Developer Preview & Test Portal */}
                     <div>
                       <button
                         type="button"
                         onClick={() => setShowTelebirrConfig(!showTelebirrConfig)}
-                        className="text-[11px] text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                        className="text-[11px] text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:underline flex items-center gap-1 cursor-pointer font-medium"
                       >
                         <Sliders className="w-3 h-3" />
                         <span>
@@ -662,7 +670,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       </button>
 
                       {showTelebirrConfig && (
-                        <div className="mt-2 p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-2 text-xs">
+                        <div className="mt-2 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800 space-y-2 text-xs">
                           <p className="text-[10px] text-zinc-500">
                             You can test the Telebirr payment simulation flow before your official TIN is activated:
                           </p>
@@ -673,7 +681,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                               value={phoneNumber}
                               onChange={(e) => setPhoneNumber(e.target.value)}
                               placeholder="0911000000"
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 font-mono text-[11px]"
+                              className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 font-mono text-[11px]"
                             />
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -684,7 +692,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                                 value={telebirrAppId}
                                 onChange={(e) => setTelebirrAppId(e.target.value)}
                                 placeholder="telebirr-app-id"
-                                className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 font-mono text-[11px]"
+                                className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 font-mono text-[11px]"
                               />
                             </div>
                             <div>
@@ -694,7 +702,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                                 value={telebirrShortCode}
                                 onChange={(e) => setTelebirrShortCode(e.target.value)}
                                 placeholder="100234"
-                                className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 font-mono text-[11px]"
+                                className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 font-mono text-[11px]"
                               />
                             </div>
                           </div>
@@ -713,14 +721,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleCopy('0911000000', 'telebirr')}
-                          className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
                         >
                           <Copy className="w-3.5 h-3.5" />
                           <span>{copiedAccount === 'telebirr' ? 'Copied!' : 'Copy'}</span>
                         </button>
                       </div>
                     </div>
-                    <p className="text-[11px] text-zinc-500 mt-1">
+                    <p className="text-[11px] text-zinc-500 mt-1.5">
                       Send <strong>{selectedPlan.priceETB} ETB</strong> via Telebirr app or *127#, then paste the SMS transaction number below.
                     </p>
                   </div>
@@ -739,14 +747,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCopy('10001234567890', 'cbe')}
-                      className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span>{copiedAccount === 'cbe' ? 'Copied!' : 'Copy'}</span>
                     </button>
                   </div>
                 </div>
-                <p className="text-[11px] text-zinc-500 mt-1">
+                <p className="text-[11px] text-zinc-500 mt-1.5">
                   Pay <strong>{selectedPlan.priceETB} ETB</strong> to Commercial Bank of Ethiopia (CBE Birr or Mobile Banking).
                 </p>
               </div>
@@ -758,7 +766,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
                     Chapa Automated Gateway Integration
                   </span>
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                     Instant Online Checkout
                   </span>
                 </div>
@@ -771,7 +779,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="Enter phone number (e.g. 0911234567)"
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-mono text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="w-full px-4 py-2.5 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-mono text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
                   />
                 </div>
               </div>
@@ -788,14 +796,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCopy('BOA9876543210', 'boa')}
-                      className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span>{copiedAccount === 'boa' ? 'Copied!' : 'Copy'}</span>
                     </button>
                   </div>
                 </div>
-                <p className="text-[11px] text-zinc-500 mt-1">
+                <p className="text-[11px] text-zinc-500 mt-1.5">
                   Transfer <strong>{selectedPlan.priceETB} ETB</strong> via BoA mobile banking or branch.
                 </p>
               </div>
@@ -805,7 +813,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           {/* Reference input for manual methods */}
           {paymentMethod !== 'chapa' && !(paymentMethod === 'telebirr' && telebirrMode === 'gateway') && (
             <div>
-              <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block mb-1.5">
+              <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 block mb-1.5">
                 3. Transaction Confirmation Code / Reference
               </label>
               <input
@@ -813,7 +821,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 value={transactionRef}
                 onChange={(e) => setTransactionRef(e.target.value)}
                 placeholder="e.g. FT260915... or Telebirr SMS code"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-mono text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                className="w-full px-4 py-2.5 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-mono text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 shadow-2xs"
               />
               <p className="text-[10px] text-zinc-500 mt-1">
                 Enter the receipt number from your mobile banking notification to verify your access.
@@ -823,14 +831,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
           {/* Alerts */}
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
+            <div className="p-3.5 rounded-[20px] bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {successNotice && (
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
+            <div className="p-3.5 rounded-[20px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{successNotice}</span>
             </div>
@@ -838,10 +846,10 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
           {/* Guest account notice */}
           {(!user || user.uid === 'guest') && (
-            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                <span className="text-xs text-amber-800 dark:text-amber-200">
+                <AlertCircle className="w-4 h-4 text-zinc-400 shrink-0" />
+                <span className="text-xs text-zinc-600 dark:text-zinc-300">
                   You are in guest mode. Sign in to link this subscription with your Google account.
                 </span>
               </div>
@@ -849,7 +857,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <button
                   type="button"
                   onClick={handleTriggerSignIn}
-                  className="px-3 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold text-xs shrink-0 cursor-pointer transition shadow-xs"
+                  className="px-4 py-1.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs shrink-0 cursor-pointer transition shadow-xs active:scale-98"
                 >
                   Sign In
                 </button>
@@ -859,20 +867,20 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
           {/* Active Checkout Portal Card (for both Telebirr and Chapa) */}
           {checkoutUrl && (
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-transparent border-2 border-emerald-500/40 space-y-3.5 shadow-sm">
+            <div className="p-4 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 space-y-3.5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="text-xs font-black text-emerald-950 dark:text-emerald-100 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
                     {paymentMethod === 'telebirr' ? 'Telebirr Payment Ready' : 'Chapa Payment Ready'}
                   </span>
                 </div>
-                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-800 dark:text-emerald-300">
+                <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                   Ref: {activeTxRef}
                 </span>
               </div>
 
-              <p className="text-xs text-emerald-900 dark:text-emerald-100 leading-relaxed font-medium">
+              <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed font-medium">
                 {paymentMethod === 'telebirr'
                   ? 'Your Telebirr checkout session has been created. Click below to complete authorization and activate your subscription:'
                   : 'Your checkout session has been created. Click below to pay with Telebirr, CBE Birr, or debit card, then verify your payment:'}
@@ -883,17 +891,17 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => handleOpenCheckoutInNewTab(checkoutUrl)}
-                  className="px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+                  className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 transition shadow-xs cursor-pointer active:scale-98"
                 >
                   <span>{paymentMethod === 'telebirr' ? 'Open Telebirr Portal' : 'Open Chapa Portal'}</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </button>
 
-                {/* Direct Redirect in Same Tab (if browser strictly blocks popups) */}
+                {/* Direct Redirect in Same Tab */}
                 <button
                   type="button"
                   onClick={() => { window.location.href = checkoutUrl; }}
-                  className="px-3.5 py-2.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-900 dark:text-emerald-200 font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+                  className="px-3.5 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1 transition cursor-pointer"
                   title="Directly redirect in this tab"
                 >
                   <span>Open in this Tab</span>
@@ -903,7 +911,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <button
                   type="button"
                   onClick={handleCopyCheckoutLink}
-                  className="px-3 py-2.5 rounded-full bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                  className="px-3 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
                   title="Copy payment link"
                 >
                   {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
@@ -915,9 +923,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   type="button"
                   disabled={isVerifying}
                   onClick={handleVerifyStatus}
-                  className="px-4 py-2.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-xs flex items-center gap-1.5 hover:opacity-90 transition cursor-pointer disabled:opacity-50 shadow-xs"
+                  className="px-4 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition cursor-pointer disabled:opacity-50 shadow-xs"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" />
+                  <ShieldCheck className="w-3.5 h-3.5" />
                   <span>{isVerifying ? 'Checking...' : 'Check Payment Status'}</span>
                 </button>
 
@@ -930,22 +938,22 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     setErrorMsg(null);
                     setSuccessNotice(null);
                   }}
-                  className="px-3 py-2.5 rounded-full bg-zinc-200/80 dark:bg-zinc-800/80 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                  className="px-3 py-2 rounded-full text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
                   title="Generate a brand new checkout session"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Start New Session</span>
+                  <span>New Session</span>
                 </button>
               </div>
 
               {/* Direct clickable URL fallback */}
-              <div className="pt-2 border-t border-emerald-500/20 text-[11px] text-zinc-600 dark:text-zinc-400 flex items-center justify-between gap-2">
+              <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 text-[11px] text-zinc-600 dark:text-zinc-400 flex items-center justify-between gap-2">
                 <span className="shrink-0 text-zinc-500">Direct URL:</span>
                 <a
                   href={checkoutUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="truncate text-emerald-600 dark:text-emerald-400 hover:underline font-mono text-[10px]"
+                  className="truncate text-zinc-700 dark:text-zinc-300 hover:underline font-mono text-[10px]"
                 >
                   {checkoutUrl}
                 </a>
@@ -954,14 +962,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           )}
 
           {/* Collapsible Tier Comparison: Guest vs Logged-in vs Premium */}
-          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 overflow-hidden">
+          <div className="rounded-[24px] border border-white/80 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] backdrop-blur-xl overflow-hidden">
             <button
               type="button"
               onClick={() => setShowComparison(!showComparison)}
-              className="w-full p-4 flex items-center justify-between text-left hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 transition cursor-pointer"
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-white/40 dark:hover:bg-white/[0.05] transition cursor-pointer"
             >
               <div className="flex items-center gap-2.5">
-                <Info className="w-4 h-4 text-emerald-500 shrink-0" />
+                <Info className="w-4 h-4 text-zinc-700 dark:text-zinc-300 shrink-0" />
                 <div>
                   <span className="text-xs font-bold text-zinc-900 dark:text-white block">
                     Compare Plans: Guest vs. Logged In vs. Premium
@@ -971,78 +979,78 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   </span>
                 </div>
               </div>
-              <div className="p-1 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+              <div className="p-1 rounded-full bg-zinc-200/80 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
                 {showComparison ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>
             </button>
 
             {showComparison && (
-              <div className="p-4 pt-1 border-t border-zinc-200/80 dark:border-zinc-800/80 space-y-3.5 text-xs animate-in fade-in duration-200">
+              <div className="p-4 pt-1 border-t border-white/60 dark:border-white/10 space-y-3 text-xs animate-in fade-in duration-200">
                 {/* Guest Mode */}
-                <div className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800">
+                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-blue-500" />
+                      <User className="w-3.5 h-3.5 text-zinc-500" />
                       Guest Mode (No Account / Local Storage)
                     </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                       Free / Instant
                     </span>
                   </div>
                   <ul className="space-y-1 text-[11px] text-zinc-600 dark:text-zinc-400 list-disc list-inside">
                     <li>Create or practice exams with up to <strong>20 questions</strong> per exam.</li>
-                    <li>Countdown timer, question flagging, scratchpad & scientific calculator included.</li>
+                    <li>Countdown timer, question flagging, scratchpad &amp; scientific calculator included.</li>
                     <li>Instant grading, percentage score, and KaTeX math formulas.</li>
                     <li>Saved in current browser (no cloud sync across phones or laptops).</li>
                   </ul>
                 </div>
 
                 {/* Logged-In User */}
-                <div className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-emerald-500/30">
+                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-emerald-500" />
+                      <Globe className="w-3.5 h-3.5 text-zinc-500" />
                       Logged-In (Free Google Account)
                     </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                       🎁 3-Day Trial Included
                     </span>
                   </div>
                   <ul className="space-y-1 text-[11px] text-zinc-600 dark:text-zinc-400 list-disc list-inside">
-                    <li><strong>🎁 First 3 Days:</strong> Welcome Trial unlocked with up to <strong>50 questions per exam</strong> & bulk import.</li>
-                    <li><strong>Permanent Cloud Sync:</strong> All exams, test history & scores automatically backed up in Firestore across all devices.</li>
-                    <li>Persistent study reminders, push alert preferences & custom profile.</li>
+                    <li><strong>🎁 First 3 Days:</strong> Welcome Trial unlocked with up to <strong>50 questions per exam</strong> &amp; bulk import.</li>
+                    <li><strong>Permanent Cloud Sync:</strong> All exams, test history &amp; scores automatically backed up in Firestore across all devices.</li>
+                    <li>Persistent study reminders, push alert preferences &amp; custom profile.</li>
                     <li>Standard 20 questions/exam available permanently after trial period ends.</li>
                   </ul>
                 </div>
 
                 {/* Premium Scholar */}
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
-                      <Crown className="w-3.5 h-3.5 text-amber-500 fill-current" />
+                    <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                      <Crown className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                       Premium Scholar (ETB Subscription)
                     </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-zinc-950">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950">
                       From 19.9 ETB
                     </span>
                   </div>
-                  <ul className="space-y-1 text-[11px] text-amber-900/90 dark:text-amber-200/90 list-disc list-inside">
+                  <ul className="space-y-1 text-[11px] text-zinc-600 dark:text-zinc-400 list-disc list-inside">
                     <li><strong>Unlimited Questions:</strong> Build, practice, and test with 100, 200, or 500+ questions without any cap.</li>
-                    <li><strong>Unlimited Bulk Imports:</strong> Import full curriculum units, past national exam sheets & lecture notes directly.</li>
+                    <li><strong>Unlimited Bulk Imports:</strong> Import full curriculum units, past national exam sheets &amp; lecture notes directly.</li>
                     <li><strong>Full Worked Solutions:</strong> Complete step-by-step LaTeX formulas, worked math steps, and memory aid tricks.</li>
-                    <li><strong>Priority Payments:</strong> Instant automated Telebirr & Chapa activation, or CBE / BoA manual verification.</li>
+                    <li><strong>Priority Payments:</strong> Instant automated Telebirr &amp; Chapa activation, or CBE / BoA manual verification.</li>
                   </ul>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Action Button */}
-          <div className="flex items-center justify-between pt-2 border-t border-zinc-200 dark:border-zinc-800">
+          {/* Action Button Row */}
+          <div className="flex items-center justify-between pt-3 border-t border-white/60 dark:border-white/10">
             <div>
               <span className="text-xs text-zinc-500 block">Total Due:</span>
-              <span className="text-lg font-black font-['Syne',sans-serif] text-zinc-900 dark:text-white">
+              <span className="text-lg font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
                 {selectedPlan.priceETB} ETB
               </span>
             </div>
@@ -1061,7 +1069,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   handleSubmitPayment();
                 }
               }}
-              className="px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-zinc-950 font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-md shadow-emerald-500/20 disabled:opacity-50"
+              className="px-6 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-2 transition cursor-pointer shadow-xs active:scale-98 disabled:opacity-50"
             >
               <ShieldCheck className="w-4 h-4" />
               <span>
