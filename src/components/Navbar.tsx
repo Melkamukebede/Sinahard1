@@ -199,13 +199,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Menu className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
             <span className="hidden sm:inline">Menu</span>
             {unreadAlertsCount > 0 && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-zinc-900 dark:bg-white animate-pulse" />
             )}
           </button>
 
           {/* Firebase Authentication & Sync Status */}
           {authLoading ? (
-            <div className="w-8 h-8 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin" />
+            <div className="w-8 h-8 rounded-full border-2 border-zinc-400/30 border-t-zinc-900 dark:border-t-white animate-spin" />
           ) : user && isCloudSynced ? (
             <div className="relative">
               <button
@@ -232,7 +232,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     G-{user.grade}
                   </span>
                 )}
-                <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                <Cloud className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
               </button>
 
               {showUserMenu && (

@@ -90,9 +90,21 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [telebirrStatus, setTelebirrStatus] = useState<TelebirrConfigStatus | null>(null);
   const [showComparison, setShowComparison] = useState(false);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const modalContentRef = useRef<HTMLDivElement>(null);
+
   React.useEffect(() => {
     if (isOpen) {
       checkTelebirrConfigStatus().then(setTelebirrStatus);
+      // Ensure scrolling starts at the very upmost top position
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+      requestAnimationFrame(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = 0;
+        }
+      });
     }
   }, [isOpen]);
 
@@ -431,14 +443,20 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-md overflow-y-auto font-['Plus_Jakarta_Sans',sans-serif]">
-      <div className="relative w-full max-w-2xl my-6 rounded-[32px] bg-white/95 dark:bg-[#070e1a]/95 border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200">
+    <div
+      ref={scrollContainerRef}
+      className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-5 pt-3 sm:pt-6 pb-20 bg-black/60 backdrop-blur-md overflow-y-auto font-['Plus_Jakarta_Sans',sans-serif]"
+    >
+      <div
+        ref={modalContentRef}
+        className="relative w-full max-w-2xl my-2 sm:my-4 rounded-[32px] bg-white/95 dark:bg-[#070e1a]/95 border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200"
+      >
         {/* Subtle Atmospheric Ambient Glow */}
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-zinc-500/5 dark:bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-zinc-600/5 dark:bg-white/[0.01] rounded-full blur-3xl pointer-events-none" />
 
-        {/* Modal Header */}
-        <div className="relative px-6 pt-6 pb-4 bg-white/60 dark:bg-white/[0.02] border-b border-white/60 dark:border-white/10 flex items-start justify-between backdrop-blur-xl">
+        {/* Modal Header - Sticky so it is always accessible at the upmost position */}
+        <div className="sticky top-0 z-30 px-6 pt-5 pb-4 bg-white/95 dark:bg-[#070e1a]/95 border-b border-zinc-200/80 dark:border-white/10 flex items-start justify-between backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <SinahardLogo size="lg" idSuffix="sub-modal" />
             <div>
@@ -456,20 +474,25 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              id="payment-cancel-btn-top"
+              type="button"
+              onClick={onClose}
+              className="px-4 py-1.5 rounded-full text-xs font-bold text-zinc-700 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 transition cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-98"
+              title="Cancel payment"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Cancel</span>
+            </button>
+          </div>
         </div>
 
         {/* Current Active Status Alert */}
         {isActive && activeSubscription && (
           <div className="mx-6 mt-4 p-4 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-zinc-950 dark:text-white shrink-0" />
               <div>
                 <p className="text-xs font-bold text-zinc-900 dark:text-white">
                   Active Premium Subscription
@@ -690,7 +713,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                               type="tel"
                               value={phoneNumber}
                               onChange={(e) => setPhoneNumber(e.target.value)}
-                              placeholder="0911000000"
+                              placeholder="0918049806"
                               className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 font-mono text-[11px]"
                             />
                           </div>
@@ -726,11 +749,11 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       <span className="text-zinc-600 dark:text-zinc-400">Telebirr Merchant / Phone:</span>
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-bold text-zinc-900 dark:text-white">
-                          0911-00-00-00
+                          0918-04-98-06
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleCopy('0911000000', 'telebirr')}
+                          onClick={() => handleCopy('0918049806', 'telebirr')}
                           className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
                         >
                           <Copy className="w-3.5 h-3.5" />
@@ -751,12 +774,12 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-zinc-600 dark:text-zinc-400">CBE Account Number:</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-zinc-900 dark:text-white">
-                      1000-1234-5678-90
+                    <span className="font-mono font-bold text-zinc-900 dark:text-white tracking-wide">
+                      1000442803769
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleCopy('10001234567890', 'cbe')}
+                      onClick={() => handleCopy('1000442803769', 'cbe')}
                       className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
                     >
                       <Copy className="w-3.5 h-3.5" />
@@ -808,12 +831,12 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-zinc-600 dark:text-zinc-400">Bank of Abyssinia Account:</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-zinc-900 dark:text-white">
-                      BOA-9876-5432-10
+                    <span className="font-mono font-bold text-zinc-900 dark:text-white tracking-wide">
+                      244028993
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleCopy('BOA9876543210', 'boa')}
+                      onClick={() => handleCopy('244028993', 'boa')}
                       className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
                     >
                       <Copy className="w-3.5 h-3.5" />
@@ -856,8 +879,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           )}
 
           {successNotice && (
-            <div className="p-3.5 rounded-[20px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <div className="p-3.5 rounded-[20px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-zinc-950 dark:text-white" />
               <span>{successNotice}</span>
             </div>
           )}
@@ -888,7 +911,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             <div className="p-4 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 space-y-3.5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-900 dark:bg-white animate-ping" />
                   <span className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
                     {paymentMethod === 'telebirr' ? 'Telebirr Payment Ready' : 'Chapa Payment Ready'}
                   </span>
@@ -932,7 +955,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   className="px-3 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
                   title="Copy payment link"
                 >
-                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedLink ? <Check className="w-3.5 h-3.5 text-zinc-950 dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedLink ? 'Copied Link!' : 'Copy Link'}</span>
                 </button>
 
@@ -1065,7 +1088,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </div>
 
           {/* Action Button Row */}
-          <div className="flex items-center justify-between pt-3 border-t border-white/60 dark:border-white/10">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-zinc-200/80 dark:border-white/10">
             <div>
               <span className="text-xs text-zinc-500 block">Total Due:</span>
               <span className="text-lg font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
@@ -1073,40 +1096,70 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </span>
             </div>
 
-            <button
-              type="button"
-              disabled={isSubmitting || paymentMethod === 'chapa'}
-              onClick={() => {
-                if (paymentMethod === 'chapa') {
-                  return;
-                }
-                if (
-                  paymentMethod === 'telebirr' &&
-                  telebirrMode === 'gateway' &&
-                  checkoutUrl
-                ) {
-                  handleOpenCheckoutInNewTab(checkoutUrl);
-                } else {
-                  handleSubmitPayment();
-                }
-              }}
-              className={`px-6 py-2.5 rounded-full font-semibold text-xs flex items-center gap-2 transition shadow-xs active:scale-98 disabled:opacity-50 ${
-                paymentMethod === 'chapa'
-                  ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 cursor-not-allowed'
-                  : 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 cursor-pointer'
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>
-                {paymentMethod === 'chapa'
-                  ? 'Chapa Payment (Coming Soon)'
-                  : paymentMethod === 'telebirr' && telebirrMode === 'gateway'
-                  ? checkoutUrl
-                    ? 'Open Telebirr Checkout ↗'
-                    : 'Proceed to Telebirr Checkout'
-                  : 'Submit & Verify Payment'}
-              </span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              {/* Scroll to Upmost Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (scrollContainerRef.current) {
+                    scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className="p-2.5 rounded-full text-zinc-500 hover:text-zinc-950 dark:hover:text-white bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer border border-zinc-200 dark:border-zinc-700 shadow-2xs active:scale-98"
+                title="Scroll to upmost top"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </button>
+
+              {/* Bottom Cancel Button */}
+              <button
+                id="payment-cancel-btn-bottom"
+                type="button"
+                onClick={onClose}
+                className="flex-1 sm:flex-initial px-5 py-2.5 rounded-full font-semibold text-xs flex items-center justify-center gap-1.5 transition shadow-2xs active:scale-98 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 cursor-pointer"
+                title="Cancel and close payment dialog"
+              >
+                <X className="w-4 h-4" />
+                <span>Cancel</span>
+              </button>
+
+              {/* Submit Payment Button */}
+              <button
+                id="payment-submit-btn-bottom"
+                type="button"
+                disabled={isSubmitting || paymentMethod === 'chapa'}
+                onClick={() => {
+                  if (paymentMethod === 'chapa') {
+                    return;
+                  }
+                  if (
+                    paymentMethod === 'telebirr' &&
+                    telebirrMode === 'gateway' &&
+                    checkoutUrl
+                  ) {
+                    handleOpenCheckoutInNewTab(checkoutUrl);
+                  } else {
+                    handleSubmitPayment();
+                  }
+                }}
+                className={`flex-1 sm:flex-initial px-6 py-2.5 rounded-full font-semibold text-xs flex items-center justify-center gap-2 transition shadow-xs active:scale-98 disabled:opacity-50 ${
+                  paymentMethod === 'chapa'
+                    ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 cursor-not-allowed'
+                    : 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 cursor-pointer'
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>
+                  {paymentMethod === 'chapa'
+                    ? 'Chapa Payment (Coming Soon)'
+                    : paymentMethod === 'telebirr' && telebirrMode === 'gateway'
+                    ? checkoutUrl
+                      ? 'Open Telebirr Checkout ↗'
+                      : 'Proceed to Telebirr Checkout'
+                    : 'Submit & Verify Payment'}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

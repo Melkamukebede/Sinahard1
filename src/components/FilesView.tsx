@@ -277,7 +277,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
             exit={{ opacity: 0, y: -10 }}
             className="fixed top-20 right-6 z-50 px-4 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold shadow-xl flex items-center gap-2 border border-white/20"
           >
-            <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-600" />
+            <CheckCircle className="w-4 h-4 text-zinc-950 dark:text-white" />
             <span>{copiedNotification}</span>
           </motion.div>
         )}
@@ -288,8 +288,8 @@ export const FilesView: React.FC<FilesViewProps> = ({
       ───────────────────────────────────────────────────────────── */}
       <div className="relative rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 p-5 sm:p-7 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-5 overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
         {/* Subtle Atmospheric Ambient Glow */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-80 h-80 bg-zinc-400/5 dark:bg-white/[0.03] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-zinc-500/5 dark:bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
 
         {/* Top Header Row */}
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -503,6 +503,81 @@ export const FilesView: React.FC<FilesViewProps> = ({
             </div>
           </div>
 
+          {/* Quick Subject Access & Push in Every Subject (if Admin) */}
+          {dynamicSubjects.length > 1 && (
+            <div className="pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-zinc-500" />
+                  <span>Subjects ({dynamicSubjects.filter((s) => s !== 'All').length})</span>
+                </span>
+                {isAdmin && (
+                  <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 flex items-center gap-1">
+                    <CloudUpload className="w-3 h-3 text-zinc-900 dark:text-white" />
+                    <span>Admin: Push exams per subject</span>
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {dynamicSubjects.map((subj) => {
+                  const isSelected = selectedSubject.toLowerCase() === subj.toLowerCase();
+                  const count = subj === 'All' ? exams.length : (subjectCounts[subj] || 0);
+                  const subjectExam = subj === 'All'
+                    ? exams[0]
+                    : exams.find((e) => (e.subject || 'General').toLowerCase() === subj.toLowerCase());
+
+                  return (
+                    <div
+                      key={subj}
+                      className={`inline-flex items-center rounded-full text-xs transition border overflow-hidden ${
+                        isSelected
+                          ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
+                          : 'bg-zinc-50 dark:bg-zinc-900/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSubject(subj)}
+                        className="px-3 py-1 font-semibold flex items-center gap-1.5 cursor-pointer active:scale-98"
+                      >
+                        <span>{subj}</span>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                            isSelected
+                              ? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900'
+                              : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </button>
+
+                      {/* Admin Push button in every subject */}
+                      {isAdmin && onOpenDatabaseUpload && subj !== 'All' && subjectExam && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenDatabaseUpload(subjectExam);
+                          }}
+                          className={`px-2 py-1 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition border-l active:scale-95 ${
+                            isSelected
+                              ? 'border-zinc-800 dark:border-zinc-200 hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900'
+                              : 'border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white'
+                          }`}
+                          title={`Push ${subj} exam to Cloud Firestore`}
+                        >
+                          <CloudUpload className="w-3 h-3" />
+                          <span>Push</span>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Filter Summary & Quick Reset */}
           {activeFiltersCount > 0 && (
             <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
@@ -588,6 +663,22 @@ export const FilesView: React.FC<FilesViewProps> = ({
                             {exam.subject || 'General'}
                           </span>
 
+                          {/* Admin Push Button on Subject Badge */}
+                          {isAdmin && onOpenDatabaseUpload && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenDatabaseUpload(exam);
+                              }}
+                              className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:opacity-90 transition cursor-pointer shadow-2xs active:scale-95"
+                              title={`Push ${exam.subject || 'exam'} to Cloud Firestore`}
+                            >
+                              <CloudUpload className="w-2.5 h-2.5" />
+                              <span>Push</span>
+                            </button>
+                          )}
+
                           {isCurated && (
                             <span
                               className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
@@ -599,7 +690,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
                           )}
                         </div>
 
-                        {/* Collapsed Actions: Practice and Expand */}
+                        {/* Collapsed Actions: Practice, Push (Admin), and Expand */}
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             type="button"
@@ -613,6 +704,21 @@ export const FilesView: React.FC<FilesViewProps> = ({
                             <Play className="w-3 h-3 fill-current" />
                             <span>Practice</span>
                           </button>
+
+                          {isAdmin && onOpenDatabaseUpload && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenDatabaseUpload(exam);
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 transition cursor-pointer active:scale-98"
+                              title={`Push ${exam.subject || 'exam'} to Cloud Firestore`}
+                            >
+                              <CloudUpload className="w-3 h-3" />
+                              <span>Push</span>
+                            </button>
+                          )}
 
                           <button
                             type="button"
@@ -711,8 +817,8 @@ export const FilesView: React.FC<FilesViewProps> = ({
                           </div>
                         </div>
 
-                        {/* 3 Action Buttons: [Practice] [Edit or Export] [Delete] - Small & Not Bold */}
-                        <div className="grid grid-cols-3 gap-2 pt-0.5">
+                        {/* Action Buttons: [Practice] [Push (Admin)] [Edit or Export] [Delete] */}
+                        <div className={`grid ${isAdmin && onOpenDatabaseUpload ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2 pt-0.5`}>
                           {/* Button 1: Practice */}
                           <button
                             type="button"
@@ -723,6 +829,19 @@ export const FilesView: React.FC<FilesViewProps> = ({
                             <Play className="w-3 h-3 fill-current" />
                             <span>Practice</span>
                           </button>
+
+                          {/* Button Admin: Push to Cloud */}
+                          {isAdmin && onOpenDatabaseUpload && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenDatabaseUpload(exam)}
+                              className="py-1.5 px-2 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-semibold text-xs flex items-center justify-center gap-1 transition hover:opacity-90 active:scale-98 cursor-pointer shadow-xs border border-zinc-900 dark:border-white"
+                              title={`Push ${exam.subject || 'exam'} to Cloud Firestore`}
+                            >
+                              <CloudUpload className="w-3 h-3" />
+                              <span>Push</span>
+                            </button>
+                          )}
 
                           {/* Button 2: Edit or Export */}
                           {!isCurated ? (

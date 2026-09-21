@@ -89,8 +89,8 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
           className="relative w-screen max-w-sm bg-white/95 dark:bg-[#070e1a]/95 backdrop-blur-2xl border-l border-white/60 dark:border-white/10 shadow-2xl flex flex-col transition-transform animate-in slide-in-from-right duration-300 ease-out overflow-hidden"
         >
           {/* Subtle Atmospheric Ambient Glow */}
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-12 -left-24 w-64 h-64 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-zinc-400/5 dark:bg-zinc-700/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-12 -left-24 w-64 h-64 bg-zinc-400/5 dark:bg-zinc-800/10 rounded-full blur-3xl pointer-events-none" />
 
           {/* Drawer Header - Frosted Glass Bar */}
           <div className="relative px-5 py-4 border-b border-white/60 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl">
@@ -141,8 +141,8 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                     {isCloudSynced ? (
                       <>
-                        <Cloud className="w-3 h-3 text-emerald-500" />
-                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                        <Cloud className="w-3 h-3 text-zinc-900 dark:text-white" />
+                        <span className="text-zinc-900 dark:text-white font-medium">
                           Cloud Synced
                         </span>
                       </>
@@ -282,7 +282,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   <div className="relative w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center shadow-2xs">
                     <Bell className="w-4 h-4" />
                     {unreadAlertsCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500" />
+                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-zinc-900 dark:bg-white" />
                     )}
                   </div>
                   <div>
@@ -344,13 +344,13 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold shadow-2xs">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold shadow-2xs">
                     <Bot className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       <span>Support Bot</span>
-                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700">
                         @Frm2026_bot
                       </span>
                     </div>
@@ -397,8 +397,8 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                     >
                       {copiedPhone ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">Copied</span>
+                          <Check className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
+                          <span className="text-[11px] text-zinc-900 dark:text-white font-bold">Copied</span>
                         </>
                       ) : (
                         <>

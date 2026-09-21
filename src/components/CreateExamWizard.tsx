@@ -846,8 +846,8 @@ Time Limit: 25 minutes
       ───────────────────────────────────────────────────────────── */}
       <div className="relative rounded-[32px] sm:rounded-[38px] bg-white/70 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/70 dark:border-white/10 p-5 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] overflow-hidden space-y-6">
         {/* Subtle Atmospheric Ambient Glow */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-zinc-400/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-80 h-80 bg-zinc-400/5 dark:bg-zinc-700/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-zinc-400/5 dark:bg-zinc-800/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Top Header Row with Sinahard Pro Brand & 2-Step Pill Bar */}
         <div className="relative z-10 border-b border-zinc-200/70 dark:border-white/10 pb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -943,16 +943,16 @@ Time Limit: 25 minutes
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-xs"
+              className="p-3.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs flex items-center justify-between gap-3 shadow-xs"
             >
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                <Check className="w-4 h-4 text-zinc-900 dark:text-white shrink-0" />
                 <span>{successMsg}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setSuccessMsg(null)}
-                className="p-1 hover:bg-emerald-500/20 rounded-md transition cursor-pointer"
+                className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md transition cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1249,20 +1249,20 @@ Time Limit: 25 minutes
 
               {/* Imported File Info Banner */}
               {importedFileName && (
-                <div className="flex items-center justify-between p-2.5 px-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-xs text-emerald-800 dark:text-emerald-300 shadow-2xs">
+                <div className="flex items-center justify-between p-2.5 px-3.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-white shadow-2xs">
                   <div className="flex items-center gap-2 truncate">
                     <FileText className="w-4 h-4 text-black dark:text-white shrink-0" />
                     <span className="truncate">
                       <strong>Imported:</strong> {importedFileName}
                     </span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
+                    <span className="text-zinc-600 dark:text-zinc-400 font-bold shrink-0">
                       • {previewQuestions.length} Questions detected
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => txtFileInputRef.current?.click()}
-                    className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:underline shrink-0 ml-2 cursor-pointer"
+                    className="text-[11px] font-bold text-zinc-900 dark:text-white hover:underline shrink-0 ml-2 cursor-pointer"
                   >
                     Re-import .txt
                   </button>
@@ -1282,14 +1282,14 @@ Time Limit: 25 minutes
                   value={pasteRawText}
                   onChange={(e) => setPasteRawText(e.target.value)}
                   placeholder={`Paste or drag-and-drop your .txt exam file here. Format example:\n\nGrade: 12\nSubject: Physics\nTopic: Mechanics\n\n1. What is the derivative of f(x) = x^2?\n   A) 2x*\n   B) x\n   C) 2\n   D) x^3\n   Answer: A\n   Explanation: Using the power rule, d/dx[x^2] = 2x.`}
-                  className="w-full p-4 text-xs sm:text-sm font-mono rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50 leading-relaxed resize-y shadow-2xs"
+                  className="w-full p-4 text-xs sm:text-sm font-mono rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-zinc-400/30 leading-relaxed resize-y shadow-2xs"
                 />
 
                 {/* Drag-and-drop Active Indicator */}
                 {isDraggingFile && (
-                  <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-emerald-500 bg-emerald-500/15 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-20 pointer-events-none">
+                  <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-zinc-950 dark:border-white bg-zinc-950/10 dark:bg-white/10 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-20 pointer-events-none">
                     <FileUp className="w-10 h-10 text-black dark:text-white animate-bounce" />
-                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                    <span className="text-sm font-bold text-zinc-900 dark:text-white">
                       Drop your .txt exam file here to import!
                     </span>
                   </div>
@@ -1298,12 +1298,12 @@ Time Limit: 25 minutes
                 {/* Status Pill in Corner */}
                 <div className="absolute bottom-3 right-3 flex items-center gap-2 pointer-events-none z-10">
                   {previewQuestions.length > 0 ? (
-                    <span className="px-3 py-1 rounded-full bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-xs">
-                      <FileCheck2 className="w-3.5 h-3.5 text-black" />
+                    <span className="px-3 py-1 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-xs">
+                      <FileCheck2 className="w-3.5 h-3.5" />
                       <span>{previewQuestions.length} Questions Detected</span>
                     </span>
                   ) : pasteRawText.trim() ? (
-                    <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold text-xs border border-emerald-500/30">
+                    <span className="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs border border-zinc-200 dark:border-zinc-700">
                       Parsing format...
                     </span>
                   ) : null}
@@ -1367,7 +1367,7 @@ Time Limit: 25 minutes
                   {name || 'Untitled Exam'}
                 </h3>
                 <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">Grade {grade}</span>
+                  <span className="font-semibold text-zinc-900 dark:text-white">Grade {grade}</span>
                   <span>•</span>
                   <span>{subject || 'General'}</span>
                   {topic && (
@@ -1382,11 +1382,11 @@ Time Limit: 25 minutes
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-500/30">
+                <span className="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-bold text-xs border border-zinc-200 dark:border-zinc-700">
                   {questionsStats.total} Questions
                 </span>
                 {questionsStats.withFormulas > 0 && (
-                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-medium text-xs border border-emerald-500/20 hidden sm:inline-flex">
+                  <span className="px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-xs border border-zinc-200 dark:border-zinc-700 hidden sm:inline-flex">
                     {questionsStats.withFormulas} KaTeX
                   </span>
                 )}
@@ -1398,9 +1398,9 @@ Time Limit: 25 minutes
                 <button
                   type="button"
                   onClick={handleAddQuestion}
-                  className="px-3.5 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1 cursor-pointer active:scale-98 transition shadow-xs"
+                  className="px-3.5 py-1.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-bold text-xs flex items-center gap-1 cursor-pointer active:scale-98 transition shadow-xs"
                 >
-                  <Plus className="w-3.5 h-3.5 text-black" />
+                  <Plus className="w-3.5 h-3.5 text-white dark:text-zinc-950" />
                   <span>Add Question</span>
                 </button>
               </div>
@@ -1410,13 +1410,13 @@ Time Limit: 25 minutes
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-white/70 dark:bg-[#0c182b]/80 backdrop-blur-md border border-white/80 dark:border-white/10 shadow-2xs">
               {/* Search Bar */}
               <div className="relative flex-1">
-                <Search className="w-3.5 h-3.5 text-black dark:text-white absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search questions by formula, keywords or options..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-zinc-400/30"
                 />
                 {searchQuery && (
                   <button
@@ -1436,15 +1436,15 @@ Time Limit: 25 minutes
                   onClick={toggleAllPreviews}
                   className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer active:scale-98 ${
                     isAllPreviewOpen
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                      ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white'
                       : 'bg-white dark:bg-[#0c182b] border-zinc-200/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-[#0f1d33]'
                   }`}
                   title={isAllPreviewOpen ? 'Hide all live math previews' : 'Preview all questions with rendered KaTeX'}
                 >
                   {isAllPreviewOpen ? (
-                    <EyeOff className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <EyeOff className="w-3.5 h-3.5" />
                   ) : (
-                    <Eye className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <Eye className="w-3.5 h-3.5" />
                   )}
                   <span>{isAllPreviewOpen ? 'Hide Math' : 'Preview KaTeX'}</span>
                 </button>
@@ -1454,7 +1454,7 @@ Time Limit: 25 minutes
                   onClick={toggleAllExpanded}
                   className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer active:scale-98 ${
                     isAllExpanded
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                      ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white'
                       : 'bg-white dark:bg-[#0c182b] border-zinc-200/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-[#0f1d33]'
                   }`}
                   title={isAllExpanded ? 'Collapse all questions' : 'Expand all questions for full review'}
@@ -1479,7 +1479,7 @@ Time Limit: 25 minutes
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                  className="text-xs font-bold text-zinc-900 dark:text-white hover:underline cursor-pointer"
                 >
                   Clear search filter
                 </button>
@@ -1499,7 +1499,7 @@ Time Limit: 25 minutes
                         className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-zinc-50/80 dark:hover:bg-[#08111e]/80 transition"
                       >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <span className="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">
+                          <span className="w-6 h-6 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-bold text-xs flex items-center justify-center shrink-0">
                             {originalIndex + 1}
                           </span>
                           <span className="text-xs sm:text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate">
@@ -1516,12 +1516,12 @@ Time Limit: 25 minutes
                             }}
                             className={`p-1.5 rounded-lg transition cursor-pointer ${
                               previewingIndices[originalIndex]
-                                ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                                : 'text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400'
+                                ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white'
+                                : 'text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                             }`}
                             title={previewingIndices[originalIndex] ? 'Hide live preview' : 'Preview KaTeX math'}
                           >
-                            {previewingIndices[originalIndex] ? <EyeOff className="w-3.5 h-3.5 text-black dark:text-white" /> : <Eye className="w-3.5 h-3.5 text-black dark:text-white" />}
+                            {previewingIndices[originalIndex] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                           </button>
 
                           <button
@@ -1530,10 +1530,10 @@ Time Limit: 25 minutes
                               e.stopPropagation();
                               handleDuplicateQuestion(originalIndex);
                             }}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer"
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition cursor-pointer"
                             title="Duplicate question"
                           >
-                            <Copy className="w-3.5 h-3.5 text-black dark:text-white" />
+                            <Copy className="w-3.5 h-3.5" />
                           </button>
 
                           {questions.length > 1 && (
@@ -1546,14 +1546,14 @@ Time Limit: 25 minutes
                               className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 transition cursor-pointer"
                               title="Delete question"
                             >
-                              <Trash2 className="w-3.5 h-3.5 text-black dark:text-white" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           )}
 
                           {isExpanded ? (
-                            <ChevronUp className="w-4 h-4 text-black dark:text-white" />
+                            <ChevronUp className="w-4 h-4 text-zinc-400" />
                           ) : (
-                            <ChevronDown className="w-4 h-4 text-black dark:text-white" />
+                            <ChevronDown className="w-4 h-4 text-zinc-400" />
                           )}
                         </div>
                       </div>
@@ -1563,10 +1563,10 @@ Time Limit: 25 minutes
                         <div className="p-4 sm:p-5 pt-2 border-t border-zinc-100 dark:border-white/5 space-y-3.5 bg-zinc-50/50 dark:bg-[#08111e]/40">
                           {/* Live Preview Box */}
                           {previewingIndices[originalIndex] && (
-                            <div className="p-4 rounded-2xl bg-white/90 dark:bg-[#0c182b] border border-emerald-500/30 text-xs space-y-2 shadow-xs">
-                              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                            <div className="p-4 rounded-2xl bg-white/90 dark:bg-[#0c182b] border border-zinc-200 dark:border-zinc-700 text-xs space-y-2 shadow-xs">
+                              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
                                 <span className="flex items-center gap-1">
-                                  <Sparkles className="w-3 h-3 text-black dark:text-white" />
+                                  <Sparkles className="w-3 h-3 text-zinc-900 dark:text-white" />
                                   <span>Live Math Preview</span>
                                 </span>
                                 <span>Correct: Option {String.fromCharCode(65 + q.correct)}</span>
@@ -1580,12 +1580,12 @@ Time Limit: 25 minutes
                                     key={oIdx}
                                     className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 ${
                                       q.correct === oIdx
-                                        ? 'border-emerald-500 bg-emerald-500/10 font-semibold'
+                                        ? 'border-zinc-950 dark:border-white bg-zinc-100 dark:bg-zinc-800 font-semibold text-zinc-900 dark:text-white'
                                         : 'border-zinc-200/80 dark:border-white/10 bg-white/80 dark:bg-[#08111e]/60'
                                     }`}
                                   >
                                     <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${
-                                      q.correct === oIdx ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
+                                      q.correct === oIdx ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950' : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
                                     }`}>
                                       {String.fromCharCode(65 + oIdx)}
                                     </span>
@@ -1597,7 +1597,7 @@ Time Limit: 25 minutes
                               </div>
                               {q.explanation && (
                                 <div className="pt-2 border-t border-zinc-200/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400">
-                                  <span className="font-bold text-[10px] uppercase text-emerald-600 dark:text-emerald-400 block mb-0.5">Solution:</span>
+                                  <span className="font-bold text-[10px] uppercase text-zinc-500 block mb-0.5">Solution:</span>
                                   <MathRenderer content={q.explanation} />
                                 </div>
                               )}
@@ -1624,7 +1624,7 @@ Time Limit: 25 minutes
                                     key={sc.label}
                                     type="button"
                                     onClick={() => insertFormulaToQuestion(originalIndex, sc.code, 'text')}
-                                    className="px-2 py-0.5 rounded-full bg-white dark:bg-[#0c182b] hover:bg-emerald-500/15 dark:hover:bg-emerald-500/20 text-zinc-700 dark:text-zinc-300 text-[10px] font-mono border border-zinc-200/80 dark:border-white/10 cursor-pointer shadow-2xs transition"
+                                    className="px-2 py-0.5 rounded-full bg-white dark:bg-[#0c182b] hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-[10px] font-mono border border-zinc-200/80 dark:border-white/10 cursor-pointer shadow-2xs transition"
                                   >
                                     {sc.label}
                                   </button>
@@ -1637,7 +1637,7 @@ Time Limit: 25 minutes
                               value={q.text}
                               onChange={(e) => updateQuestionText(originalIndex, e.target.value)}
                               placeholder="Question prompt or math formula..."
-                              className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30 shadow-2xs"
+                              className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-zinc-400/30 shadow-2xs"
                             />
                           </div>
 
@@ -1656,7 +1656,7 @@ Time Limit: 25 minutes
                                     key={optIndex}
                                     className={`flex items-center gap-2 p-2.5 rounded-2xl border transition ${
                                       isCorrect
-                                        ? 'border-emerald-500 bg-emerald-500/10'
+                                        ? 'border-zinc-950 dark:border-white bg-zinc-100 dark:bg-zinc-800'
                                         : 'border-zinc-200/80 dark:border-white/10 bg-white/90 dark:bg-[#08111e]/90'
                                     }`}
                                   >
@@ -1665,8 +1665,8 @@ Time Limit: 25 minutes
                                       onClick={() => updateCorrectOption(originalIndex, optIndex)}
                                       className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition cursor-pointer ${
                                         isCorrect
-                                          ? 'bg-emerald-500 text-zinc-950 font-extrabold shadow-2xs'
-                                          : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-emerald-500/30'
+                                          ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-extrabold shadow-2xs'
+                                          : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600'
                                       }`}
                                       title={`Mark ${char} as correct`}
                                     >
@@ -1696,7 +1696,7 @@ Time Limit: 25 minutes
                               value={q.explanation || ''}
                               onChange={(e) => updateExplanation(originalIndex, e.target.value)}
                               placeholder="Reasoning, derivation, or formula proof..."
-                              className="w-full px-3.5 py-2 text-xs rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30 resize-none shadow-2xs"
+                              className="w-full px-3.5 py-2 text-xs rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-zinc-400/30 resize-none shadow-2xs"
                             />
                           </div>
                         </div>
@@ -1714,7 +1714,7 @@ Time Limit: 25 minutes
                 onClick={() => setCurrentStep(1)}
                 className="px-4 py-2 rounded-full border border-zinc-200/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer hover:bg-zinc-50 dark:hover:bg-[#08111e] transition active:scale-98"
               >
-                <ChevronLeft className="w-4 h-4 text-black dark:text-white" />
+                <ChevronLeft className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
                 <span>Back to Edit & Paste</span>
               </button>
 
@@ -1736,9 +1736,9 @@ Time Limit: 25 minutes
                         updatedAt: new Date().toISOString(),
                       });
                     }}
-                    className="px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer active:scale-98 transition shadow-xs hover:bg-emerald-500/20"
+                    className="px-4 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer active:scale-98 transition shadow-xs hover:bg-zinc-200 dark:hover:bg-zinc-700"
                   >
-                    <CloudUpload className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <CloudUpload className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                     <span>Publish to Firestore</span>
                   </button>
                 )}
@@ -1746,9 +1746,9 @@ Time Limit: 25 minutes
                 <button
                   type="button"
                   onClick={handleFinalSave}
-                  className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
+                  className="px-5 py-2.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:opacity-90 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
                 >
-                  <Save className="w-3.5 h-3.5 text-black" />
+                  <Save className="w-3.5 h-3.5" />
                   <span>Save Exam</span>
                 </button>
               </div>

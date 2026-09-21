@@ -364,7 +364,7 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
                 onClick={() => setActiveTab('text')}
                 className={`px-3 py-1 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'text'
-                    ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                    ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
                     : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
@@ -377,7 +377,7 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
                 onClick={() => setActiveTab('json')}
                 className={`px-3 py-1 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'json'
-                    ? 'bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                    ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-xs'
                     : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                 }`}
               >
@@ -391,7 +391,7 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
               <button
                 type="button"
                 onClick={handleInsertSampleTemplate}
-                className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 font-bold transition cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-bold transition cursor-pointer flex items-center gap-1"
                 title="Load sample question text"
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -421,7 +421,7 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {/* Format Instructions Banner */}
             <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-300 flex items-start gap-2.5">
-              <BookOpen className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+              <BookOpen className="w-4 h-4 text-zinc-900 dark:text-white shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold text-zinc-900 dark:text-white">Text Format Instructions: </span>
                 Provide question numbering (e.g. <code className="px-1 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800">1. Question</code>),
@@ -437,7 +437,7 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder={`1. What is the derivative of f(x) = x³?\nA) 3x²*\nB) 2x\nC) 3x\nD) x⁴/4\nExplanation: Using the power rule d/dx[x^n] = n*x^(n-1).\n\n2. Which law states that PV = nRT?\nA) Boyle's Law\nB) Charles's Law\nC) Ideal Gas Law*\nD) Avogadro's Law`}
-                className="w-full p-4 font-mono text-xs leading-relaxed rounded-2xl bg-zinc-50 dark:bg-[#070e1a] border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-y"
+                className="w-full p-4 font-mono text-xs leading-relaxed rounded-2xl bg-zinc-50 dark:bg-[#070e1a] border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-400/30 resize-y"
                 spellCheck="false"
               />
             </div>
@@ -445,7 +445,7 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
             {/* Status Bar */}
             <div className="flex items-center justify-between text-zinc-400 text-[11px] px-1">
               <span>{lineCount} lines • {charCount} characters</span>
-              <span className={`font-bold ${previewQuestions.length > 0 ? 'text-emerald-500' : 'text-zinc-400'}`}>
+              <span className={`font-bold ${previewQuestions.length > 0 ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>
                 {previewQuestions.length} Questions Ready
               </span>
             </div>
@@ -491,7 +491,7 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
             {/* Questions Preview List */}
             {previewQuestions.length > 0 && (
               <div className="space-y-2.5 pt-2">
-                <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
+                <div className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Parsed Questions Preview ({previewQuestions.length})</span>
@@ -534,7 +534,7 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
                               key={oIdx}
                               className={`px-2 py-1 rounded-lg border ${
                                 oIdx === q.correct
-                                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-bold'
+                                  ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white font-bold'
                                   : 'bg-white/60 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700/60 text-zinc-600 dark:text-zinc-400'
                               }`}
                             >

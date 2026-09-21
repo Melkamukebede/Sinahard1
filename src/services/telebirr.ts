@@ -76,7 +76,7 @@ export async function initializeTelebirrPayment(
   }
 ): Promise<{ toPayUrl?: string; outTradeNo: string; isSandbox?: boolean; error?: string }> {
   const outTradeNo = generateTelebirrTradeNo(user.uid, plan.id);
-  const cleanPhone = (phoneNumber || '0911000000').replace(/[^0-9+]/g, '') || '0911000000';
+  const cleanPhone = (phoneNumber || '0918049806').replace(/[^0-9+]/g, '') || '0918049806';
 
   const payload: TelebirrInitializeRequest = {
     amount: plan.priceETB,

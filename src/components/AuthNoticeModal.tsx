@@ -73,7 +73,7 @@ export const AuthNoticeModal: React.FC<AuthNoticeModalProps> = ({ isOpen, onClos
             className="w-full flex items-center justify-between p-3.5 rounded-[20px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-zinc-900 border border-white/80 dark:border-white/10 text-zinc-900 dark:text-white transition cursor-pointer shadow-xs group"
           >
             <div className="flex items-center gap-2.5 text-left">
-              <ExternalLink className="w-4 h-4 text-emerald-500 shrink-0 group-hover:scale-110 transition-transform" />
+              <ExternalLink className="w-4 h-4 text-zinc-900 dark:text-white shrink-0 group-hover:scale-110 transition-transform" />
               <div>
                 <div className="text-xs font-semibold text-zinc-900 dark:text-white">
                   Open App in New Tab

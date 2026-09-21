@@ -347,7 +347,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             let optionCardClasses = '';
             if (isExplRevealed) {
               if (isCorrectOption) {
-                optionCardClasses = 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500 text-zinc-950 dark:text-white shadow-2xs';
+                optionCardClasses = 'bg-zinc-100 dark:bg-zinc-800 border-zinc-900 dark:border-white text-zinc-950 dark:text-white shadow-2xs font-medium';
               } else if (isSelected && !isCorrectOption) {
                 optionCardClasses = 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500 text-zinc-950 dark:text-white shadow-2xs';
               } else {
@@ -376,7 +376,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
                     isExplRevealed && isCorrectOption
-                      ? 'bg-emerald-500 text-white shadow-2xs'
+                      ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-2xs'
                       : isExplRevealed && isSelected && !isCorrectOption
                       ? 'bg-rose-500 text-white shadow-2xs'
                       : isSelected
@@ -391,7 +391,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 </div>
                 {/* Visual Icon Check / Indicator */}
                 {isExplRevealed && isCorrectOption && (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-zinc-900 dark:text-white shrink-0" />
                 )}
                 {isExplRevealed && isSelected && !isCorrectOption && (
                   <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
@@ -408,13 +408,13 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             onClick={() => handleToggleExplanation(qIndex)}
             className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 cursor-pointer transition border shadow-2xs active:scale-98 ${
               isExplRevealed
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-700'
                 : 'bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 border-white/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[#0f1d33]'
             }`}
           >
             {isExplRevealed ? (
               <>
-                <EyeOff className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <EyeOff className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                 <span>Hide Explanation</span>
               </>
             ) : (
@@ -428,15 +428,15 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
         {/* Correct Answer Shower & Step-by-Step Explanation Banner */}
         {isExplRevealed && (
-          <div className="p-4 sm:p-5 rounded-[24px] bg-emerald-500/10 border border-emerald-500/25 text-zinc-900 dark:text-white space-y-3 animate-in fade-in duration-200">
+          <div className="p-4 sm:p-5 rounded-[24px] bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white space-y-3 animate-in fade-in duration-200">
             {/* Banner Header: Correct Answer Shower */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-emerald-500/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                <div className="w-8 h-8 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
                   {String.fromCharCode(65 + q.correct)}
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 block">
                     Correct Answer
                   </span>
                   <div className="text-sm sm:text-base font-bold text-zinc-950 dark:text-white">
@@ -448,8 +448,8 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               {/* Status Comparison Badge */}
               <div className="shrink-0">
                 {selectedOpt === q.correct ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                     Your Choice: Correct ✓
                   </span>
                 ) : selectedOpt !== null && selectedOpt !== undefined ? (
@@ -469,7 +469,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             {/* Step-by-Step Solution & LaTeX formulas */}
             {q.explanation && (
               <div className="pt-1 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 space-y-1.5">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
                   <span>Step-by-step Solution:</span>
                 </div>
                 <div className="leading-relaxed">
@@ -490,7 +490,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
           {/* Header Bar using App Color Design */}
           <div className="px-5 sm:px-6 py-3.5 border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between gap-3 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md flex-wrap">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="w-2.5 h-2.5 rounded-full bg-zinc-900 dark:bg-white animate-pulse shrink-0" />
               <h2 className="font-['Outfit',sans-serif] font-bold text-sm sm:text-base text-zinc-900 dark:text-white truncate">
                 {exam.name}
               </h2>
@@ -618,7 +618,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               if (isCurrent) {
                 pillClass = 'ring-2 ring-zinc-950 dark:ring-white font-bold bg-zinc-950 text-white dark:bg-white dark:text-zinc-950';
               } else if (isAns) {
-                pillClass = 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30';
+                pillClass = 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700 font-semibold';
               } else if (isExpl) {
                 pillClass = 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30';
               } else {

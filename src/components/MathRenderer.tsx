@@ -98,9 +98,9 @@ function processMathContent(content: string): string {
     .replace(/>/g, '&gt;');
 
   // Step 3: Markdown formatting
-  html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-emerald-600 dark:text-emerald-400">$1</strong>');
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-zinc-900 dark:text-white">$1</strong>');
   html = html.replace(/\*([^\*]+)\*/g, '<em class="italic opacity-90">$1</em>');
-  html = html.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-xs font-mono text-emerald-700 dark:text-emerald-300 border border-zinc-200 dark:border-zinc-700">$1</code>');
+  html = html.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-xs font-mono text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700">$1</code>');
   html = html.replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>');
 
   // Step 4: Restore KaTeX tokens

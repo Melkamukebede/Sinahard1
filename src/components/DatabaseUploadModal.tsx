@@ -295,8 +295,8 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                     Upload to Cloud Firestore
                   </h3>
                   {isAdmin ? (
-                    <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-zinc-900 dark:text-white" />
                       Verified Admin
                     </span>
                   ) : (
@@ -379,7 +379,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2.5 border-t border-zinc-200/60 dark:border-zinc-800/80 text-xs">
                 <div className="p-2 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800">
                   <span className="text-zinc-400 text-[10px] block">Questions</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
+                  <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1 mt-0.5">
                     <Layers className="w-3.5 h-3.5" />
                     {diagnostics.total} items
                   </span>
@@ -589,17 +589,17 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
               {/* Toggles */}
               <div className="space-y-2.5 pt-1">
                 {/* Instant Official Exams Catalog Sync */}
-                <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/30 cursor-pointer hover:border-emerald-500/50 transition">
+                <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-600 transition">
                   <input
                     type="checkbox"
                     checked={asOfficialExam}
                     onChange={(e) => setAsOfficialExam(e.target.checked)}
-                    className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
+                    className="mt-0.5 rounded text-zinc-900 focus:ring-zinc-500"
                   />
                   <div className="text-xs">
                     <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       Publish to Official Exams Catalog
-                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-black">
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 font-black">
                         LIVE
                       </span>
                     </span>
@@ -659,7 +659,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 </div>
                 <div className="w-full h-2 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-300"
+                    className="h-full bg-zinc-900 dark:bg-white rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>

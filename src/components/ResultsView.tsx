@@ -83,7 +83,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center shrink-0 border border-zinc-200/60 dark:border-zinc-700">
-              <BarChart3 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <BarChart3 className="w-5 h-5 text-zinc-900 dark:text-white" />
             </div>
             <div>
               <h1 className="text-xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
@@ -159,7 +159,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
             <div className="p-3.5 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800">
               <div className="flex items-center gap-1.5 text-zinc-400 text-[11px] font-medium mb-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                 <span>Pass Rate</span>
               </div>
               <div className="text-xl font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
@@ -230,7 +230,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                       <div
                         className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center font-['Outfit',sans-serif] font-bold text-sm shrink-0 border ${
                           isPassed
-                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                            ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-700'
                             : 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20'
                         }`}
                       >
@@ -246,7 +246,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                               isPassed
-                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                                ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-700'
                                 : 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30'
                             }`}
                           >
@@ -306,7 +306,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                           <button
                             type="button"
                             onClick={() => toggleMistakesOnly(originalIdx)}
-                            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                            className="text-xs font-bold text-zinc-900 dark:text-white hover:underline cursor-pointer"
                           >
                             {mistakesOnly ? 'Show All Questions' : `Focus on ${mistakeCount} Mistakes Only`}
                           </button>
@@ -322,7 +322,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                             <div
                               className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold ${
                                 ans.isCorrect
-                                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                                  ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
                                   : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
                               }`}
                             >
@@ -339,7 +339,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                               <span className="text-zinc-400">Your answer:</span>
                               <span
                                 className={`font-semibold ${
-                                  ans.isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
+                                  ans.isCorrect ? 'text-zinc-900 dark:text-white' : 'text-rose-500'
                                 }`}
                               >
                                 <MathRenderer content={ans.userAnswer} inline />
@@ -349,7 +349,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                             {!ans.isCorrect && (
                               <div className="flex items-center gap-2">
                                 <span className="text-zinc-400">Correct answer:</span>
-                                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                <span className="font-semibold text-zinc-900 dark:text-white">
                                   <MathRenderer content={ans.correctAnswer} inline />
                                 </span>
                               </div>
@@ -357,8 +357,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
                             {ans.explanation && (
                               <div className="mt-2 p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300">
-                                <div className="font-semibold text-[10px] uppercase text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mb-0.5">
-                                  <Lightbulb className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                <div className="font-semibold text-[10px] uppercase text-zinc-500 flex items-center gap-1 mb-0.5">
+                                  <Lightbulb className="w-3 h-3 text-zinc-500" />
                                   <span>Step-by-step Solution:</span>
                                 </div>
                                 <MathRenderer content={ans.explanation} />

@@ -61,7 +61,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02]">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center shadow-2xs">
-              <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <Target className="w-4 h-4 text-zinc-900 dark:text-white" />
             </div>
             <div>
               <h3 className="font-bold text-base font-['Outfit',sans-serif]">Study Targets & Alerts</h3>
@@ -82,17 +82,17 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
           {/* Daily Goal & Streak Hero Banner */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Streak Card */}
-            <div className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <div className="p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white flex items-center justify-center shrink-0">
                 <Flame className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                   Study Consistency
                 </div>
                 <div className="text-lg font-black text-zinc-900 dark:text-white flex items-center gap-1.5">
                   <span>{studyStreakDays} Day Streak</span>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">
                     Active
                   </span>
                 </div>
@@ -101,12 +101,12 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
             </div>
 
             {/* Daily Target Card */}
-            <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white flex items-center justify-center shrink-0">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                   Today's Progress
                 </div>
                 <div className="text-lg font-black text-zinc-900 dark:text-white">
@@ -124,7 +124,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-sm text-zinc-900 dark:text-white flex items-center gap-2">
-                  <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <Target className="w-4 h-4 text-zinc-900 dark:text-white" />
                   Daily Exam Goal
                 </h4>
                 <p className="text-xs text-zinc-500 mt-0.5">
@@ -141,7 +141,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                   onClick={() => setDailyGoal(target)}
                   className={`py-2 px-3 rounded-xl font-bold text-xs cursor-pointer border transition flex flex-col items-center gap-0.5 ${
                     dailyGoal === target
-                      ? 'bg-emerald-500 text-zinc-950 border-emerald-500 shadow-xs'
+                      ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
                       : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700'
                   }`}
                 >
@@ -203,7 +203,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                 onClick={handleSendTest}
                 className="px-3.5 py-1.5 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition"
               >
-                {testSent ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Send className="w-3.5 h-3.5 text-zinc-500" />}
+                {testSent ? <Check className="w-3.5 h-3.5 text-zinc-950 dark:text-white" /> : <Send className="w-3.5 h-3.5 text-zinc-500" />}
                 {testSent ? 'Alert Sent!' : 'Preview In-App Alert'}
               </button>
             </div>
@@ -243,7 +243,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                        {!alert.read && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
+                        {!alert.read && <span className="w-2 h-2 rounded-full bg-zinc-950 dark:bg-white" />}
                         {alert.title}
                       </span>
                       <span className="text-[10px] text-zinc-400">
