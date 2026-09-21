@@ -121,7 +121,6 @@ export async function publishExamForCloudSharing(exam: Exam): Promise<boolean> {
       subject: (exam.subject || 'General').trim(),
       grade: String(exam.grade || '12'),
       timeLimit: Number(exam.timeLimit) || 20,
-      passingScore: Number(exam.passingScore) || 70,
       ...(exam.topic?.trim() ? { topic: exam.topic.trim() } : {}),
       ...(exam.stream ? { stream: exam.stream } : {}),
       ...(exam.targetExamYear ? { targetExamYear: exam.targetExamYear } : {}),

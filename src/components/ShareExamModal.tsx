@@ -9,7 +9,7 @@ import {
   GraduationCap,
   Clock,
   HelpCircle,
-  Award,
+  Layers,
   Tag,
   Play,
   CheckCircle2,
@@ -63,9 +63,9 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
     return 'General';
   })();
 
-  const topicLabel = exam.unit?.trim() || exam.description?.trim() || 'General Curriculum';
+  const topicLabel = exam.topic?.trim() || exam.metadata?.topic?.trim() || exam.description?.trim() || 'General Curriculum';
   const questionCount = exam.questions?.length || 0;
-  const passingScore = exam.passingScore || 70;
+  const streamLabel = exam.stream || exam.metadata?.stream || 'General';
 
   // Generate short sharing link using requested production domain: https://questions-creator.pages.dev/
   const compactExamId = (exam.catalogId || exam.id).trim();
@@ -80,7 +80,6 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
 🏷️ Topic: ${topicLabel}
 ⏱️ Duration: ${exam.timeLimit} Minutes
 ❓ Questions: ${questionCount} Multiple-Choice Questions
-🎯 Passing Score: ${passingScore}%
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 👉 Practice this exam on Sinahard:
 ${shortLink}`;
@@ -231,11 +230,11 @@ ${shortLink}`;
 
               <div className="p-2 rounded-xl bg-white dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800">
                 <div className="flex items-center justify-center gap-1 text-zinc-500 dark:text-zinc-400 text-[10px] uppercase font-bold">
-                  <Award className="w-3 h-3" />
-                  <span>Pass Score</span>
+                  <Layers className="w-3 h-3" />
+                  <span>Stream</span>
                 </div>
-                <span className="text-sm font-bold text-zinc-900 dark:text-white mt-0.5 block">
-                  {passingScore}%
+                <span className="text-sm font-bold text-zinc-900 dark:text-white mt-0.5 block truncate">
+                  {streamLabel}
                 </span>
               </div>
             </div>

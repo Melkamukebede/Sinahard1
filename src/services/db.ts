@@ -455,7 +455,6 @@ export async function saveResultToDb(result: ExamResult, user: AppUser | null): 
         percentage: Number(resWithId.percentage) || 0,
         timeSpent: Number(resWithId.timeSpent) || 0,
         answers: sanitizedAnswers,
-        ...(resWithId.passingScore !== undefined ? { passingScore: Number(resWithId.passingScore) } : {}),
         ...(resWithId.subjectType ? { subjectType: String(resWithId.subjectType) } : {}),
       };
 

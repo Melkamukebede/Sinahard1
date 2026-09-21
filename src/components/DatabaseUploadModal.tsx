@@ -17,9 +17,16 @@ import {
   Calendar,
   LogIn,
   Clock,
-  Target,
   Compass,
   FileText,
+  Database,
+  Flame,
+  Code2,
+  Check,
+  Zap,
+  SlidersHorizontal,
+  Copy,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Exam, AppUser } from '../types';
 import {
@@ -40,12 +47,12 @@ interface DatabaseUploadModalProps {
 }
 
 const ACADEMIC_GRADE_OPTIONS = [
-  { id: 'Senior University', label: 'University Senior', subtitle: 'Undergrad Exit & Advanced Degree Exam Prep' },
-  { id: 'Freshman', label: 'University Freshman', subtitle: 'Higher Education Remedial & Degree Core' },
   { id: '12', label: 'Grade 12', subtitle: 'National University Entrance Examination (NEAEA / MoE)' },
+  { id: 'Freshman', label: 'University Freshman', subtitle: 'Higher Education Remedial & Degree Core' },
   { id: '11', label: 'Grade 11', subtitle: 'Senior Secondary Preparatory Curriculum' },
   { id: '10', label: 'Grade 10', subtitle: 'Secondary General Education' },
   { id: '9', label: 'Grade 9', subtitle: 'Secondary Foundation Curriculum' },
+  { id: 'Senior University', label: 'University Senior', subtitle: 'Undergrad Exit & Advanced Degree Exam Prep' },
   { id: '8', label: 'Grade 8', subtitle: 'Regional Ministry Level Examination' },
   { id: '7', label: 'Grade 7', subtitle: 'Middle School Curriculum' },
   { id: 'All', label: 'All Grades / General', subtitle: 'Open access for all academic stages' },
@@ -60,6 +67,8 @@ const STREAM_OPTIONS = [
   { id: 'All', label: 'All Streams', subtitle: 'Universal accessibility across all academic tracks' },
 ];
 
+const TIME_PRESETS = [15, 20, 30, 45, 60, 90];
+
 export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   exam,
   user,
@@ -68,6 +77,10 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   onUploadComplete,
 }) => {
   const { signInWithGoogle, isSigningIn, popupBlocked } = useAuth();
+
+  // Active view tab: 'configure' or 'schema_preview'
+  const [activeTab, setActiveTab] = useState<'configure' | 'schema_preview'>('configure');
+  const [copiedPayload, setCopiedPayload] = useState(false);
 
   // Form states initialized dynamically based on exam prop
   const [selectedGrade, setSelectedGrade] = useState<string>('12');
@@ -102,28 +115,35 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     if (isKnownGrade) {
       setSelectedGrade(detectedGrade);
       setCustomGradeText('');
-    } else if (detectedGrade) {
+    } else {
       setSelectedGrade('custom');
       setCustomGradeText(detectedGrade);
-    } else {
-      setSelectedGrade('12');
-      setCustomGradeText('');
     }
 
-    // Detect stream
-    const detectedStream = (exam as any).stream || inferStream(exam.subject, `${exam.name} ${exam.title || ''}`, detectedGrade);
-    setSelectedStream(detectedStream);
+    // Infer stream
+    const inferred = inferStream(exam.subject, `${exam.name} ${exam.title || ''}`, detectedGrade);
+    setSelectedStream((exam as any).stream || inferred);
 
-    // Metadata defaults
-    setTopic(exam.topic || (exam.name.includes(':') ? exam.name.split(':')[1].trim() : ''));
-    setTimeLimit(Number(exam.timeLimit) || 20);
-    setTargetExamYear((exam as any).targetExamYear || '2026 (2018 E.C.)');
+    // Topic extraction (prioritize clean topic, fallback to name parsing)
+    const existingTopic = exam.topic || (exam.metadata?.topic) || '';
+    if (existingTopic) {
+      setTopic(existingTopic);
+    } else if (exam.name.includes(':')) {
+      setTopic(exam.name.split(':')[1].trim());
+    } else {
+      setTopic('');
+    }
 
+    // Time limit & exam session year
+    setTimeLimit(exam.timeLimit || 20);
+    setTargetExamYear((exam as any).targetExamYear || exam.metadata?.targetExamYear || '2026 (2018 E.C.)');
+
+    // Curator & tags
     setCuratorName(
       exam.curator ||
       (detectedGrade === 'Freshman'
         ? 'University Higher Education Mathematics Board'
-        : 'Ministry of Education (MoE) Specialist Team')
+        : 'Ministry of Education (MoE)')
     );
 
     setAdminTag(
@@ -133,13 +153,14 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
         : `Grade ${detectedGrade} National Curriculum Exam`)
     );
 
-    // Reset status indicators
+    // Reset status indicators & tab
     setStatusMessage(null);
     setErrorMessage(null);
     setUploadProgress(0);
+    setActiveTab('configure');
   }, [exam, isOpen]);
 
-  // Adjust suggested stream when grade changes
+  // Adjust suggested stream and curator when grade changes
   const handleGradeChange = (newGrade: string) => {
     setSelectedGrade(newGrade);
     if (newGrade === 'Freshman') {
@@ -207,11 +228,66 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     };
   }, [exam]);
 
+  const effectiveGrade = selectedGrade === 'custom' ? (customGradeText.trim() || 'General') : selectedGrade;
+
+  // Optimized Firestore Payload Preview Generator
+  const previewPayload = useMemo(() => {
+    if (!exam) return null;
+    const examId = exam.id || 'exam_' + Date.now();
+    const title = (exam.title || exam.name || 'Official Curriculum Exam').trim();
+
+    const sanitizedQuestions = (exam.questions || []).map((q, idx) => ({
+      id: q.id || `q_${examId}_${idx + 1}`,
+      text: q.text,
+      options: q.options,
+      correct: q.correct,
+      explanation: q.explanation || undefined,
+    }));
+
+    const metadata = {
+      subject: (exam.subject || 'General').trim(),
+      grade: effectiveGrade,
+      stream: selectedStream,
+      topic: topic.trim() || undefined,
+      timeLimit: Number(timeLimit) || 20,
+      targetExamYear: targetExamYear.trim() || '2026 (2018 E.C.)',
+      description: exam.description?.trim() || undefined,
+    };
+
+    return {
+      id: examId,
+      catalogId: exam.catalogId || examId,
+      title,
+      metadata,
+      questionsCount: sanitizedQuestions.length,
+      sampleQuestion: sanitizedQuestions[0] || null,
+      isPublic,
+      sourceType: asOfficialExam ? 'curated_catalog' : (exam.sourceType || 'curated_catalog'),
+    };
+  }, [exam, effectiveGrade, selectedStream, topic, timeLimit, targetExamYear, isPublic, asOfficialExam]);
+
+  // Estimated JSON document payload size
+  const estimatedPayloadSizeKB = useMemo(() => {
+    if (!previewPayload) return '0.0';
+    try {
+      const bytes = new Blob([JSON.stringify(previewPayload)]).size;
+      return (bytes / 1024).toFixed(1);
+    } catch {
+      return '1.2';
+    }
+  }, [previewPayload]);
+
   if (!isOpen || !exam) return null;
 
   const isAdmin = canUserUploadToFirestore(user);
   const userEmail = user?.email || 'Not logged in';
-  const effectiveGrade = selectedGrade === 'custom' ? (customGradeText.trim() || 'General') : selectedGrade;
+
+  const handleCopyPayload = () => {
+    if (!previewPayload) return;
+    navigator.clipboard.writeText(JSON.stringify(previewPayload, null, 2));
+    setCopiedPayload(true);
+    setTimeout(() => setCopiedPayload(false), 2000);
+  };
 
   const handleUploadToFirestore = async () => {
     if (!isAdmin) {
@@ -271,75 +347,128 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto bg-black/65 backdrop-blur-xs">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto bg-slate-950/60 backdrop-blur-md">
         <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 12 }}
+          initial={{ opacity: 0, scale: 0.97, y: 14 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 12 }}
-          transition={{ duration: 0.2 }}
-          className="w-full max-w-2xl bg-white/95 dark:bg-[#0c182b] border border-white/80 dark:border-white/10 rounded-[32px] shadow-2xl overflow-hidden text-zinc-900 dark:text-zinc-100 backdrop-blur-2xl my-auto"
+          exit={{ opacity: 0, scale: 0.97, y: 14 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-2xl bg-[#f8fafc] dark:bg-[#0c182b] border border-slate-200/90 dark:border-white/10 rounded-[28px] sm:rounded-[32px] shadow-2xl overflow-hidden text-slate-900 dark:text-slate-100 backdrop-blur-2xl my-auto flex flex-col max-h-[90vh]"
         >
           {/* Header */}
-          <div className="px-6 py-5 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-white/80 dark:border-white/10 text-zinc-900 dark:text-white flex items-center justify-center shadow-2xs">
-                <CloudUpload className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+          <div className="px-5 sm:px-6 py-4.5 border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between bg-white/70 dark:bg-white/[0.02]">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* App Brand Icon Badge */}
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-amber-600/20 dark:from-amber-400/20 dark:to-orange-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs">
+                <Flame className="w-5 h-5 fill-amber-500/20" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-zinc-900 dark:text-white font-['Outfit',sans-serif]">
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white font-['Outfit',sans-serif] truncate">
                     Upload to Cloud Firestore
                   </h3>
+
+                  {/* Firebase Live Status Pill */}
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Firestore (default)
+                  </span>
+
                   {isAdmin ? (
-                    <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-zinc-900 dark:text-white" />
-                      Verified Admin
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-950 shrink-0">
+                      <ShieldCheck className="w-3 h-3" />
+                      Admin Verified
                     </span>
                   ) : (
-                    <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 flex items-center gap-1">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 shrink-0">
                       <Lock className="w-3 h-3 text-rose-500" />
                       Admin Protected
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Firebase Native Document Storage & Central Question Bank
+
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                  Optimized Document Storage • Nested Metadata • Batch /questions Bank
                 </p>
               </div>
             </div>
+
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition cursor-pointer"
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer shrink-0 ml-2"
               aria-label="Close modal"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+          {/* Sub-header Tabs: Configuration vs Schema Inspection */}
+          <div className="px-5 sm:px-6 pt-2 pb-1 flex items-center justify-between border-b border-slate-200/60 dark:border-white/5 bg-slate-100/60 dark:bg-slate-900/30 text-xs">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('configure')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition cursor-pointer ${
+                  activeTab === 'configure'
+                    ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-2xs border border-slate-200/80 dark:border-white/10'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
+                <span>Curriculum & Metadata</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('schema_preview')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition cursor-pointer ${
+                  activeTab === 'schema_preview'
+                    ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-2xs border border-slate-200/80 dark:border-white/10'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <Code2 className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Inspect Firestore Schema</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                  Optimized
+                </span>
+              </button>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-400">
+              <span>Doc Est:</span>
+              <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                ~{estimatedPayloadSizeKB} KB
+              </span>
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
             {/* Non-Admin Alert & One-Click Sign-In */}
             {!isAdmin && (
-              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 space-y-3">
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-800 dark:text-rose-300 space-y-2.5">
                 <div className="flex items-center gap-2 text-sm font-bold">
                   <Lock className="w-4 h-4 text-rose-500 shrink-0" />
                   <span>Administrator Authentication Required</span>
                 </div>
                 <p className="text-xs text-rose-700 dark:text-rose-400 leading-relaxed">
-                  Only the verified administrator (<span className="font-mono font-bold">{ADMIN_EMAIL}</span>) can upload questions to Cloud Firestore collections (<span className="font-mono">/exams</span> and <span className="font-mono">/questions</span>).
+                  Only the verified administrator (<span className="font-mono font-bold">{ADMIN_EMAIL}</span>) is authorized to publish into Cloud Firestore root collections (<span className="font-mono">/exams</span> and <span className="font-mono">/questions</span>).
                 </p>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-rose-500/20">
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Current account: <span className="font-semibold text-zinc-700 dark:text-zinc-200">{userEmail}</span>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    Current user: <span className="font-semibold text-slate-800 dark:text-slate-200">{userEmail}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => signInWithGoogle()}
                     disabled={isSigningIn}
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-bold text-xs shadow-sm cursor-pointer disabled:opacity-50 transition"
+                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-bold text-xs shadow-xs cursor-pointer disabled:opacity-50 transition active:scale-98 shrink-0"
                   >
                     <LogIn className="w-3.5 h-3.5" />
-                    <span>{isSigningIn ? 'Signing In...' : 'Sign In with Google as Admin'}</span>
+                    <span>{isSigningIn ? 'Signing In...' : 'Sign In as Admin'}</span>
                   </button>
                 </div>
                 {popupBlocked && (
@@ -350,298 +479,356 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
               </div>
             )}
 
-            {/* Exam Diagnostic Summary Card */}
-            <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-3">
+            {/* Exam Diagnostic & Optimization Summary Card */}
+            <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-3 shadow-xs">
               <div className="flex items-start justify-between gap-3">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                      Exam Target
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      Target Exam
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25">
                       {effectiveGrade === 'Freshman' ? 'University Freshman' : `Grade ${effectiveGrade}`}
                     </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                      {selectedStream}
+                    </span>
                   </div>
-                  <h4 className="text-sm font-bold text-zinc-900 dark:text-white line-clamp-1">
+                  <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
                     {exam.name}
                   </h4>
                 </div>
-                <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 shrink-0">
+                <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0 border border-slate-200/60 dark:border-slate-700">
                   {exam.subject}
                 </span>
               </div>
 
               {/* Metrics audit bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2.5 border-t border-zinc-200/60 dark:border-zinc-800/80 text-xs">
-                <div className="p-2 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800">
-                  <span className="text-zinc-400 text-[10px] block">Questions</span>
-                  <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1 mt-0.5">
-                    <Layers className="w-3.5 h-3.5" />
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/70 text-xs">
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800">
+                  <span className="text-slate-400 text-[10px] block font-medium">Questions</span>
+                  <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1 mt-0.5">
+                    <Layers className="w-3.5 h-3.5 text-indigo-500" />
                     {diagnostics.total} items
                   </span>
                 </div>
 
-                <div className="p-2 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800">
-                  <span className="text-zinc-400 text-[10px] block">Formula Engine</span>
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-200 flex items-center gap-1 mt-0.5">
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800">
+                  <span className="text-slate-400 text-[10px] block font-medium">Formula Engine</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 mt-0.5">
                     <Binary className="w-3.5 h-3.5 text-blue-500" />
                     {diagnostics.hasMath ? `${diagnostics.mathCount} with LaTeX` : 'Plain Text'}
                   </span>
                 </div>
 
-                <div className="p-2 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800">
-                  <span className="text-zinc-400 text-[10px] block">Pedagogy</span>
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-200 flex items-center gap-1 mt-0.5">
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800">
+                  <span className="text-slate-400 text-[10px] block font-medium">Pedagogy</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 mt-0.5">
                     <FileCheck2 className="w-3.5 h-3.5 text-amber-500" />
                     {diagnostics.withExplanation}/{diagnostics.total} Explained
                   </span>
                 </div>
 
-                <div className="p-2 rounded-xl bg-white dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800">
-                  <span className="text-zinc-400 text-[10px] block">Sync State</span>
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-200 flex items-center gap-1 mt-0.5">
-                    <Cloud className="w-3.5 h-3.5 text-cyan-500" />
-                    {exam.isUploadedToCloud ? 'Synced' : 'Local Draft'}
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800">
+                  <span className="text-slate-400 text-[10px] block font-medium">Schema Status</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                    Optimized
                   </span>
                 </div>
               </div>
 
-              {/* Diagnostic warnings if any */}
+              {/* Validation alert if any */}
               {!diagnostics.isValid && (
                 <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-[11px] flex items-center gap-2">
                   <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                  <span>Validation issue detected: {diagnostics.issues[0]}</span>
+                  <span>Validation check: {diagnostics.issues[0]}</span>
                 </div>
               )}
             </div>
 
-            {/* Firestore Destination Infrastructure Info */}
-            <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-amber-700 dark:text-amber-300">
-                <span className="flex items-center gap-1.5">
-                  <Cloud className="w-4 h-4 text-amber-500" />
-                  Target Firestore Collections
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-800 dark:text-amber-200">
-                  Batch limit: 400 docs/commit
-                </span>
-              </div>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Stores complete metadata in <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">/exams/{exam.id}</span> and batch-commits all {exam.questions.length} normalized questions into <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">/questions</span> with strict security rules and zero-latency local catalog cache synchronization.
-              </p>
-            </div>
-
-            {/* Upload & Academic Configurations */}
-            <div className="space-y-4 pt-1">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <GraduationCap className="w-4 h-4 text-amber-500" />
-                  Academic Level & Curriculum Configuration
-                </h4>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white border border-zinc-200/80 dark:border-white/10">
-                  Live Catalog Sync
-                </span>
-              </div>
-
-              {/* 1. Academic Grade Selection */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                  Academic Grade / Educational Stage
-                </label>
-                <select
-                  value={selectedGrade}
-                  onChange={(e) => handleGradeChange(e.target.value)}
-                  className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white font-medium cursor-pointer"
-                >
-                  {ACADEMIC_GRADE_OPTIONS.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.label} — {g.subtitle}
-                    </option>
-                  ))}
-                </select>
-
-                {selectedGrade === 'custom' && (
-                  <div className="mt-2">
-                    <input
-                      type="text"
-                      value={customGradeText}
-                      onChange={(e) => setCustomGradeText(e.target.value)}
-                      placeholder="Enter custom academic level (e.g. Higher Education Remedial, TVET Level 4)"
-                      className="w-full text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
-                    />
+            {/* TAB 1: CURRICULUM CONFIGURATION */}
+            {activeTab === 'configure' && (
+              <div className="space-y-4">
+                {/* Firestore Optimization & Decoupling Notice */}
+                <div className="p-3.5 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
+                    <span className="flex items-center gap-1.5">
+                      <Database className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      Firebase Cloud Storage Mapping
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-900 dark:text-amber-200 font-bold">
+                      Batch: 400 docs/commit
+                    </span>
                   </div>
-                )}
-              </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Writes optimized metadata to <span className="font-mono font-bold text-slate-900 dark:text-white">/exams/{exam.id}</span> with nested metadata object. Student attempts remain isolated in <span className="font-mono font-bold text-slate-900 dark:text-white">/user_attempts</span> to keep document footprints minimal.
+                  </p>
+                </div>
 
-              {/* 2. Stream & Topic Selection */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
-                    <Compass className="w-3.5 h-3.5 text-blue-500" />
-                    Academic Stream / Track
+                {/* 1. Academic Grade Selection */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Academic Grade / Educational Stage</span>
                   </label>
                   <select
-                    value={selectedStream}
-                    onChange={(e) => setSelectedStream(e.target.value)}
-                    className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white cursor-pointer"
+                    value={selectedGrade}
+                    onChange={(e) => handleGradeChange(e.target.value)}
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white font-medium cursor-pointer"
                   >
-                    {STREAM_OPTIONS.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.label}
+                    {ACADEMIC_GRADE_OPTIONS.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.label} — {g.subtitle}
                       </option>
                     ))}
                   </select>
+
+                  {selectedGrade === 'custom' && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        value={customGradeText}
+                        onChange={(e) => setCustomGradeText(e.target.value)}
+                        placeholder="Enter custom academic level (e.g. TVET Level 4, Engineering Remedial)"
+                        className="w-full text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
-                    <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                    Topic / Core Subject Area
-                  </label>
-                  <input
-                    type="text"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    placeholder="e.g. Classical Mechanics / Differential Calculus"
-                    className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
-                  />
-                </div>
-              </div>
+                {/* 2. Stream & Topic Selection */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                      <Compass className="w-3.5 h-3.5 text-blue-500" />
+                      Academic Stream / Track
+                    </label>
+                    <select
+                      value={selectedStream}
+                      onChange={(e) => setSelectedStream(e.target.value)}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white cursor-pointer"
+                    >
+                      {STREAM_OPTIONS.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* 3. Session Year, Duration & Curator */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                    Time Limit (Minutes)
-                  </label>
-                  <input
-                    type="number"
-                    min={5}
-                    max={300}
-                    value={timeLimit}
-                    onChange={(e) => setTimeLimit(Math.max(1, Number(e.target.value) || 20))}
-                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-                    Target Exam Session
-                  </label>
-                  <input
-                    type="text"
-                    value={targetExamYear}
-                    onChange={(e) => setTargetExamYear(e.target.value)}
-                    placeholder="2026 (2018 E.C.)"
-                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
-                  />
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                      <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                      Topic / Core Subject Area
+                    </label>
+                    <input
+                      type="text"
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      placeholder="e.g. Calculus & Integrals, Electromagnetism"
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
-                    <FileText className="w-3.5 h-3.5 text-purple-500" />
-                    Curator / Authority
-                  </label>
-                  <input
-                    type="text"
-                    value={curatorName}
-                    onChange={(e) => setCuratorName(e.target.value)}
-                    placeholder="e.g. Ministry of Education (MoE)"
-                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
-                  />
+                {/* 3. Duration Presets & Input */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      Time Limit (Minutes)
+                    </label>
+                    <span className="text-[11px] text-slate-400">
+                      {timeLimit} min session
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {TIME_PRESETS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setTimeLimit(preset)}
+                        className={`px-3 py-1 rounded-xl text-xs font-semibold transition cursor-pointer border ${
+                          timeLimit === preset
+                            ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 border-slate-900 dark:border-white shadow-2xs'
+                            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                        }`}
+                      >
+                        {preset} min
+                      </button>
+                    ))}
+                    <input
+                      type="number"
+                      min={5}
+                      max={300}
+                      value={timeLimit}
+                      onChange={(e) => setTimeLimit(Math.max(1, Number(e.target.value) || 20))}
+                      className="w-20 text-xs px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-center font-bold"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* 5. Curriculum / Verification Tag */}
-              <div>
-                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Public Curriculum / Verification Tag
-                </label>
-                <input
-                  type="text"
-                  value={adminTag}
-                  onChange={(e) => setAdminTag(e.target.value)}
-                  placeholder="e.g. Grade 12 National Exam 2026, MoE Official"
-                  className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
-                />
-              </div>
+                {/* 4. Session Year & Curator */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      Target Exam Session
+                    </label>
+                    <input
+                      type="text"
+                      value={targetExamYear}
+                      onChange={(e) => setTargetExamYear(e.target.value)}
+                      placeholder="2026 (2018 E.C.)"
+                      className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white"
+                    />
+                  </div>
 
-              {/* Toggles */}
-              <div className="space-y-2.5 pt-1">
-                {/* Instant Official Exams Catalog Sync */}
-                <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-600 transition">
-                  <input
-                    type="checkbox"
-                    checked={asOfficialExam}
-                    onChange={(e) => setAsOfficialExam(e.target.checked)}
-                    className="mt-0.5 rounded text-zinc-900 focus:ring-zinc-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                      Publish to Official Exams Catalog
-                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 font-black">
-                        LIVE
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                      <FileText className="w-3.5 h-3.5 text-purple-500" />
+                      Curator / Authority
+                    </label>
+                    <input
+                      type="text"
+                      value={curatorName}
+                      onChange={(e) => setCuratorName(e.target.value)}
+                      placeholder="e.g. Ministry of Education (MoE)"
+                      className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Toggles */}
+                <div className="space-y-2.5 pt-1">
+                  {/* Instant Official Exams Catalog Sync */}
+                  <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition shadow-2xs">
+                    <input
+                      type="checkbox"
+                      checked={asOfficialExam}
+                      onChange={(e) => setAsOfficialExam(e.target.checked)}
+                      className="mt-0.5 rounded text-slate-900 focus:ring-slate-500"
+                    />
+                    <div className="text-xs">
+                      <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        Publish to Official Exams Catalog
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-slate-950 text-white dark:bg-white dark:text-slate-950 font-black">
+                          LIVE
+                        </span>
                       </span>
-                    </span>
-                    <span className="text-zinc-500 dark:text-zinc-400 text-[11px] block mt-0.5">
-                      Synchronizes instantly to the student Official Exams directory tailored by registered grade (e.g., {effectiveGrade === 'Freshman' ? 'University Freshman' : `Grade ${effectiveGrade}`}).
-                    </span>
-                  </div>
-                </label>
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] block mt-0.5">
+                        Synchronizes instantly to the student Official Exams directory tailored by grade ({effectiveGrade === 'Freshman' ? 'University Freshman' : `Grade ${effectiveGrade}`}).
+                      </span>
+                    </div>
+                  </label>
 
-                {/* Individual question storage */}
-                <label className="flex items-start gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/80 dark:border-zinc-800 cursor-pointer hover:border-amber-500/40 transition">
-                  <input
-                    type="checkbox"
-                    checked={uploadIndividualQuestions}
-                    onChange={(e) => setUploadIndividualQuestions(e.target.checked)}
-                    className="mt-0.5 rounded text-amber-500 focus:ring-amber-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-zinc-900 dark:text-white block">
-                      Sync to Global Modular Question Bank (/questions)
-                    </span>
-                    <span className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                      Batch commits all questions so students and teachers can query modular questions by grade, stream, and topic.
-                    </span>
-                  </div>
-                </label>
+                  {/* Individual question storage in /questions */}
+                  <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 cursor-pointer hover:border-amber-500/40 transition">
+                    <input
+                      type="checkbox"
+                      checked={uploadIndividualQuestions}
+                      onChange={(e) => setUploadIndividualQuestions(e.target.checked)}
+                      className="mt-0.5 rounded text-amber-500 focus:ring-amber-500"
+                    />
+                    <div className="text-xs">
+                      <span className="font-bold text-slate-900 dark:text-white block">
+                        Sync to Global Modular Question Bank (/questions)
+                      </span>
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+                        Parallel batch-commits {exam.questions.length} normalized question documents for granular queries.
+                      </span>
+                    </div>
+                  </label>
 
-                {/* Public Availability */}
-                <label className="flex items-start gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/80 dark:border-zinc-800 cursor-pointer hover:border-amber-500/40 transition">
-                  <input
-                    type="checkbox"
-                    checked={isPublic}
-                    onChange={(e) => setIsPublic(e.target.checked)}
-                    className="mt-0.5 rounded text-amber-500 focus:ring-amber-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-zinc-900 dark:text-white block">
-                      Make Publicly Available to All Students
-                    </span>
-                    <span className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                      Registered students matching this grade limitation can immediately access, practice, and review this exam.
-                    </span>
-                  </div>
-                </label>
+                  {/* Public Availability */}
+                  <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 cursor-pointer hover:border-amber-500/40 transition">
+                    <input
+                      type="checkbox"
+                      checked={isPublic}
+                      onChange={(e) => setIsPublic(e.target.checked)}
+                      className="mt-0.5 rounded text-amber-500 focus:ring-amber-500"
+                    />
+                    <div className="text-xs">
+                      <span className="font-bold text-slate-900 dark:text-white block">
+                        Make Publicly Accessible to Registered Students
+                      </span>
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+                        Students in this academic stage can immediately access, practice, and review this curriculum.
+                      </span>
+                    </div>
+                  </label>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* TAB 2: SCHEMA & PAYLOAD INSPECTION */}
+            {activeTab === 'schema_preview' && previewPayload && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Code2 className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Optimized Cloud Firestore Document Payload</span>
+                    </h5>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Destination: <span className="font-mono font-bold text-slate-700 dark:text-slate-200">/exams/{previewPayload.id}</span>
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyPayload}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition cursor-pointer shadow-2xs"
+                  >
+                    {copiedPayload ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Copied JSON</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy JSON</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* JSON Code Viewer */}
+                <div className="p-3.5 rounded-2xl bg-slate-950 text-emerald-400 font-mono text-[11px] overflow-x-auto max-h-72 border border-slate-800 leading-relaxed shadow-inner">
+                  <pre>{JSON.stringify(previewPayload, null, 2)}</pre>
+                </div>
+
+                {/* Optimization Highlights */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>Nested <strong>metadata</strong> object prevents redundant top-level clutter.</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>Eliminated deprecated <strong>unit</strong> keys across all schemas.</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Upload Progress Bar */}
             {isLoading && (
               <div className="space-y-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30">
                 <div className="flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
                   <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                    <Sparkles className="w-3.5 h-3.5 animate-spin text-amber-500" />
                     {progressStatusText || 'Uploading to Cloud Firestore...'}
                   </span>
                   <span>{uploadProgress}%</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                   <div
-                    className="h-full bg-zinc-900 dark:bg-white rounded-full transition-all duration-300"
+                    className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
@@ -658,12 +845,12 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
             {/* Success Message */}
             {statusMessage && (
-              <div className="p-4 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs flex items-start gap-2.5 shadow-sm">
-                <CheckCircle2 className="w-4 h-4 text-white dark:text-zinc-950 shrink-0 mt-0.5" />
+              <div className="p-4 rounded-2xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 text-xs flex items-start gap-2.5 shadow-sm">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 dark:text-emerald-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <p className="font-bold">{statusMessage}</p>
-                  <p className="text-[11px] text-zinc-300 dark:text-zinc-600">
-                    Exam ID: <span className="font-mono font-bold">{exam.id}</span> • Grade Level: <span className="font-bold">{effectiveGrade === 'Freshman' ? 'University Freshman' : effectiveGrade === 'Senior University' ? 'University Senior' : `Grade ${effectiveGrade}`}</span> • Stream: <span className="font-bold">{selectedStream}</span>
+                  <p className="text-[11px] text-slate-300 dark:text-slate-600">
+                    Exam ID: <span className="font-mono font-bold">{exam.id}</span> • Grade Level: <span className="font-bold">{effectiveGrade === 'Freshman' ? 'University Freshman' : `Grade ${effectiveGrade}`}</span> • Stream: <span className="font-bold">{selectedStream}</span>
                   </p>
                 </div>
               </div>
@@ -671,11 +858,11 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
           </div>
 
           {/* Footer Actions */}
-          <div className="px-6 py-4 border-t border-zinc-100 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] flex items-center justify-between">
+          <div className="px-5 sm:px-6 py-4 border-t border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700 transition cursor-pointer shadow-xs"
+              className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer shadow-2xs"
             >
               {statusMessage ? 'Done' : 'Cancel'}
             </button>
@@ -685,7 +872,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 type="button"
                 disabled={isLoading}
                 onClick={handleUploadToFirestore}
-                className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 transition active:scale-98"
+                className="px-5 py-2.5 rounded-full bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 transition active:scale-98 hover:opacity-95"
               >
                 {isLoading ? (
                   <>
@@ -704,7 +891,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 type="button"
                 onClick={() => signInWithGoogle()}
                 disabled={isSigningIn}
-                className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 transition active:scale-98"
+                className="px-5 py-2.5 rounded-full bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 transition active:scale-98 hover:opacity-95"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>{isSigningIn ? 'Signing In...' : 'Sign In as Admin to Upload'}</span>

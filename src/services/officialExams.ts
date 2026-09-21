@@ -42,7 +42,6 @@ export function sanitizeFirestoreExam(data: Record<string, any>, docId: string):
   const grade = meta.grade || data.grade || inferGradeFromName(`${name} ${title}`);
   const subject = String(meta.subject || data.subject || 'General').trim();
   const timeLimit = Number(meta.timeLimit ?? data.timeLimit) || 25;
-  const passingScore = Number(meta.passingScore ?? data.passingScore) || 70;
   const description = String(meta.description || data.description || '').trim();
   const stream = meta.stream || data.stream;
   const topic = meta.topic || data.topic;
@@ -56,7 +55,6 @@ export function sanitizeFirestoreExam(data: Record<string, any>, docId: string):
     subject,
     topic,
     timeLimit,
-    passingScore,
     description,
     questions: sanitizedQuestions,
     questionCount: typeof data.questionCount === 'number' ? data.questionCount : sanitizedQuestions.length,
@@ -69,7 +67,6 @@ export function sanitizeFirestoreExam(data: Record<string, any>, docId: string):
       stream,
       topic,
       timeLimit,
-      passingScore,
       targetExamYear,
       description,
     },

@@ -72,7 +72,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const avgScore = results.length
     ? Math.round(results.reduce((acc, r) => acc + (r.percentage || 0), 0) / results.length)
     : 0;
-  const passedCount = results.filter((r) => r.percentage >= (r.passingScore || 70)).length;
+  const passedCount = results.filter((r) => (r.percentage || 0) >= 70).length;
   const recentResults = results.slice(0, 4);
   const isPremiumActive = isUserSubscriptionActive(activeSubscription || null);
 
@@ -448,7 +448,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           ) : (
             <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
               {recentResults.map((r, index) => {
-                const isPassed = r.percentage >= (r.passingScore || 70);
+                const isPassed = (r.percentage || 0) >= 70;
                 return (
                   <div
                     key={index}

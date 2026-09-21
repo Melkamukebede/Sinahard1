@@ -11,7 +11,6 @@ export interface FirestoreUploadOptions {
   grade?: number | string;
   topic?: string;
   stream?: string;
-  unit?: string;
   timeLimit?: number;
   targetExamYear?: string;
   curator?: string;
@@ -87,7 +86,6 @@ export async function uploadExamToFirestore(
     grade,
     topic,
     stream,
-    unit,
     timeLimit,
     targetExamYear,
     curator,
@@ -142,7 +140,6 @@ export async function uploadExamToFirestore(
     grade: finalGrade,
     stream: finalStream,
     timeLimit: finalTimeLimit,
-    passingScore: Number(exam.passingScore) || 70,
     ...(finalTopic ? { topic: finalTopic } : {}),
     ...(finalTargetExamYear ? { targetExamYear: finalTargetExamYear } : {}),
     ...(exam.description?.trim() ? { description: exam.description.trim() } : {}),

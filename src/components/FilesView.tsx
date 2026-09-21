@@ -15,6 +15,7 @@ import {
   Layers,
   CloudDownload,
   CloudUpload,
+  Flame,
   GraduationCap,
   Bookmark,
   ChevronDown,
@@ -675,12 +676,12 @@ export const FilesView: React.FC<FilesViewProps> = ({
                                 }}
                                 className={`px-2 py-1 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition border-l active:scale-95 ${
                                   isSelected
-                                    ? 'border-zinc-800 dark:border-zinc-200 hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900'
-                                    : 'border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white'
+                                    ? 'border-zinc-800 dark:border-zinc-200 hover:bg-zinc-800 dark:hover:bg-zinc-100 text-amber-300 dark:text-amber-600'
+                                    : 'border-zinc-200 dark:border-zinc-700 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400'
                                 }`}
                                 title={`Push ${subj} exam to Cloud Firestore`}
                               >
-                                <CloudUpload className="w-3 h-3" />
+                                <Flame className="w-3 h-3 fill-amber-500/20" />
                                 <span>Push</span>
                               </button>
                             )}
@@ -957,10 +958,10 @@ export const FilesView: React.FC<FilesViewProps> = ({
                             <button
                               type="button"
                               onClick={() => onOpenDatabaseUpload(exam)}
-                              className="py-1 px-2 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-[10px] inline-flex items-center justify-center gap-1 transition hover:opacity-90 active:scale-95 cursor-pointer shadow-xs border border-zinc-900 dark:border-white"
-                              title={`Push ${exam.subject || 'exam'} to Cloud Firestore`}
+                              className="py-1 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold text-[10px] inline-flex items-center justify-center gap-1 transition active:scale-95 cursor-pointer shadow-2xs border border-amber-500/30"
+                              title={`Upload ${exam.subject || 'exam'} to Cloud Firestore`}
                             >
-                              <CloudUpload className="w-2.5 h-2.5" />
+                              <Flame className="w-2.5 h-2.5 fill-amber-500/20" />
                               <span>Push</span>
                             </button>
                           )}

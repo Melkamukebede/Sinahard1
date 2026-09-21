@@ -76,7 +76,6 @@
         "score": { "type": "number" },
         "total": { "type": "number" },
         "percentage": { "type": "number" },
-        "passingScore": { "type": "number" },
         "timeSpent": { "type": "number" },
         "answers": { "type": "array" },
         "subjectType": { "type": "string", "maxLength": 64 }
@@ -96,7 +95,6 @@
         "score": { "type": "number" },
         "total": { "type": "number" },
         "percentage": { "type": "number" },
-        "passingScore": { "type": "number" },
         "timeSpent": { "type": "number" },
         "answers": { "type": "array" },
         "subjectType": { "type": "string", "maxLength": 64 }

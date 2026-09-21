@@ -15,7 +15,6 @@ export interface ExamMetadata {
   stream?: string;
   topic?: string;
   timeLimit: number;
-  passingScore?: number;
   targetExamYear?: string;
   description?: string;
 }
@@ -28,7 +27,6 @@ export interface Exam {
   topic?: string;
   grade?: number | string; // e.g. 9, 10, 11, 12, 'Freshman', 'National Exam'
   timeLimit: number; // in minutes
-  passingScore?: number;
   metadata?: ExamMetadata;
   questions: Question[];
   questionCount?: number;
@@ -83,7 +81,6 @@ export interface ExamResult {
   timeSpent: number; // in seconds
   answers: ExamAnswerRecord[];
   userId?: string;
-  passingScore?: number;
   subjectType?: string;
 }
 

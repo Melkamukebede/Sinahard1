@@ -9,7 +9,6 @@ import {
   Clock,
   HelpCircle,
   Star,
-  Award,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -416,10 +415,12 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                           <Clock className="w-3.5 h-3.5 text-zinc-400" />
                           {exam.timeLimit} Mins
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Award className="w-3.5 h-3.5 text-zinc-400" />
-                          Pass: {exam.passingScore}%
-                        </span>
+                        {exam.stream && (
+                          <span className="flex items-center gap-1">
+                            <Layers className="w-3.5 h-3.5 text-zinc-400" />
+                            {exam.stream}
+                          </span>
+                        )}
                       </div>
                     </div>
 
