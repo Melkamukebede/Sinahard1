@@ -293,6 +293,20 @@ export async function resolveExamForPractice(
       resolvedDocId
     );
 
+    // Optimize: Cache resolved exam locally so future practice launches cost 0 Firestore reads
+    try {
+      const existing = getCachedOfficialExams();
+      const idx = existing.findIndex((e) => e.id === sanitizedExam.id || (e.catalogId && e.catalogId === sanitizedExam.catalogId));
+      if (idx >= 0) {
+        existing[idx] = sanitizedExam;
+      } else {
+        existing.push(sanitizedExam);
+      }
+      localStorage.setItem('exam_master_official_exams_cache', JSON.stringify(existing));
+    } catch {
+      // ignore storage quota errors gracefully
+    }
+
     return sanitizedExam;
   } catch (err) {
     console.error('Error fetching exam from Firestore:', err);

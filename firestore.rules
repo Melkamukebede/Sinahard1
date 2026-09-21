@@ -25,8 +25,7 @@ service cloud.firestore {
     // Users Collection
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) || isAdmin();
-      allow update: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin();
     }
 
@@ -34,33 +33,36 @@ service cloud.firestore {
     match /exams/{examId} {
       allow get, list: if true;
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.authorId == request.auth.uid ||
+        isAdmin()
+      );
     }
 
     // Questions Bank Collection (Individual Question Storage)
     match /questions/{questionId} {
       allow get, list: if true;
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.authorId == request.auth.uid ||
+        isAdmin()
+      );
     }
 
     // Results Collection
     match /results/{resultId} {
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get, list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // Reminders Collection
     match /reminders/{reminderId} {
       allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     // Test collection for initial connectivity test
@@ -70,22 +72,18 @@ service cloud.firestore {
 
     // Subscriptions Collection (Premium Ethiopian Birr Payment Records)
     // Students can read their own subscriptions and submit new payment requests.
-    // Admin (or owner) can view and verify subscriptions.
+    // Admin can view, verify, and manage all subscriptions.
     match /subscriptions/{subscriptionId} {
-      allow get: if isSignedIn() && (
+      allow get, list: if isSignedIn() && (
         resource.data.userId == request.auth.uid ||
-        request.auth.token.email == 'melkamukebede11@gmail.com'
-      );
-      allow list: if isSignedIn() && (
-        resource.data.userId == request.auth.uid ||
-        request.auth.token.email == 'melkamukebede11@gmail.com'
+        isAdmin()
       );
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if isSignedIn() && (
         resource.data.userId == request.auth.uid ||
-        request.auth.token.email == 'melkamukebede11@gmail.com'
+        isAdmin()
       );
-      allow delete: if isSignedIn() && request.auth.token.email == 'melkamukebede11@gmail.com';
+      allow delete: if isAdmin();
     }
   }
 }

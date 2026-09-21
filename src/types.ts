@@ -71,6 +71,8 @@ export interface ExamResult {
   timeSpent: number; // in seconds
   answers: ExamAnswerRecord[];
   userId?: string;
+  passingScore?: number;
+  subjectType?: string;
 }
 
 export interface StudyReminder {

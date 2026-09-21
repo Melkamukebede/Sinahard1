@@ -9,6 +9,7 @@ import {
   where,
   getDocs,
   orderBy,
+  limit,
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import {
@@ -348,7 +349,8 @@ export function subscribeToResults(
 
   try {
     const resultsRef = collection(db, 'results');
-    const q = query(resultsRef, where('userId', '==', user.uid));
+    // Optimize: query with limit(100) to avoid unbounded historical reads and reduce bandwidth
+    const q = query(resultsRef, where('userId', '==', user.uid), limit(100));
 
     const unsubscribe = onSnapshot(
       q,
@@ -411,7 +413,7 @@ export async function deleteExamFromDb(examId: string, _user: AppUser | null): P
 
 export async function saveResultToDb(result: ExamResult, user: AppUser | null): Promise<void> {
   const localResults = getLocalResults();
-  const resWithId = {
+  const resWithId: ExamResult = {
     ...result,
     id: result.id || 'res_' + Date.now(),
     userId: user ? user.uid : 'guest',
@@ -421,8 +423,32 @@ export async function saveResultToDb(result: ExamResult, user: AppUser | null): 
 
   if (user) {
     try {
+      // Optimize & sanitize payload for Firestore (prevent undefined values and strip unused keys)
+      const sanitizedAnswers = (resWithId.answers || []).map((ans) => ({
+        text: ans.text || '',
+        userAnswer: ans.userAnswer || '',
+        correctAnswer: ans.correctAnswer || '',
+        isCorrect: Boolean(ans.isCorrect),
+        ...(ans.explanation ? { explanation: ans.explanation } : {}),
+      }));
+
+      const firestoreResultPayload = {
+        id: String(resWithId.id),
+        examId: String(resWithId.examId || ''),
+        examTitle: String(resWithId.examTitle || ''),
+        userId: user.uid,
+        date: resWithId.date || new Date().toISOString(),
+        score: Number(resWithId.score) || 0,
+        total: Number(resWithId.total) || 0,
+        percentage: Number(resWithId.percentage) || 0,
+        timeSpent: Number(resWithId.timeSpent) || 0,
+        answers: sanitizedAnswers,
+        ...(resWithId.passingScore !== undefined ? { passingScore: Number(resWithId.passingScore) } : {}),
+        ...(resWithId.subjectType ? { subjectType: String(resWithId.subjectType) } : {}),
+      };
+
       const resultDocRef = doc(db, 'results', String(resWithId.id));
-      await setDoc(resultDocRef, resWithId);
+      await setDoc(resultDocRef, firestoreResultPayload);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `results/${resWithId.id}`);
     }
@@ -592,9 +618,11 @@ export function subscribeToUserSubscription(
 
   try {
     const subsRef = collection(db, 'subscriptions');
+    // Optimize: limit to 10 most recent records per user to minimize reads
     const q = query(
       subsRef,
-      where('userId', '==', user.uid)
+      where('userId', '==', user.uid),
+      limit(10)
     );
 
     const unsubscribe = onSnapshot(
@@ -680,8 +708,10 @@ export function subscribeToAllSubscriptions(
 
   try {
     const subsRef = collection(db, 'subscriptions');
+    // Optimize: query with limit(150) to avoid pulling unbounded historical subscriptions
+    const q = query(subsRef, limit(150));
     const unsubscribe = onSnapshot(
-      subsRef,
+      q,
       (snapshot) => {
         const all: UserSubscription[] = [];
         snapshot.forEach((docSnap) => {

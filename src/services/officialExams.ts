@@ -1,6 +1,8 @@
 import {
   collection,
   onSnapshot,
+  query,
+  limit,
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -178,8 +180,10 @@ export function subscribeToOfficialExams(
 
   try {
     const examsCol = collection(db, 'exams');
+    // Optimize: query with limit(100) to avoid unbounded collection scan
+    const q = query(examsCol, limit(100));
     unsubscribeFirestore = onSnapshot(
-      examsCol,
+      q,
       (snapshot) => {
         const firestoreExams: Exam[] = [];
         snapshot.forEach((docSnap) => {

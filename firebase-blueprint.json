@@ -26,6 +26,7 @@
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
+        "catalogId": { "type": "string", "maxLength": 128 },
         "name": { "type": "string", "maxLength": 256 },
         "title": { "type": "string", "maxLength": 256 },
         "subject": { "type": "string", "maxLength": 128 },
