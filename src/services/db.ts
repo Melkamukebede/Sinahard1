@@ -348,16 +348,28 @@ export function subscribeToResults(
   }
 
   try {
-    const resultsRef = collection(db, 'results');
-    // Optimize: query with limit(100) to avoid unbounded historical reads and reduce bandwidth
-    const q = query(resultsRef, where('userId', '==', user.uid), limit(100));
+    const attemptsRef = collection(db, 'user_attempts');
+    // Dedicated user_attempts collection decoupling practice performance metrics from exams library
+    const q = query(attemptsRef, where('userId', '==', user.uid), limit(100));
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
         const firestoreResults: ExamResult[] = [];
         snapshot.forEach((docSnap) => {
-          firestoreResults.push({ id: docSnap.id, ...docSnap.data() } as ExamResult);
+          const d = docSnap.data() as any;
+          const score = Number(d.score) || 0;
+          const total = Number(d.total) || 0;
+          const percentage = typeof d.percentage === 'number'
+            ? d.percentage
+            : Math.round((score / (total || 1)) * 100);
+          firestoreResults.push({
+            id: docSnap.id,
+            ...d,
+            score,
+            total,
+            percentage,
+          } as ExamResult);
         });
 
         // Merge firestore results with local results
@@ -371,7 +383,7 @@ export function subscribeToResults(
         onUpdate(mergedList);
       },
       (error) => {
-        console.warn('Firestore results subscription fallback to local:', error);
+        console.warn('Firestore user_attempts subscription fallback to local:', error);
       }
     );
 
@@ -447,10 +459,18 @@ export async function saveResultToDb(result: ExamResult, user: AppUser | null): 
         ...(resWithId.subjectType ? { subjectType: String(resWithId.subjectType) } : {}),
       };
 
-      const resultDocRef = doc(db, 'results', String(resWithId.id));
-      await setDoc(resultDocRef, firestoreResultPayload);
+      const attemptDocRef = doc(db, 'user_attempts', String(resWithId.id));
+      await setDoc(attemptDocRef, firestoreResultPayload);
+
+      // Backwards-compatible mirror to legacy results collection
+      try {
+        const legacyDocRef = doc(db, 'results', String(resWithId.id));
+        await setDoc(legacyDocRef, firestoreResultPayload);
+      } catch {
+        // Ignored
+      }
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, `results/${resWithId.id}`);
+      handleFirestoreError(err, OperationType.WRITE, `user_attempts/${resWithId.id}`);
     }
   }
 }
@@ -461,10 +481,16 @@ export async function deleteResultFromDb(resultId: string | number, user: AppUse
 
   if (user) {
     try {
-      const resultDocRef = doc(db, 'results', String(resultId));
-      await deleteDoc(resultDocRef);
+      const attemptDocRef = doc(db, 'user_attempts', String(resultId));
+      await deleteDoc(attemptDocRef);
+      try {
+        const legacyDocRef = doc(db, 'results', String(resultId));
+        await deleteDoc(legacyDocRef);
+      } catch {
+        // Ignored
+      }
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, `results/${resultId}`);
+      handleFirestoreError(err, OperationType.DELETE, `user_attempts/${resultId}`);
     }
   }
 }
@@ -474,13 +500,23 @@ export async function clearAllResultsFromDb(user: AppUser | null): Promise<void>
 
   if (user) {
     try {
-      const resultsRef = collection(db, 'results');
-      const q = query(resultsRef, where('userId', '==', user.uid));
+      const attemptsRef = collection(db, 'user_attempts');
+      const q = query(attemptsRef, where('userId', '==', user.uid));
       const snap = await getDocs(q);
       const deletePromises = snap.docs.map((docSnap) => deleteDoc(docSnap.ref));
       await Promise.all(deletePromises);
+
+      // Also clean legacy results if any exist
+      try {
+        const legacyRef = collection(db, 'results');
+        const legacyQ = query(legacyRef, where('userId', '==', user.uid));
+        const legacySnap = await getDocs(legacyQ);
+        await Promise.all(legacySnap.docs.map((d) => deleteDoc(d.ref)));
+      } catch {
+        // Ignored
+      }
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, 'results');
+      handleFirestoreError(err, OperationType.DELETE, 'user_attempts');
     }
   }
 }

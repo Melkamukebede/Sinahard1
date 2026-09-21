@@ -51,7 +51,14 @@ service cloud.firestore {
       );
     }
 
-    // Results Collection
+    // User Attempts Collection (Decoupled student practice metrics)
+    match /user_attempts/{attemptId} {
+      allow get, list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Results Collection (Legacy)
     match /results/{resultId} {
       allow get, list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;

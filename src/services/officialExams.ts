@@ -36,26 +36,47 @@ export function sanitizeFirestoreExam(data: Record<string, any>, docId: string):
     explanation: q.explanation ? String(q.explanation) : '',
   }));
 
+  const meta = data.metadata || {};
   const name = String(data.name || data.title || 'Official Curriculum Exam').trim();
   const title = String(data.title || data.name || name).trim();
-  const grade = data.grade || inferGradeFromName(`${name} ${title}`);
+  const grade = meta.grade || data.grade || inferGradeFromName(`${name} ${title}`);
+  const subject = String(meta.subject || data.subject || 'General').trim();
+  const timeLimit = Number(meta.timeLimit ?? data.timeLimit) || 25;
+  const passingScore = Number(meta.passingScore ?? data.passingScore) || 70;
+  const description = String(meta.description || data.description || '').trim();
+  const stream = meta.stream || data.stream;
+  const topic = meta.topic || data.topic;
+  const targetExamYear = meta.targetExamYear || data.targetExamYear;
 
   return {
     id: docId,
+    catalogId: data.catalogId || docId,
     name,
     title,
-    subject: String(data.subject || 'General').trim(),
-    timeLimit: Number(data.timeLimit) || 25,
-    description: String(data.description || '').trim(),
+    subject,
+    topic,
+    timeLimit,
+    passingScore,
+    description,
     questions: sanitizedQuestions,
+    questionCount: typeof data.questionCount === 'number' ? data.questionCount : sanitizedQuestions.length,
     grade,
-    stream: data.stream,
-    targetExamYear: data.targetExamYear,
-    unit: String(data.unit || (grade === 'Freshman' ? 'University Core Curriculum' : 'National Curriculum Unit')).trim(),
+    stream,
+    targetExamYear,
+    metadata: {
+      subject,
+      grade,
+      stream,
+      topic,
+      timeLimit,
+      passingScore,
+      targetExamYear,
+      description,
+    },
     curator: String(data.curator || data.adminTag || (grade === 'Freshman' ? 'University Higher Education Board' : 'Ministry Curriculum Specialist Team')).trim(),
     rating: typeof data.rating === 'number' ? data.rating : 4.9,
     downloadCount: typeof data.downloadCount === 'number' ? data.downloadCount : 150,
-    sourceType: 'curated_catalog',
+    sourceType: data.sourceType || 'curated_catalog',
     isUploadedToCloud: true,
     cloudStorageEngine: 'firestore',
     cloudUploadedAt: data.cloudUploadedAt || data.updatedAt || data.createdAt || new Date().toISOString(),
@@ -63,6 +84,8 @@ export function sanitizeFirestoreExam(data: Record<string, any>, docId: string):
     updatedAt: data.updatedAt || new Date().toISOString(),
     adminTag: data.adminTag || (grade === 'Freshman' ? 'University Freshman Curriculum' : 'Official Exam'),
     isPublic: data.isPublic !== false,
+    userId: data.userId || data.authorId,
+    authorEmail: data.authorEmail,
   };
 }
 

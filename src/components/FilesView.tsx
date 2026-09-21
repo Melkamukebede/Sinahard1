@@ -86,9 +86,10 @@ export const FilesView: React.FC<FilesViewProps> = ({
     return 'General';
   };
 
-  // Helper to extract primary topic or unit
+  // Helper to extract primary topic
   const getExamTopic = (exam: Exam): string => {
-    if (exam.unit && exam.unit.trim()) return exam.unit.trim();
+    if (exam.topic && exam.topic.trim()) return exam.topic.trim();
+    if (exam.metadata?.topic && exam.metadata.topic.trim()) return exam.metadata.topic.trim();
     if (exam.description && exam.description.trim()) return exam.description.trim();
     return 'Core Curriculum';
   };

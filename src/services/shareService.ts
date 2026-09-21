@@ -116,26 +116,31 @@ export async function publishExamForCloudSharing(exam: Exam): Promise<boolean> {
     const authorEmail = auth.currentUser?.email || null;
     const nowIso = new Date().toISOString();
 
+    const title = (exam.title || exam.name || 'Practice Exam').trim();
+    const examMetadata = {
+      subject: (exam.subject || 'General').trim(),
+      grade: String(exam.grade || '12'),
+      timeLimit: Number(exam.timeLimit) || 20,
+      passingScore: Number(exam.passingScore) || 70,
+      ...(exam.topic?.trim() ? { topic: exam.topic.trim() } : {}),
+      ...(exam.stream ? { stream: exam.stream } : {}),
+      ...(exam.targetExamYear ? { targetExamYear: exam.targetExamYear } : {}),
+      ...(exam.description?.trim() ? { description: exam.description.trim() } : {}),
+    };
+
     const payload = {
       id: examId,
       catalogId: exam.catalogId || examId,
-      name: exam.name.trim(),
-      title: (exam.title || exam.name).trim(),
-      subject: (exam.subject || 'General').trim(),
-      grade: String(exam.grade || '12'),
-      topic: (exam.topic || '').trim(),
-      unit: (exam.unit || '').trim(),
-      timeLimit: Number(exam.timeLimit) || 20,
-      passingScore: Number(exam.passingScore) || 70,
+      title,
+      metadata: examMetadata,
       questions: sanitizedQuestions,
+      questionCount: sanitizedQuestions.length,
       isPublic: true,
       sourceType: exam.sourceType || 'user_shared',
       userId: authorUid,
-      authorId: authorUid,
-      authorEmail: authorEmail,
-      sharedAt: nowIso,
-      updatedAt: nowIso,
       createdAt: exam.createdAt || nowIso,
+      updatedAt: nowIso,
+      ...(authorEmail ? { authorEmail } : {}),
     };
 
     if (!existingSnap.exists()) {

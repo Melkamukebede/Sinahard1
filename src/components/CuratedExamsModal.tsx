@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Edit3,
   Filter,
+  Layers,
 } from 'lucide-react';
 import { Exam, AppUser } from '../types';
 import { CURATED_EXAMS_CATALOG } from '../data/curatedCatalog';
@@ -103,8 +104,8 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
         const q = searchQuery.toLowerCase();
         const matchesTitle = exam.title?.toLowerCase().includes(q) || exam.name.toLowerCase().includes(q);
         const matchesSubject = exam.subject.toLowerCase().includes(q);
-        const matchesUnit = exam.unit?.toLowerCase().includes(q) || false;
-        if (!matchesTitle && !matchesSubject && !matchesUnit) return false;
+        const matchesTopic = exam.topic?.toLowerCase().includes(q) || false;
+        if (!matchesTitle && !matchesSubject && !matchesTopic) return false;
       }
 
       return true;
@@ -397,11 +398,11 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                         {exam.title}
                       </h3>
 
-                      {/* Curriculum unit details */}
-                      {exam.unit && (
+                      {/* Topic or focus area */}
+                      {(exam.topic || (exam.metadata && (exam.metadata as any).topic)) && (
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                          <BookOpen className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                          <span>{exam.unit}</span>
+                          <Layers className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                          <span>{exam.topic || (exam.metadata && (exam.metadata as any).topic)}</span>
                         </p>
                       )}
 

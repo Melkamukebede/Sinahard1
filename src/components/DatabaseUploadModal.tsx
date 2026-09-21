@@ -74,7 +74,6 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   const [customGradeText, setCustomGradeText] = useState<string>('');
   const [selectedStream, setSelectedStream] = useState<string>('Natural Science');
   const [topic, setTopic] = useState<string>('');
-  const [unitName, setUnitName] = useState<string>('');
   const [adminTag, setAdminTag] = useState<string>('Official Curriculum Exam');
   const [curatorName, setCuratorName] = useState<string>('Ministry of Education (MoE)');
   const [timeLimit, setTimeLimit] = useState<number>(20);
@@ -117,7 +116,6 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
     // Metadata defaults
     setTopic(exam.topic || (exam.name.includes(':') ? exam.name.split(':')[1].trim() : ''));
-    setUnitName(exam.unit || (detectedGrade === 'Freshman' ? 'University Core Curriculum' : 'National Curriculum Unit'));
     setTimeLimit(Number(exam.timeLimit) || 20);
     setTargetExamYear((exam as any).targetExamYear || '2026 (2018 E.C.)');
 
@@ -235,7 +233,6 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
         grade: effectiveGrade,
         topic: topic.trim() || undefined,
         stream: selectedStream,
-        unit: unitName.trim() || exam.unit,
         adminTag: adminTag.trim() || (effectiveGrade === 'Freshman' ? 'University Freshman Curriculum' : `Grade ${effectiveGrade} Exam`),
         curator: curatorName.trim(),
         timeLimit,
@@ -257,7 +254,6 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
             grade: effectiveGrade,
             topic: topic.trim() || undefined,
             stream: selectedStream,
-            unit: unitName.trim() || exam.unit,
             curator: curatorName.trim(),
             timeLimit,
             sourceType: asOfficialExam ? 'curated_catalog' : exam.sourceType,
@@ -477,8 +473,8 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 )}
               </div>
 
-              {/* 2. Stream, Topic & Unit Selection */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* 2. Stream & Topic Selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
                     <Compass className="w-3.5 h-3.5 text-blue-500" />
@@ -500,27 +496,13 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 <div>
                   <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
                     <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                    Topic / Sub-Topic
+                    Topic / Core Subject Area
                   </label>
                   <input
                     type="text"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
-                    placeholder="e.g. Classical Mechanics"
-                    className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
-                    <BookOpen className="w-3.5 h-3.5 text-amber-500" />
-                    Curriculum Unit / Chapter
-                  </label>
-                  <input
-                    type="text"
-                    value={unitName}
-                    onChange={(e) => setUnitName(e.target.value)}
-                    placeholder="e.g. Unit 3: Differential Calculus"
+                    placeholder="e.g. Classical Mechanics / Differential Calculus"
                     className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
                   />
                 </div>

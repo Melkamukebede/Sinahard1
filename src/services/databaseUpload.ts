@@ -121,7 +121,6 @@ export async function uploadExamToFirestore(
   const finalGrade = String(grade || exam.grade || inferGrade(`${exam.name} ${exam.title || ''}`));
   const finalTopic = (topic || exam.topic || (exam.name.includes(':') ? exam.name.split(':')[1].trim() : '')).trim();
   const finalStream = stream || (exam as any).stream || inferStream(exam.subject, `${exam.name} ${exam.title || ''}`, finalGrade);
-  const finalUnit = (unit || exam.unit || (finalGrade === 'Freshman' ? 'University Core Curriculum' : 'National Curriculum Unit')).trim();
   const finalCurator = (
     curator ||
     exam.curator ||
@@ -136,34 +135,32 @@ export async function uploadExamToFirestore(
   const finalTargetExamYear = targetExamYear || (exam as any).targetExamYear || '2026 (2018 E.C.)';
   const nowIso = new Date().toISOString();
 
-  // 2. Prepare comprehensive exam payload
-  const firestoreExamPayload: Partial<Exam> & Record<string, unknown> = {
-    id: examId,
-    name: exam.name.trim(),
-    title: (exam.title || exam.name).trim(),
+  // 2. Prepare clean, non-redundant exam payload for Firestore with nested metadata
+  const title = (exam.title || exam.name || 'Official Curriculum Exam').trim();
+  const examMetadata: Record<string, unknown> = {
     subject: (exam.subject || 'General').trim(),
-    topic: finalTopic || undefined,
-    timeLimit: finalTimeLimit,
-    description: (exam.description || '').trim(),
-    questions: sanitizedQuestions,
     grade: finalGrade,
     stream: finalStream,
-    unit: finalUnit,
-    curator: finalCurator,
-    rating: exam.rating ?? 4.9,
-    downloadCount: exam.downloadCount ?? 120,
+    timeLimit: finalTimeLimit,
+    passingScore: Number(exam.passingScore) || 70,
+    ...(finalTopic ? { topic: finalTopic } : {}),
+    ...(finalTargetExamYear ? { targetExamYear: finalTargetExamYear } : {}),
+    ...(exam.description?.trim() ? { description: exam.description.trim() } : {}),
+  };
+
+  const firestoreExamPayload: Record<string, unknown> = {
+    id: examId,
+    catalogId: exam.catalogId || examId,
+    title,
+    metadata: examMetadata,
+    questions: sanitizedQuestions,
+    questionCount: sanitizedQuestions.length,
     isPublic,
     userId: authorId,
-    authorId,
-    authorEmail,
-    adminTag: finalAdminTag,
-    targetExamYear: finalTargetExamYear,
     sourceType: asOfficialExam ? 'curated_catalog' : (exam.sourceType || 'curated_catalog'),
-    isUploadedToCloud: true,
-    cloudStorageEngine: 'firestore',
-    cloudUploadedAt: nowIso,
-    updatedAt: nowIso,
     createdAt: exam.createdAt || nowIso,
+    updatedAt: nowIso,
+    ...(authorEmail ? { authorEmail } : {}),
   };
 
   try {
@@ -195,20 +192,18 @@ export async function uploadExamToFirestore(
           batch.set(qRef, {
             id: qId,
             examId,
-            examName: exam.name.trim(),
-            subject: exam.subject || 'General',
-            topic: finalTopic || undefined,
+            subject: (exam.subject || 'General').trim(),
             text: q.text,
             options: q.options,
             correct: q.correct,
-            explanation: q.explanation || '',
             isPublic,
             grade: finalGrade,
             stream: finalStream,
-            unit: finalUnit,
-            authorId,
-            authorEmail,
+            userId: authorId,
             uploadedAt: nowIso,
+            ...(q.explanation ? { explanation: q.explanation } : {}),
+            ...(finalTopic ? { topic: finalTopic } : {}),
+            ...(authorEmail ? { authorEmail } : {}),
           });
         });
 
@@ -224,8 +219,23 @@ export async function uploadExamToFirestore(
 
     const fullyUpdatedExam: Exam = {
       ...exam,
-      ...firestoreExamPayload,
+      id: examId,
+      catalogId: exam.catalogId || examId,
+      title,
+      subject: (exam.subject || 'General').trim(),
+      grade: finalGrade,
+      stream: finalStream,
+      topic: finalTopic,
+      timeLimit: finalTimeLimit,
+      targetExamYear: finalTargetExamYear,
+      metadata: examMetadata as any,
       questions: sanitizedQuestions,
+      questionCount: sanitizedQuestions.length,
+      isPublic,
+      userId: authorId,
+      sourceType: asOfficialExam ? 'curated_catalog' : (exam.sourceType || 'curated_catalog'),
+      createdAt: exam.createdAt || nowIso,
+      updatedAt: nowIso,
     } as Exam;
 
     // 5. Instantly broadcast to the Official Exams live catalog (0ms latency)

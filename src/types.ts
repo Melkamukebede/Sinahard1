@@ -9,6 +9,17 @@ export interface Question {
 export type SubjectType = 'theory' | 'calculation';
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
 
+export interface ExamMetadata {
+  subject: string;
+  grade?: number | string;
+  stream?: string;
+  topic?: string;
+  timeLimit: number;
+  passingScore?: number;
+  targetExamYear?: string;
+  description?: string;
+}
+
 export interface Exam {
   id: string;
   name: string;
@@ -18,7 +29,9 @@ export interface Exam {
   grade?: number | string; // e.g. 9, 10, 11, 12, 'Freshman', 'National Exam'
   timeLimit: number; // in minutes
   passingScore?: number;
+  metadata?: ExamMetadata;
   questions: Question[];
+  questionCount?: number;
   description?: string;
   userId?: string;
   isPublic?: boolean;
@@ -30,7 +43,6 @@ export interface Exam {
   catalogId?: string;
   stream?: string;
   targetExamYear?: string;
-  unit?: string;
   curator?: string;
   rating?: number;
   downloadCount?: number;
@@ -74,6 +86,11 @@ export interface ExamResult {
   passingScore?: number;
   subjectType?: string;
 }
+
+/**
+ * Dedicated practice performance metric decoupled from exams library
+ */
+export type UserAttempt = ExamResult;
 
 export interface StudyReminder {
   id: string;

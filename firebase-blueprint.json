@@ -22,40 +22,24 @@
     },
     "Exam": {
       "title": "Exam",
-      "description": "Exam data containing questions and settings",
+      "description": "Exam data containing questions and nested metadata",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
         "catalogId": { "type": "string", "maxLength": 128 },
-        "name": { "type": "string", "maxLength": 256 },
         "title": { "type": "string", "maxLength": 256 },
-        "subject": { "type": "string", "maxLength": 128 },
-        "topic": { "type": "string", "maxLength": 128 },
-        "grade": { "type": "string", "maxLength": 32 },
-        "timeLimit": { "type": "number" },
-        "description": { "type": "string", "maxLength": 1000 },
+        "metadata": { "type": "object" },
         "questions": { "type": "array" },
+        "questionCount": { "type": "number" },
         "difficulty": { "type": "string", "maxLength": 64 },
-        "passingScore": { "type": "number" },
-        "subjectType": { "type": "string", "maxLength": 64 },
-        "stream": { "type": "string", "maxLength": 64 },
-        "unit": { "type": "string", "maxLength": 128 },
-        "curator": { "type": "string", "maxLength": 128 },
-        "adminTag": { "type": "string", "maxLength": 128 },
         "sourceType": { "type": "string", "maxLength": 64 },
-        "targetExamYear": { "type": "string", "maxLength": 32 },
-        "rating": { "type": "number" },
-        "downloadCount": { "type": "number" },
-        "isUploadedToCloud": { "type": "boolean" },
-        "cloudStorageEngine": { "type": "string", "maxLength": 32 },
-        "cloudUploadedAt": { "type": "string", "maxLength": 64 },
         "authorEmail": { "type": "string", "maxLength": 256 },
         "userId": { "type": "string", "maxLength": 128 },
         "isPublic": { "type": "boolean" },
         "createdAt": { "type": "string", "maxLength": 64 },
         "updatedAt": { "type": "string", "maxLength": 64 }
       },
-      "required": ["id", "name", "userId", "questions"]
+      "required": ["id", "title", "userId", "questions"]
     },
     "Question": {
       "title": "Question",
@@ -64,21 +48,40 @@
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
         "examId": { "type": "string", "maxLength": 128 },
-        "examName": { "type": "string", "maxLength": 256 },
         "subject": { "type": "string", "maxLength": 128 },
+        "topic": { "type": "string", "maxLength": 128 },
         "text": { "type": "string", "maxLength": 4000 },
         "options": { "type": "array" },
         "correct": { "type": "number" },
         "explanation": { "type": "string", "maxLength": 4000 },
         "grade": { "type": "string", "maxLength": 32 },
         "stream": { "type": "string", "maxLength": 64 },
-        "unit": { "type": "string", "maxLength": 128 },
         "isPublic": { "type": "boolean" },
-        "authorId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
         "authorEmail": { "type": "string", "maxLength": 256 },
         "uploadedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "examId", "text", "options", "correct"]
+    },
+    "UserAttempt": {
+      "title": "UserAttempt",
+      "description": "Decoupled student practice attempt performance and question review",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "examId": { "type": "string", "maxLength": 128 },
+        "examTitle": { "type": "string", "maxLength": 256 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 64 },
+        "score": { "type": "number" },
+        "total": { "type": "number" },
+        "percentage": { "type": "number" },
+        "passingScore": { "type": "number" },
+        "timeSpent": { "type": "number" },
+        "answers": { "type": "array" },
+        "subjectType": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "examId", "userId", "score", "total"]
     },
     "Result": {
       "title": "Result",
@@ -152,7 +155,11 @@
     },
     "/results/{resultId}": {
       "schema": "Result",
-      "description": "Exam completion records and question answer histories"
+      "description": "Legacy exam completion records and question answer histories"
+    },
+    "/user_attempts/{attemptId}": {
+      "schema": "UserAttempt",
+      "description": "Decoupled student practice attempt performance metrics and review"
     },
     "/reminders/{reminderId}": {
       "schema": "StudyReminder",
