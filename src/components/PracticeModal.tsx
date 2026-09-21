@@ -512,7 +512,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 title="Single question focus mode"
               >
                 <Square className="w-3.5 h-3.5" />
-                <span>1 to 1 Mode</span>
+                <span>1 to 1<span className="hidden sm:inline"> Mode</span></span>
               </button>
               <button
                 type="button"
@@ -521,7 +521,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                   setBatchPage(Math.floor(currentIndex / BATCH_SIZE));
                   if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
                 }}
-                className={`px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
                   viewMode === '6-to-1'
                     ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
                     : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
@@ -529,7 +529,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 title="6 questions per page vertically"
               >
                 <LayoutList className="w-3.5 h-3.5" />
-                <span>6 to 1 Mode</span>
+                <span>6 to 1<span className="hidden sm:inline"> Mode</span></span>
               </button>
             </div>
 
@@ -733,7 +733,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                   className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
                 >
                   <ChevronLeft className="w-4 h-4" />
-                  <span>Previous 6 Questions</span>
+                  <span>Prev<span className="hidden sm:inline">ious 6 Questions</span></span>
                 </button>
 
                 <div className="hidden sm:flex items-center text-xs text-zinc-500">
@@ -744,16 +744,16 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                   <button
                     type="button"
                     onClick={handleNextBatch}
-                    className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
                   >
                     {batchPage === totalBatchPages - 1 ? (
                       <>
-                        <span>Finish Exam</span>
+                        <span>Finish<span className="hidden sm:inline"> Exam</span></span>
                         <Send className="w-3.5 h-3.5" />
                       </>
                     ) : (
                       <>
-                        <span>Next 6 Questions</span>
+                        <span>Next<span className="hidden sm:inline"> 6 Questions</span></span>
                         <ChevronRight className="w-4 h-4" />
                       </>
                     )}

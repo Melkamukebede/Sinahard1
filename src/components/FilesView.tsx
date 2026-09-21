@@ -20,8 +20,13 @@ import {
   ChevronDown,
   ChevronUp,
   Tag,
+  Share2,
+  Filter,
+  SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { Exam, AppUser } from '../types';
+import { ShareExamModal } from './ShareExamModal';
 
 interface FilesViewProps {
   exams: Exam[];
@@ -55,6 +60,8 @@ export const FilesView: React.FC<FilesViewProps> = ({
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [copiedNotification, setCopiedNotification] = useState<string | null>(null);
+  const [examToShare, setExamToShare] = useState<Exam | null>(null);
+  const [isFiltersExpanded, setIsFiltersExpanded] = useState<boolean>(false);
 
   // Track which exams are expanded to show details
   const [expandedExamIds, setExpandedExamIds] = useState<Record<string, boolean>>({});
@@ -406,194 +413,300 @@ export const FilesView: React.FC<FilesViewProps> = ({
         </div>
 
         {/* ─────────────────────────────────────────────────────────
-            LAYER 2: FILTER PANEL (Grade, Subject, Topic strictly)
+            LAYER 2: FILTER PANEL (Collapsible & Expandable)
         ───────────────────────────────────────────────────────── */}
-        <div className="relative z-10 p-4 sm:p-5 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-3.5">
-          {/* Search Input Bar */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              id="fileSearchInput"
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by title, subject, grade, topic, or question keywords..."
-              className="w-full pl-10 pr-14 py-2.5 text-xs sm:text-sm rounded-full bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 transition"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          {/* Strict 3 Filters: Grade, Subject, Topic (Others Eliminated) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-            {/* 1. Grade Filter */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                <GraduationCap className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Grade</span>
-              </label>
-              <select
-                id="filterGradeSelect"
-                value={selectedGrade}
-                onChange={(e) => setSelectedGrade(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
-              >
-                <option value="All">All Grades ({exams.length})</option>
-                {dynamicGrades
-                  .filter((g) => g !== 'All')
-                  .map((grade) => (
-                    <option key={grade} value={grade}>
-                      {grade} ({gradeCounts[grade] || 0})
-                    </option>
-                  ))}
-              </select>
+        <div className="relative z-10 p-3.5 sm:p-5 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-3">
+          {/* Search Input Bar & Filter Toggle Row */}
+          <div className="space-y-2.5">
+            <div className="relative">
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                id="fileSearchInput"
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by title, subject, grade, topic, or question keywords..."
+                className="w-full pl-10 pr-14 py-2.5 text-xs sm:text-sm rounded-full bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 transition"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
             </div>
 
-            {/* 2. Subject Filter */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Subject</span>
-              </label>
-              <select
-                id="filterSubjectSelect"
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
-              >
-                <option value="All">All Subjects ({exams.length})</option>
-                {dynamicSubjects
-                  .filter((s) => s !== 'All')
-                  .map((subj) => (
-                    <option key={subj} value={subj}>
-                      {subj} ({subjectCounts[subj] || 0})
-                    </option>
-                  ))}
-              </select>
-            </div>
+            {/* Filter Toggle & Active Filter Chips Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  id="toggle-filters-btn"
+                  onClick={() => setIsFiltersExpanded((prev) => !prev)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer border active:scale-95 ${
+                    isFiltersExpanded || activeFiltersCount > 0
+                      ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-zinc-900 dark:border-white shadow-2xs'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                  }`}
+                  title={isFiltersExpanded ? 'Collapse grade, subject & topic filters' : 'Expand grade, subject & topic filters'}
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>{isFiltersExpanded ? 'Hide Filters' : 'Filter Options'}</span>
+                  {activeFiltersCount > 0 && (
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        isFiltersExpanded || activeFiltersCount > 0
+                          ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950'
+                          : 'bg-zinc-300 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200'
+                      }`}
+                    >
+                      {activeFiltersCount}
+                    </span>
+                  )}
+                  {isFiltersExpanded ? (
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  )}
+                </button>
 
-            {/* 3. Topic / Unit Filter */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                <Bookmark className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Topic</span>
-              </label>
-              <select
-                id="filterTopicSelect"
-                value={selectedTopic}
-                onChange={(e) => setSelectedTopic(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none truncate"
-              >
-                <option value="All">All Topics ({exams.length})</option>
-                {dynamicTopics
-                  .filter((t) => t !== 'All')
-                  .map((topic) => (
-                    <option key={topic} value={topic}>
-                      {topic.length > 50 ? `${topic.substring(0, 50)}...` : topic} ({topicCounts[topic] || 0})
-                    </option>
-                  ))}
-              </select>
-            </div>
-          </div>
+                {/* Active Filter Chips (visible even when collapsed for instant context) */}
+                {selectedGrade !== 'All' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700">
+                    <GraduationCap className="w-3 h-3 text-zinc-500" />
+                    <span>{selectedGrade}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedGrade('All')}
+                      className="hover:text-rose-500 ml-0.5 cursor-pointer"
+                      title="Remove grade filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
 
-          {/* Quick Subject Access & Push in Every Subject (if Admin) */}
-          {dynamicSubjects.length > 1 && (
-            <div className="pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-zinc-500" />
-                  <span>Subjects ({dynamicSubjects.filter((s) => s !== 'All').length})</span>
-                </span>
-                {isAdmin && (
-                  <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 flex items-center gap-1">
-                    <CloudUpload className="w-3 h-3 text-zinc-900 dark:text-white" />
-                    <span>Admin: Push exams per subject</span>
+                {selectedSubject !== 'All' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700">
+                    <BookOpen className="w-3 h-3 text-zinc-500" />
+                    <span>{selectedSubject}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSubject('All')}
+                      className="hover:text-rose-500 ml-0.5 cursor-pointer"
+                      title="Remove subject filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+
+                {selectedTopic !== 'All' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700">
+                    <Bookmark className="w-3 h-3 text-zinc-500" />
+                    <span className="max-w-[120px] truncate">{selectedTopic}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTopic('All')}
+                      className="hover:text-rose-500 ml-0.5 cursor-pointer"
+                      title="Remove topic filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {dynamicSubjects.map((subj) => {
-                  const isSelected = selectedSubject.toLowerCase() === subj.toLowerCase();
-                  const count = subj === 'All' ? exams.length : (subjectCounts[subj] || 0);
-                  const subjectExam = subj === 'All'
-                    ? exams[0]
-                    : exams.find((e) => (e.subject || 'General').toLowerCase() === subj.toLowerCase());
 
-                  return (
-                    <div
-                      key={subj}
-                      className={`inline-flex items-center rounded-full text-xs transition border overflow-hidden ${
-                        isSelected
-                          ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
-                          : 'bg-zinc-50 dark:bg-zinc-900/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
-                      }`}
+              {activeFiltersCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer transition ml-auto"
+                >
+                  <RotateCcw className="w-3 h-3 text-zinc-500" />
+                  <span>Reset All</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Expandable Filter Details (Grade, Subject, Topic & Subject Pills) */}
+          <AnimatePresence>
+            {isFiltersExpanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden space-y-3.5 pt-3 border-t border-zinc-100 dark:border-zinc-800/80"
+              >
+                {/* Strict 3 Filters: Grade, Subject, Topic */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* 1. Grade Filter */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5 text-zinc-500" />
+                      <span>Grade</span>
+                    </label>
+                    <select
+                      id="filterGradeSelect"
+                      value={selectedGrade}
+                      onChange={(e) => setSelectedGrade(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
                     >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedSubject(subj)}
-                        className="px-3 py-1 font-semibold flex items-center gap-1.5 cursor-pointer active:scale-98"
-                      >
-                        <span>{subj}</span>
-                        <span
-                          className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                            isSelected
-                              ? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900'
-                              : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
-                          }`}
-                        >
-                          {count}
-                        </span>
-                      </button>
+                      <option value="All">All Grades ({exams.length})</option>
+                      {dynamicGrades
+                        .filter((g) => g !== 'All')
+                        .map((grade) => (
+                          <option key={grade} value={grade}>
+                            {grade} ({gradeCounts[grade] || 0})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
 
-                      {/* Admin Push button in every subject */}
-                      {isAdmin && onOpenDatabaseUpload && subj !== 'All' && subjectExam && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenDatabaseUpload(subjectExam);
-                          }}
-                          className={`px-2 py-1 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition border-l active:scale-95 ${
-                            isSelected
-                              ? 'border-zinc-800 dark:border-zinc-200 hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900'
-                              : 'border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white'
-                          }`}
-                          title={`Push ${subj} exam to Cloud Firestore`}
-                        >
-                          <CloudUpload className="w-3 h-3" />
-                          <span>Push</span>
-                        </button>
+                  {/* 2. Subject Filter */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5 text-zinc-500" />
+                      <span>Subject</span>
+                    </label>
+                    <select
+                      id="filterSubjectSelect"
+                      value={selectedSubject}
+                      onChange={(e) => setSelectedSubject(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none"
+                    >
+                      <option value="All">All Subjects ({exams.length})</option>
+                      {dynamicSubjects
+                        .filter((s) => s !== 'All')
+                        .map((subj) => (
+                          <option key={subj} value={subj}>
+                            {subj} ({subjectCounts[subj] || 0})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  {/* 3. Topic / Unit Filter */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                      <Bookmark className="w-3.5 h-3.5 text-zinc-500" />
+                      <span>Topic</span>
+                    </label>
+                    <select
+                      id="filterTopicSelect"
+                      value={selectedTopic}
+                      onChange={(e) => setSelectedTopic(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium cursor-pointer focus:outline-none truncate"
+                    >
+                      <option value="All">All Topics ({exams.length})</option>
+                      {dynamicTopics
+                        .filter((t) => t !== 'All')
+                        .map((topic) => (
+                          <option key={topic} value={topic}>
+                            {topic.length > 50 ? `${topic.substring(0, 50)}...` : topic} ({topicCounts[topic] || 0})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Quick Subject Access & Push in Every Subject (if Admin) */}
+                {dynamicSubjects.length > 1 && (
+                  <div className="pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5 text-zinc-500" />
+                        <span>Subjects ({dynamicSubjects.filter((s) => s !== 'All').length})</span>
+                      </span>
+                      {isAdmin && (
+                        <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 flex items-center gap-1">
+                          <CloudUpload className="w-3 h-3 text-zinc-900 dark:text-white" />
+                          <span>Admin: Push exams per subject</span>
+                        </span>
                       )}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {dynamicSubjects.map((subj) => {
+                        const isSelected = selectedSubject.toLowerCase() === subj.toLowerCase();
+                        const count = subj === 'All' ? exams.length : (subjectCounts[subj] || 0);
+                        const subjectExam = subj === 'All'
+                          ? exams[0]
+                          : exams.find((e) => (e.subject || 'General').toLowerCase() === subj.toLowerCase());
 
-          {/* Filter Summary & Quick Reset */}
-          {activeFiltersCount > 0 && (
-            <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
-              <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Filters applied: Grade ({selectedGrade}), Subject ({selectedSubject}), Topic ({selectedTopic !== 'All' ? 'Custom' : 'All'})
-              </span>
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer transition"
-              >
-                <RotateCcw className="w-3 h-3 text-zinc-500" />
-                <span>Reset Filters</span>
-              </button>
-            </div>
-          )}
+                        return (
+                          <div
+                            key={subj}
+                            className={`inline-flex items-center rounded-full text-xs transition border overflow-hidden ${
+                              isSelected
+                                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
+                                : 'bg-zinc-50 dark:bg-zinc-900/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setSelectedSubject(subj)}
+                              className="px-3 py-1 font-semibold flex items-center gap-1.5 cursor-pointer active:scale-98"
+                            >
+                              <span>{subj}</span>
+                              <span
+                                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                                  isSelected
+                                    ? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900'
+                                    : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                                }`}
+                              >
+                                {count}
+                              </span>
+                            </button>
+
+                            {/* Admin Push button in every subject */}
+                            {isAdmin && onOpenDatabaseUpload && subj !== 'All' && subjectExam && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenDatabaseUpload(subjectExam);
+                                }}
+                                className={`px-2 py-1 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition border-l active:scale-95 ${
+                                  isSelected
+                                    ? 'border-zinc-800 dark:border-zinc-200 hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900'
+                                    : 'border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white'
+                                }`}
+                                title={`Push ${subj} exam to Cloud Firestore`}
+                              >
+                                <CloudUpload className="w-3 h-3" />
+                                <span>Push</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Filter Summary & Close Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+                  <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Filters applied: Grade ({selectedGrade}), Subject ({selectedSubject}), Topic ({selectedTopic !== 'All' ? 'Custom' : 'All'})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsFiltersExpanded(false)}
+                    className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer transition py-0.5 px-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    <ChevronUp className="w-3 h-3" />
+                    <span>Collapse Filters</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -722,6 +835,20 @@ export const FilesView: React.FC<FilesViewProps> = ({
 
                           <button
                             type="button"
+                            id={`share-exam-btn-${exam.id}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExamToShare(exam);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700 transition cursor-pointer active:scale-95 shadow-2xs touch-manipulation"
+                            title="Share exam deep link & specification"
+                          >
+                            <Share2 className="w-3 h-3 text-zinc-600 dark:text-zinc-300" />
+                            <span className="hidden sm:inline">Share</span>
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleExpandExam(exam.id);
@@ -817,8 +944,8 @@ export const FilesView: React.FC<FilesViewProps> = ({
                           </div>
                         </div>
 
-                        {/* Action Buttons: [Practice] [Push (Admin)] [Edit or Export] [Delete] */}
-                        <div className={`grid ${isAdmin && onOpenDatabaseUpload ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2 pt-0.5`}>
+                        {/* Action Buttons: [Practice] [Push (Admin)] [Share] [Edit or Export] [Delete] */}
+                        <div className={`grid ${isAdmin && onOpenDatabaseUpload ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'} gap-2 pt-0.5`}>
                           {/* Button 1: Practice */}
                           <button
                             type="button"
@@ -842,6 +969,18 @@ export const FilesView: React.FC<FilesViewProps> = ({
                               <span>Push</span>
                             </button>
                           )}
+
+                          {/* Button Share: Specification & Deep Link */}
+                          <button
+                            type="button"
+                            id={`share-exam-expanded-btn-${exam.id}`}
+                            onClick={() => setExamToShare(exam)}
+                            className="py-1.5 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-medium text-xs flex items-center justify-center gap-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer border border-zinc-200/80 dark:border-zinc-700 active:scale-98 touch-manipulation"
+                            title="Share Exam Specification & Deep Link"
+                          >
+                            <Share2 className="w-3 h-3 text-zinc-600 dark:text-zinc-300" />
+                            <span>Share</span>
+                          </button>
 
                           {/* Button 2: Edit or Export */}
                           {!isCurated ? (
@@ -896,6 +1035,17 @@ export const FilesView: React.FC<FilesViewProps> = ({
           </AnimatePresence>
         </div>
       )}
+
+      {/* Share Exam Modal */}
+      <ShareExamModal
+        isOpen={examToShare !== null}
+        exam={examToShare}
+        onClose={() => setExamToShare(null)}
+        onStartPractice={(ex) => {
+          setExamToShare(null);
+          onStartPractice(ex);
+        }}
+      />
     </div>
   );
 };

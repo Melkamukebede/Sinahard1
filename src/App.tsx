@@ -16,6 +16,8 @@ import { AdminSubscriptionsView } from './components/AdminSubscriptionsView';
 import { CuratedExamsModal } from './components/CuratedExamsModal';
 import { DatabaseUploadModal } from './components/DatabaseUploadModal';
 import { StudentRegistrationModal } from './components/StudentRegistrationModal';
+import { MobileNav } from './components/MobileNav';
+import { CURATED_EXAMS_CATALOG } from './data/curatedCatalog';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -222,6 +224,73 @@ function MainApp() {
     }
   }, [user]);
 
+  // Handle shared exam deep links (?id=... or ?examId=... or ?catalogId=...)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedExamId = params.get('id') || params.get('examId') || params.get('e');
+    const sharedCatalogId = params.get('catalogId');
+
+    if (sharedExamId || sharedCatalogId) {
+      const targetId = (sharedExamId || sharedCatalogId || '').trim();
+      if (!targetId) return;
+
+      // 1. Search in user's library exams
+      const matchedLibrary = exams.find(
+        (e) => e.id === targetId || (e.catalogId && e.catalogId === targetId)
+      );
+
+      if (matchedLibrary) {
+        setActivePracticeExam(matchedLibrary);
+        showToast(`📖 Loaded shared exam: "${matchedLibrary.name}"`);
+        window.history.replaceState({}, '', window.location.pathname);
+        return;
+      }
+
+      // 2. Search in official catalog
+      const matchedCatalog = CURATED_EXAMS_CATALOG.find(
+        (e) => e.id === targetId || (e.catalogId && e.catalogId === targetId)
+      );
+      if (matchedCatalog) {
+        setActivePracticeExam(matchedCatalog);
+        showToast(`📖 Loaded shared official exam: "${matchedCatalog.name}"`);
+        window.history.replaceState({}, '', window.location.pathname);
+        return;
+      }
+
+      // 3. Search in cached official exams
+      const cachedOfficial = getCachedOfficialExams();
+      const matchedCached = cachedOfficial.find(
+        (e) => e.id === targetId || (e.catalogId && e.catalogId === targetId)
+      );
+      if (matchedCached) {
+        setActivePracticeExam(matchedCached);
+        showToast(`📖 Loaded shared exam: "${matchedCached.name}"`);
+        window.history.replaceState({}, '', window.location.pathname);
+        return;
+      }
+
+      // 4. Fetch directly from Cloud Firestore if not found locally
+      (async () => {
+        try {
+          const { doc, getDoc } = await import('firebase/firestore');
+          const { db } = await import('./firebase');
+          const { sanitizeFirestoreExam } = await import('./services/officialExams');
+
+          const examDocRef = doc(db, 'exams', targetId);
+          const snap = await getDoc(examDocRef);
+          if (snap.exists()) {
+            const fetchedExam = sanitizeFirestoreExam(snap.data(), snap.id);
+            setActivePracticeExam(fetchedExam);
+            showToast(`📖 Loaded shared exam: "${fetchedExam.name}"`);
+            window.history.replaceState({}, '', window.location.pathname);
+          }
+        } catch {
+          // Silent fallback if offline or permission denied
+        }
+      })();
+    }
+  }, [exams]);
+
   // Actions
   const handleStartPractice = (exam: Exam) => {
     setActivePracticeExam(exam);
@@ -388,7 +457,7 @@ function MainApp() {
       />
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-24 md:pb-8">
         {activeTab === 'home' && (
           <HomeView
             exams={exams}
@@ -485,6 +554,20 @@ function MainApp() {
           />
         )}
       </main>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileNav
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          if (tab !== 'create') {
+            setEditingExam(null);
+            setCreateExamInitialMode('select');
+          }
+          setActiveTab(tab);
+        }}
+        onOpenDrawer={() => setIsDrawerOpen(true)}
+        examsCount={exams.length}
+      />
 
       {/* Utilities & Secondary Features Side Drawer */}
       <AppDrawer

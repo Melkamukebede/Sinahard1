@@ -384,6 +384,12 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   // Verification View state & Optimizations
+  const [isSpecExpanded, setIsSpecExpanded] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return false;
+    }
+    return true;
+  });
   const [expandedIndex, setExpandedIndex] = useState<number>(0);
   const [previewingIndices, setPreviewingIndices] = useState<Record<number, boolean>>({});
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -993,177 +999,275 @@ Time Limit: 25 minutes
               </button>
             </div>
 
-            {/* Metadata Section */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-white/80 dark:bg-[#0c182b]/90 backdrop-blur-xl border border-white/80 dark:border-white/10 shadow-[0_8px_30px_rgba(25,50,80,0.04)] dark:shadow-[0_12px_35px_rgba(0,0,0,0.3)] space-y-4">
+            {/* Metadata Section (Collapsible & Expandable) */}
+            <div className="p-4 sm:p-6 rounded-3xl bg-white/80 dark:bg-[#0c182b]/90 backdrop-blur-xl border border-white/80 dark:border-white/10 shadow-[0_8px_30px_rgba(25,50,80,0.04)] dark:shadow-[0_12px_35px_rgba(0,0,0,0.3)] space-y-3.5">
               <div className="flex items-center justify-between border-b border-zinc-100 dark:border-white/5 pb-3 flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-black dark:text-white" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
-                    Exam Specification & Grade Level
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSpecExpanded((prev) => !prev)}
+                  className="flex items-center gap-2 text-left cursor-pointer group select-none"
+                  title={isSpecExpanded ? 'Collapse exam specifications' : 'Expand exam specifications'}
+                >
+                  <div className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-white/10 flex items-center justify-center text-black dark:text-white group-hover:bg-zinc-200 dark:group-hover:bg-white/20 transition shrink-0">
+                    <BookOpen className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">
+                        Exam Specification & Grade Level
+                      </span>
+                      <span className="text-[10px] px-2 py-0.2 rounded-full font-semibold bg-zinc-100 dark:bg-white/10 text-zinc-600 dark:text-zinc-400">
+                        {isSpecExpanded ? 'Expanded' : 'Collapsed'}
+                      </span>
+                    </div>
+                    {!isSpecExpanded && (
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium truncate max-w-[200px] xs:max-w-xs sm:max-w-md">
+                        {name.trim() || 'Untitled Exam'} • {grade === 'Senior University' ? 'Univ Senior' : grade === 'Freshman' ? 'Univ Freshman' : `Grade ${grade}`} • {subject.trim() || 'General'}
+                      </p>
+                    )}
+                  </div>
+                </button>
+
+                <div className="flex items-center gap-2 ml-auto">
                   {detectedGradeFromText && (
-                    <span className="text-[11px] text-zinc-900 dark:text-white font-semibold flex items-center gap-1 bg-zinc-100 dark:bg-white/10 px-2.5 py-0.5 rounded-full border border-zinc-200/80 dark:border-white/10">
+                    <span className="text-[11px] text-zinc-900 dark:text-white font-semibold flex items-center gap-1 bg-zinc-100 dark:bg-white/10 px-2.5 py-0.5 rounded-full border border-zinc-200/80 dark:border-white/10 hidden xs:inline-flex">
                       <Sparkles className="w-3 h-3 text-black dark:text-white" />
-                      <span>{detectedGradeFromText === 'Senior University' ? 'Univ Senior' : detectedGradeFromText === 'Freshman' ? 'Univ Freshman' : `Grade ${detectedGradeFromText}`} Detected</span>
+                      <span>{detectedGradeFromText === 'Senior University' ? 'Univ Senior' : detectedGradeFromText === 'Freshman' ? 'Univ Freshman' : `Grade ${detectedGradeFromText}`}</span>
                     </span>
                   )}
                   {detectedSubjectFromText && (
-                    <span className="text-[11px] text-zinc-900 dark:text-white font-semibold flex items-center gap-1 bg-zinc-100 dark:bg-white/10 px-2.5 py-0.5 rounded-full border border-zinc-200/80 dark:border-white/10">
+                    <span className="text-[11px] text-zinc-900 dark:text-white font-semibold flex items-center gap-1 bg-zinc-100 dark:bg-white/10 px-2.5 py-0.5 rounded-full border border-zinc-200/80 dark:border-white/10 hidden sm:inline-flex">
                       <BookOpen className="w-3 h-3 text-black dark:text-white" />
                       <span>{detectedSubjectFromText}</span>
                     </span>
                   )}
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
-                {/* Title */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-black dark:text-white" />
-                    <span>Exam Title <span className="text-rose-500">*</span></span>
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Grade 12 Physics: Classical Mechanics"
-                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 focus:border-black/40 dark:focus:border-white/40 shadow-2xs"
-                  />
-                </div>
-
-                {/* Grade / Level */}
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <GraduationCap className="w-3.5 h-3.5 text-black dark:text-white" />
-                      <span>Grade / Level</span>
-                    </span>
-                    {detectedGradeFromText && (
-                      <span className="text-[10px] text-zinc-900 dark:text-white font-semibold">
-                        Auto-detected
-                      </span>
-                    )}
-                  </label>
-                  <select
-                    value={String(grade)}
-                    onChange={(e) => {
-                      setUserManuallySelectedGrade(true);
-                      setGrade(e.target.value);
-                    }}
-                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
+                  <button
+                    type="button"
+                    onClick={() => setIsSpecExpanded((prev) => !prev)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-white/10 hover:bg-zinc-200 dark:hover:bg-white/20 text-zinc-800 dark:text-zinc-200 transition cursor-pointer border border-zinc-200/60 dark:border-white/10 active:scale-95"
+                    title={isSpecExpanded ? 'Collapse exam specifications' : 'Expand exam specifications'}
                   >
-                    {GRADE_OPTIONS.map((g) => (
-                      <option key={g} value={g} className="bg-white dark:bg-[#0c182b] text-zinc-900 dark:text-white">
-                        {g === 'Freshman' ? 'University Freshman' : g === 'Senior University' ? 'University Senior' : g === 'All' ? 'All Grades' : `Grade ${g}`}
-                      </option>
-                    ))}
-                    {!GRADE_OPTIONS.includes(String(grade)) && (
-                      <option value={String(grade)} className="bg-white dark:bg-[#0c182b] text-zinc-900 dark:text-white">
-                        {String(grade).toLowerCase().startsWith('grade') ? grade : `Grade ${grade}`}
-                      </option>
+                    <span>{isSpecExpanded ? 'Collapse' : 'Edit Specs'}</span>
+                    {isSpecExpanded ? (
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5" />
                     )}
-                  </select>
-
-                  {/* Feedback indicator for auto-extracted grade */}
-                  {detectedGradeFromText && detectedGradeFromText === String(grade) ? (
-                    <div className="flex items-center gap-1 text-[11px] text-zinc-800 dark:text-zinc-200 font-medium mt-1">
-                      <Check className="w-3 h-3 text-black dark:text-white" />
-                      <span>Auto-synced: {grade === 'Senior University' ? 'University Senior' : grade === 'Freshman' ? 'University Freshman' : `Grade ${grade}`}</span>
-                    </div>
-                  ) : detectedGradeFromText ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setGrade(detectedGradeFromText);
-                        setUserManuallySelectedGrade(false);
-                      }}
-                      className="flex items-center gap-1 text-[11px] text-zinc-900 dark:text-white font-semibold mt-1 hover:underline cursor-pointer"
-                    >
-                      <Sparkles className="w-3 h-3 text-black dark:text-white" />
-                      <span>Use detected {detectedGradeFromText === 'Senior University' ? 'University Senior' : detectedGradeFromText === 'Freshman' ? 'University Freshman' : `Grade ${detectedGradeFromText}`}</span>
-                    </button>
-                  ) : null}
-                </div>
-
-                {/* Duration */}
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-black dark:text-white" />
-                    <span>Time Limit (min)</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={timeLimit}
-                    onChange={(e) => setTimeLimit(Math.max(1, parseInt(e.target.value, 10) || 20))}
-                    min={1}
-                    max={240}
-                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
-                  />
-                </div>
-
-                {/* Subject */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5 text-black dark:text-white" />
-                      <span>Subject</span>
-                    </span>
-                    {detectedSubjectFromText && (
-                      <span className="text-[10px] text-zinc-900 dark:text-white font-semibold">
-                        Auto-detected
-                      </span>
-                    )}
-                  </label>
-                  <input
-                    type="text"
-                    value={subject}
-                    onChange={(e) => {
-                      setSubject(e.target.value);
-                      setUserManuallySelectedSubject(true);
-                    }}
-                    placeholder="e.g. Physics, Mathematics, Biology..."
-                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
-                  />
-
-                  {/* Feedback indicator for auto-extracted subject */}
-                  {detectedSubjectFromText && detectedSubjectFromText.toLowerCase() === subject.trim().toLowerCase() ? (
-                    <div className="flex items-center gap-1 text-[11px] text-zinc-800 dark:text-zinc-200 font-medium mt-1">
-                      <Check className="w-3 h-3 text-black dark:text-white" />
-                      <span>Auto-synced: {subject}</span>
-                    </div>
-                  ) : detectedSubjectFromText ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSubject(detectedSubjectFromText);
-                        setUserManuallySelectedSubject(false);
-                      }}
-                      className="flex items-center gap-1 text-[11px] text-zinc-900 dark:text-white font-semibold mt-1 hover:underline cursor-pointer"
-                    >
-                      <Sparkles className="w-3 h-3 text-black dark:text-white" />
-                      <span>Use detected Subject: {detectedSubjectFromText}</span>
-                    </button>
-                  ) : null}
-                </div>
-
-                {/* Topic */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1.5">
-                    <Target className="w-3.5 h-3.5 text-black dark:text-white" />
-                    <span>Topic / Chapter (Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    placeholder="e.g. Work-Energy Theorem, Calculus I..."
-                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
-                  />
+                  </button>
                 </div>
               </div>
+
+              {/* Compact Preview Strip when collapsed (Tappable to expand) */}
+              {!isSpecExpanded && (
+                <div
+                  onClick={() => setIsSpecExpanded(true)}
+                  className="p-3 rounded-2xl bg-zinc-50/90 dark:bg-[#08111e]/70 border border-zinc-200/60 dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs cursor-pointer hover:bg-zinc-100/90 dark:hover:bg-[#08111e]/90 transition select-none"
+                  title="Click to expand specification fields"
+                >
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="font-bold text-zinc-900 dark:text-white">
+                      {name.trim() || 'Untitled Exam'}
+                    </span>
+                    <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                    <span className="px-2 py-0.5 rounded-full bg-zinc-200/80 dark:bg-white/10 font-bold text-zinc-800 dark:text-zinc-200 text-[11px]">
+                      {grade === 'Senior University' ? 'University Senior' : grade === 'Freshman' ? 'University Freshman' : `Grade ${grade}`}
+                    </span>
+                    <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                    <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+                      {subject.trim() || 'General Subject'}
+                    </span>
+                    {topic.trim() && (
+                      <>
+                        <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                        <span className="text-zinc-500 dark:text-zinc-400 truncate max-w-[150px]">{topic}</span>
+                      </>
+                    )}
+                    <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                    <span className="text-zinc-600 dark:text-zinc-400 flex items-center gap-1 font-medium">
+                      <Clock className="w-3 h-3 text-zinc-400" />
+                      {timeLimit}m
+                    </span>
+                  </div>
+
+                  <span className="text-[11px] font-bold text-black dark:text-white flex items-center gap-1">
+                    <span>Tap to edit</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              )}
+
+              {/* Full Specification Form Grid (Expandable) */}
+              <AnimatePresence>
+                {isSpecExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden space-y-3.5"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 pt-1">
+                      {/* Title */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-black dark:text-white" />
+                          <span>Exam Title <span className="text-rose-500">*</span></span>
+                        </label>
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="e.g. Grade 12 Physics: Classical Mechanics"
+                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 focus:border-black/40 dark:focus:border-white/40 shadow-2xs"
+                        />
+                      </div>
+
+                      {/* Grade / Level */}
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <GraduationCap className="w-3.5 h-3.5 text-black dark:text-white" />
+                            <span>Grade / Level</span>
+                          </span>
+                          {detectedGradeFromText && (
+                            <span className="text-[10px] text-zinc-900 dark:text-white font-semibold">
+                              Auto-detected
+                            </span>
+                          )}
+                        </label>
+                        <select
+                          value={String(grade)}
+                          onChange={(e) => {
+                            setUserManuallySelectedGrade(true);
+                            setGrade(e.target.value);
+                          }}
+                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
+                        >
+                          {GRADE_OPTIONS.map((g) => (
+                            <option key={g} value={g} className="bg-white dark:bg-[#0c182b] text-zinc-900 dark:text-white">
+                              {g === 'Freshman' ? 'University Freshman' : g === 'Senior University' ? 'University Senior' : g === 'All' ? 'All Grades' : `Grade ${g}`}
+                            </option>
+                          ))}
+                          {!GRADE_OPTIONS.includes(String(grade)) && (
+                            <option value={String(grade)} className="bg-white dark:bg-[#0c182b] text-zinc-900 dark:text-white">
+                              {String(grade).toLowerCase().startsWith('grade') ? grade : `Grade ${grade}`}
+                            </option>
+                          )}
+                        </select>
+
+                        {/* Feedback indicator for auto-extracted grade */}
+                        {detectedGradeFromText && detectedGradeFromText === String(grade) ? (
+                          <div className="flex items-center gap-1 text-[11px] text-zinc-800 dark:text-zinc-200 font-medium mt-1">
+                            <Check className="w-3 h-3 text-black dark:text-white" />
+                            <span>Auto-synced: {grade === 'Senior University' ? 'University Senior' : grade === 'Freshman' ? 'University Freshman' : `Grade ${grade}`}</span>
+                          </div>
+                        ) : detectedGradeFromText ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGrade(detectedGradeFromText);
+                              setUserManuallySelectedGrade(false);
+                            }}
+                            className="flex items-center gap-1 text-[11px] text-zinc-900 dark:text-white font-semibold mt-1 hover:underline cursor-pointer"
+                          >
+                            <Sparkles className="w-3 h-3 text-black dark:text-white" />
+                            <span>Use detected {detectedGradeFromText === 'Senior University' ? 'University Senior' : detectedGradeFromText === 'Freshman' ? 'University Freshman' : `Grade ${detectedGradeFromText}`}</span>
+                          </button>
+                        ) : null}
+                      </div>
+
+                      {/* Duration */}
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-black dark:text-white" />
+                          <span>Time Limit (min)</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={timeLimit}
+                          onChange={(e) => setTimeLimit(Math.max(1, parseInt(e.target.value, 10) || 20))}
+                          min={1}
+                          max={240}
+                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
+                        />
+                      </div>
+
+                      {/* Subject */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <BookOpen className="w-3.5 h-3.5 text-black dark:text-white" />
+                            <span>Subject</span>
+                          </span>
+                          {detectedSubjectFromText && (
+                            <span className="text-[10px] text-zinc-900 dark:text-white font-semibold">
+                              Auto-detected
+                            </span>
+                          )}
+                        </label>
+                        <input
+                          type="text"
+                          value={subject}
+                          onChange={(e) => {
+                            setSubject(e.target.value);
+                            setUserManuallySelectedSubject(true);
+                          }}
+                          placeholder="e.g. Physics, Mathematics, Biology..."
+                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
+                        />
+
+                        {/* Feedback indicator for auto-extracted subject */}
+                        {detectedSubjectFromText && detectedSubjectFromText.toLowerCase() === subject.trim().toLowerCase() ? (
+                          <div className="flex items-center gap-1 text-[11px] text-zinc-800 dark:text-zinc-200 font-medium mt-1">
+                            <Check className="w-3 h-3 text-black dark:text-white" />
+                            <span>Auto-synced: {subject}</span>
+                          </div>
+                        ) : detectedSubjectFromText ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubject(detectedSubjectFromText);
+                              setUserManuallySelectedSubject(false);
+                            }}
+                            className="flex items-center gap-1 text-[11px] text-zinc-900 dark:text-white font-semibold mt-1 hover:underline cursor-pointer"
+                          >
+                            <Sparkles className="w-3 h-3 text-black dark:text-white" />
+                            <span>Use detected Subject: {detectedSubjectFromText}</span>
+                          </button>
+                        ) : null}
+                      </div>
+
+                      {/* Topic */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1.5">
+                          <Target className="w-3.5 h-3.5 text-black dark:text-white" />
+                          <span>Topic / Chapter (Optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={topic}
+                          onChange={(e) => setTopic(e.target.value)}
+                          placeholder="e.g. Work-Energy Theorem, Calculus I..."
+                          className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick Collapse Footer button */}
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsSpecExpanded(false)}
+                        className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer transition py-1 px-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5"
+                      >
+                        <ChevronUp className="w-3.5 h-3.5" />
+                        <span>Done editing specs (Collapse)</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Smart Paste Section */}
