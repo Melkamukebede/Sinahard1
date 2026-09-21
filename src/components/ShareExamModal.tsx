@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Share2,
   Copy,
@@ -15,8 +15,11 @@ import {
   CheckCircle2,
   Globe,
   Link,
+  Loader2,
+  CloudCheck,
 } from 'lucide-react';
 import { Exam } from '../types';
+import { publishExamForCloudSharing, SHARE_BASE_URL } from '../services/shareService';
 
 interface ShareExamModalProps {
   exam: Exam | null;
@@ -34,6 +37,17 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedSpec, setCopiedSpec] = useState(false);
   const [nativeShareSuccess, setNativeShareSuccess] = useState(false);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'ready'>('idle');
+
+  // Automatically publish/synchronize exam to Cloud Firestore so any recipient can open it directly in practice mode
+  useEffect(() => {
+    if (isOpen && exam) {
+      setCloudSyncStatus('syncing');
+      publishExamForCloudSharing(exam).then((success) => {
+        setCloudSyncStatus(success ? 'ready' : 'idle');
+      });
+    }
+  }, [isOpen, exam]);
 
   if (!isOpen || !exam) return null;
 
@@ -54,7 +68,6 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
   const passingScore = exam.passingScore || 70;
 
   // Generate short sharing link using requested production domain: https://questions-creator.pages.dev/
-  const SHARE_BASE_URL = 'https://questions-creator.pages.dev';
   const compactExamId = (exam.catalogId || exam.id).trim();
   const shortLink = `${SHARE_BASE_URL}/?id=${encodeURIComponent(compactExamId)}`;
 
@@ -267,9 +280,23 @@ ${shortLink}`;
                 <span>{copiedLink ? 'Copied!' : 'Copy Short Link'}</span>
               </button>
             </div>
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Opening this short link on mobile, tablet, or desktop instantly launches this exam ready for practice.
-            </p>
+            <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+              <p>
+                Opening this short link on mobile or desktop directly launches this exam in <strong>Practice Mode</strong>.
+              </p>
+              {cloudSyncStatus === 'syncing' && (
+                <span className="shrink-0 flex items-center gap-1 text-zinc-400">
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                  <span>Syncing...</span>
+                </span>
+              )}
+              {cloudSyncStatus === 'ready' && (
+                <span className="shrink-0 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <CloudCheck className="w-3 h-3" />
+                  <span>Cloud Ready</span>
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Section 2: Shareable Specification Snippet */}

@@ -17,6 +17,7 @@ export interface Exam {
   topic?: string;
   grade?: number | string; // e.g. 9, 10, 11, 12, 'Freshman', 'National Exam'
   timeLimit: number; // in minutes
+  passingScore?: number;
   questions: Question[];
   description?: string;
   userId?: string;

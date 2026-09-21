@@ -21,6 +21,8 @@ import { CURATED_EXAMS_CATALOG } from './data/curatedCatalog';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { Play, AlertCircle, Loader2 } from 'lucide-react';
+import { extractTargetExamId, resolveExamForPractice } from './services/shareService';
 import {
   Exam,
   ExamResult,
@@ -90,6 +92,13 @@ function MainApp() {
 
   // Toast notifications
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Direct Practice Mode launch states for shared links (?id=... or ?examId=...)
+  const [isOpeningPracticeLink, setIsOpeningPracticeLink] = useState<boolean>(() => {
+    return !!extractTargetExamId();
+  });
+  const [practiceLinkStatus, setPracticeLinkStatus] = useState<string>('Preparing Practice Mode...');
+  const [practiceLinkError, setPracticeLinkError] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -224,72 +233,95 @@ function MainApp() {
     }
   }, [user]);
 
-  // Handle shared exam deep links (?id=... or ?examId=... or ?catalogId=...)
+  // Handle shared exam links: directly launch into Practice Mode immediately (?id=... or ?examId=... or path)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sharedExamId = params.get('id') || params.get('examId') || params.get('e');
-    const sharedCatalogId = params.get('catalogId');
-
-    if (sharedExamId || sharedCatalogId) {
-      const targetId = (sharedExamId || sharedCatalogId || '').trim();
-      if (!targetId) return;
-
-      // 1. Search in user's library exams
-      const matchedLibrary = exams.find(
-        (e) => e.id === targetId || (e.catalogId && e.catalogId === targetId)
-      );
-
-      if (matchedLibrary) {
-        setActivePracticeExam(matchedLibrary);
-        showToast(`📖 Loaded shared exam: "${matchedLibrary.name}"`);
-        window.history.replaceState({}, '', window.location.pathname);
-        return;
-      }
-
-      // 2. Search in official catalog
-      const matchedCatalog = CURATED_EXAMS_CATALOG.find(
-        (e) => e.id === targetId || (e.catalogId && e.catalogId === targetId)
-      );
-      if (matchedCatalog) {
-        setActivePracticeExam(matchedCatalog);
-        showToast(`📖 Loaded shared official exam: "${matchedCatalog.name}"`);
-        window.history.replaceState({}, '', window.location.pathname);
-        return;
-      }
-
-      // 3. Search in cached official exams
-      const cachedOfficial = getCachedOfficialExams();
-      const matchedCached = cachedOfficial.find(
-        (e) => e.id === targetId || (e.catalogId && e.catalogId === targetId)
-      );
-      if (matchedCached) {
-        setActivePracticeExam(matchedCached);
-        showToast(`📖 Loaded shared exam: "${matchedCached.name}"`);
-        window.history.replaceState({}, '', window.location.pathname);
-        return;
-      }
-
-      // 4. Fetch directly from Cloud Firestore if not found locally
-      (async () => {
-        try {
-          const { doc, getDoc } = await import('firebase/firestore');
-          const { db } = await import('./firebase');
-          const { sanitizeFirestoreExam } = await import('./services/officialExams');
-
-          const examDocRef = doc(db, 'exams', targetId);
-          const snap = await getDoc(examDocRef);
-          if (snap.exists()) {
-            const fetchedExam = sanitizeFirestoreExam(snap.data(), snap.id);
-            setActivePracticeExam(fetchedExam);
-            showToast(`📖 Loaded shared exam: "${fetchedExam.name}"`);
-            window.history.replaceState({}, '', window.location.pathname);
-          }
-        } catch {
-          // Silent fallback if offline or permission denied
-        }
-      })();
+    const targetId = extractTargetExamId();
+    if (!targetId) {
+      setIsOpeningPracticeLink(false);
+      return;
     }
-  }, [exams]);
+
+    let isMounted = true;
+    setIsOpeningPracticeLink(true);
+    setPracticeLinkStatus(`Loading exam "${targetId}" for practice...`);
+    setPracticeLinkError(null);
+
+    resolveExamForPractice(targetId, {
+      currentExams: exams,
+      onStatus: (status) => {
+        if (isMounted) setPracticeLinkStatus(status);
+      },
+    })
+      .then(async (resolvedExam) => {
+        if (!isMounted) return;
+        if (resolvedExam && resolvedExam.questions && resolvedExam.questions.length > 0) {
+          // Save exam to user's local database so they keep it permanently
+          try {
+            await saveExamToDb(resolvedExam, user);
+          } catch {
+            // Ignore storage errors
+          }
+
+          // Directly launch in Practice Mode
+          setActivePracticeExam(resolvedExam);
+          setIsOpeningPracticeLink(false);
+          showToast(`🎯 Practice Mode: "${resolvedExam.name}"`);
+
+          // Clean URL state without browser reload
+          window.history.replaceState({}, '', window.location.pathname);
+        } else {
+          setIsOpeningPracticeLink(false);
+          setPracticeLinkError(
+            `Exam "${targetId}" could not be found or does not contain questions.`
+          );
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.warn('Could not launch direct practice mode for exam:', err);
+        setIsOpeningPracticeLink(false);
+        setPracticeLinkError(
+          'Unable to load shared exam for practice. Please check your internet connection and try again.'
+        );
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Listen to popstate/hashchange so clicking or navigating to a shared exam link inside the app also triggers Practice Mode
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const targetId = extractTargetExamId();
+      if (targetId && !activePracticeExam) {
+        setIsOpeningPracticeLink(true);
+        setPracticeLinkStatus(`Opening exam "${targetId}" in Practice Mode...`);
+        resolveExamForPractice(targetId, { currentExams: exams })
+          .then(async (resolved) => {
+            if (resolved && resolved.questions && resolved.questions.length > 0) {
+              try {
+                await saveExamToDb(resolved, user);
+              } catch {
+                // Ignore storage errors
+              }
+              setActivePracticeExam(resolved);
+              setIsOpeningPracticeLink(false);
+              showToast(`🎯 Practice Mode: "${resolved.name}"`);
+              window.history.replaceState({}, '', window.location.pathname);
+            }
+          })
+          .catch(() => setIsOpeningPracticeLink(false));
+      }
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
+  }, [exams, user, activePracticeExam]);
 
   // Actions
   const handleStartPractice = (exam: Exam) => {
@@ -696,6 +728,60 @@ function MainApp() {
           showToast(`Registered successfully as Grade ${registeredProfile.grade || '12'} student! Official exams tailored.`);
         }}
       />
+
+      {/* Direct Practice Mode Launching Overlay for Shared Links */}
+      {(isOpeningPracticeLink || practiceLinkError) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 p-6 shadow-2xl text-center flex flex-col items-center space-y-4">
+            {practiceLinkError ? (
+              <>
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-white font-['Syne',sans-serif]">
+                    Exam Unavailable
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                    {practiceLinkError}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPracticeLinkError(null);
+                    setIsOpeningPracticeLink(false);
+                    window.history.replaceState({}, '', window.location.pathname);
+                  }}
+                  className="w-full py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold transition cursor-pointer hover:opacity-90"
+                >
+                  Return to Library
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="relative w-14 h-14 flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border-2 border-zinc-900 dark:border-white border-t-transparent animate-spin" />
+                  <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white shadow-xs">
+                    <Play className="w-4 h-4 fill-current ml-0.5" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-white font-['Syne',sans-serif]">
+                    Launching Practice Mode
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {practiceLinkStatus}
+                  </p>
+                </div>
+                <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="h-full bg-zinc-950 dark:bg-white rounded-full animate-pulse w-3/4 mx-auto" />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification Banner */}
       {toastMessage && (
