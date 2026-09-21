@@ -48,6 +48,7 @@ const GRADE_LEVELS = [
   { id: '10', label: 'Grade 10', subtitle: 'Secondary Curriculum' },
   { id: '9', label: 'Grade 9', subtitle: 'Secondary Curriculum' },
   { id: 'Freshman', label: 'University Freshman', subtitle: 'Higher Education Remedial' },
+  { id: 'Senior University', label: 'University Senior', subtitle: 'Undergrad Exit & Advanced Prep' },
 ];
 
 export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> = ({
@@ -209,7 +210,7 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
                   <div>
                     <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-900 dark:text-white">
                       <span>{user?.email}</span>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                     </div>
                     <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
                       Google Account Connected (Cloud Sync Active)
@@ -450,7 +451,7 @@ export const StudentRegistrationModal: React.FC<StudentRegistrationModalProps> =
               >
                 {savedSuccess ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <CheckCircle2 className="w-4 h-4 text-white dark:text-zinc-950" />
                     <span>Profile Saved!</span>
                   </>
                 ) : isSubmitting ? (

@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   FileText,
   HelpCircle,
-  Settings,
-  CheckCircle2,
   Plus,
   Trash2,
   ChevronRight,
@@ -11,35 +9,32 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
-  FileCode,
   Save,
-  BookOpen,
-  Upload,
   Clock,
-  Award,
   Target,
   FileUp,
   Check,
-  Edit3,
   ClipboardPaste,
-  Crown,
   AlertCircle,
-  Clipboard,
   X,
   FileCheck2,
   CloudUpload,
-  Database,
-  Share2,
-  Bot,
-  Download,
-  Calculator,
-  Info,
+  BookOpen,
   Copy,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  Download,
+  Search,
+  Maximize2,
+  Minimize2,
+  Upload,
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Exam, Question } from '../types';
 import { MathRenderer } from './MathRenderer';
 import { UserTierStatus } from '../services/subscriptionLimits';
+import { SinahardLogo } from './SinahardLogo';
 
 interface CreateExamWizardProps {
   initialExam?: Exam | null;
@@ -54,7 +49,7 @@ interface CreateExamWizardProps {
   isAdmin?: boolean;
 }
 
-export interface ExtractedExamMetadata {
+interface ExtractedExamMetadata {
   name?: string;
   subject?: string;
   topic?: string;
@@ -63,17 +58,42 @@ export interface ExtractedExamMetadata {
   description?: string;
 }
 
-/**
- * Extracts exam details (Grade, Subject, Topic, Time Limit)
- * from file headers structured like:
- * ================================================================
- * FORMAT SPECIFICATION:
- * Grade: 10
- * Subject: Physics
- * Topic: Classical Mechanics
- * Time Limit: 20 minutes
- * ================================================================
- */
+export const GRADE_OPTIONS = ['12', '11', '10', '9', '8', '7', 'Freshman', 'Senior University', 'All'];
+
+// Extract and normalize grade/level values
+export const normalizeGrade = (raw: string | number | undefined | null): string => {
+  if (raw === undefined || raw === null) return '12';
+  const str = String(raw).trim();
+  if (!str) return '12';
+
+  // Check for university senior / senior university / undergrad exit
+  if (/senior\s*(?:university|college|undergrad)?|university\s*senior/i.test(str)) {
+    return 'Senior University';
+  }
+  // Check for university / freshman / college / remedial
+  if (/freshman|first\s*year/i.test(str)) {
+    return 'Freshman';
+  }
+  if (/university|college|undergrad|higher/i.test(str)) {
+    return 'Freshman';
+  }
+  // Check for all / general
+  if (/^all$/i.test(str)) {
+    return 'All';
+  }
+  // Look for any number 1-12 (e.g. "Grade 10", "10th", "10", "G10", "Grade: 10", "Class 11")
+  const numMatch = str.match(/\b(1[0-2]|[1-9])(?:th|st|nd|rd)?\b/i) || str.match(/(\d{1,2})/);
+  if (numMatch) {
+    return String(parseInt(numMatch[1], 10));
+  }
+
+  const matched = GRADE_OPTIONS.find((g) => g.toLowerCase() === str.toLowerCase());
+  if (matched) return matched;
+
+  return str;
+};
+
+// Extract Exam metadata from header specification block
 export const extractExamMetadataFromText = (raw: string): ExtractedExamMetadata => {
   const metadata: ExtractedExamMetadata = {};
   if (!raw || !raw.trim()) return metadata;
@@ -81,44 +101,52 @@ export const extractExamMetadataFromText = (raw: string): ExtractedExamMetadata 
   const lines = raw.split('\n');
 
   for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('===') || trimmed.startsWith('---') || trimmed.startsWith('***')) {
+    const rawTrimmed = line.trim();
+    if (!rawTrimmed || rawTrimmed.startsWith('===') || rawTrimmed.startsWith('---') || rawTrimmed.startsWith('***')) {
       continue;
     }
 
-    // Stop extracting if we hit the first numbered question
-    if (/^(?:question\s*\d+[:\.]?|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s+[a-zA-Z0-9\\]/i.test(trimmed)) {
+    // Stop metadata scanning once questions start
+    if (/^(?:question\s*\d+[:\.]?|\bq\d+[:\.\)]|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s+[a-zA-Z0-9\\\(]/i.test(rawTrimmed)) {
       break;
     }
 
-    // Skip FORMAT SPECIFICATION label line
-    if (/^FORMAT\s*SPECIFICATION/i.test(trimmed)) {
+    if (/^FORMAT\s*SPECIFICATION/i.test(rawTrimmed)) {
       continue;
     }
 
-    // 1. Grade / Academic Level
-    const gradeMatch = trimmed.match(/^(?:GRADE(?:\s*LEVEL)?|ACADEMIC\s*LEVEL|CLASS)\s*[:\-\=]\s*(.+)$/i);
+    // Strip leading markdown bullets (*, -, +, >, ##) and remove ALL markdown bold/italic asterisks, backticks, underscores
+    const cleanLine = rawTrimmed
+      .replace(/^[\*\-\+\>\#\s]+/, '')
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/__/g, '')
+      .replace(/`/g, '')
+      .trim();
+
+    // 1. Grade: handles "Grade: 10", "Grade 10", "Grade Level: 11", "Class: 9", "Academic Level: Freshman", "Grade: Senior University"
+    const gradeMatch = cleanLine.match(/^(?:GRADE(?:\s*LEVEL)?|ACADEMIC\s*LEVEL|CLASS(?:\s*LEVEL)?)\s*[:\-\=]?\s*(.+)$/i);
     if (gradeMatch && !metadata.grade) {
-      metadata.grade = gradeMatch[1].trim();
+      metadata.grade = normalizeGrade(gradeMatch[1].trim());
       continue;
     }
 
-    // 2. Topic / Unit / Chapter
-    const topicMatch = trimmed.match(/^(?:TOPIC|CHAPTER|UNIT(?:\s*NAME)?)\s*[:\-\=]\s*(.+)$/i);
+    // 2. Topic / Chapter / Unit
+    const topicMatch = cleanLine.match(/^(?:TOPIC|CHAPTER|UNIT(?:\s*NAME)?)\s*[:\-\=]?\s*(.+)$/i);
     if (topicMatch && !metadata.topic) {
       metadata.topic = topicMatch[1].trim();
       continue;
     }
 
-    // 3. Subject Name
-    const subjectMatch = trimmed.match(/^SUBJECT(?:\s*NAME)?\s*[:\-\=]\s*(.+)$/i);
+    // 3. Subject / Course: handles "Subject: Physics", "Subject - Physics", "Subject / Course: Physics", "Course: Mathematics", "Subject = Chemistry"
+    const subjectMatch = cleanLine.match(/^(?:SUBJECT(?:\s*(?:NAME|\/\s*COURSE))?|COURSE|DISCIPLINE|FIELD)\s*[:\-\=]?\s*(.+)$/i);
     if (subjectMatch && !metadata.subject) {
       metadata.subject = subjectMatch[1].trim();
       continue;
     }
 
     // 4. Time Limit / Duration
-    const timeMatch = trimmed.match(/^(?:TIME(?:\s*LIMIT)?|DURATION)\s*[:\-\=]\s*(\d+)/i);
+    const timeMatch = cleanLine.match(/^(?:TIME(?:\s*LIMIT)?|DURATION)\s*[:\-\=]?\s*(\d+)/i);
     if (timeMatch && !metadata.timeLimit) {
       const mins = parseInt(timeMatch[1], 10);
       if (!isNaN(mins) && mins > 0) {
@@ -127,29 +155,64 @@ export const extractExamMetadataFromText = (raw: string): ExtractedExamMetadata 
       continue;
     }
 
-    // 5. Exam Name / Title (fallback if explicitly specified)
-    const nameMatch = trimmed.match(/^(?:EXAM(?:\s*NAME)?|TITLE)\s*[:\-\=]\s*(.+)$/i);
+    // 5. Exam Name / Title
+    const nameMatch = cleanLine.match(/^(?:EXAM(?:\s*(?:NAME|TITLE))?|TITLE)\s*[:\-\=]?\s*(.+)$/i);
     if (nameMatch && !metadata.name) {
       metadata.name = nameMatch[1].trim();
       continue;
     }
 
-    // 6. Description (optional)
-    const descMatch = trimmed.match(/^DESCRIPTION\s*[:\-\=]\s*(.+)$/i);
+    // 6. Description
+    const descMatch = cleanLine.match(/^DESCRIPTION\s*[:\-\=]?\s*(.+)$/i);
     if (descMatch && !metadata.description) {
       metadata.description = descMatch[1].trim();
       continue;
     }
   }
 
-  // Auto-compose exam name if not explicitly set
+  // Fallback 1: If no explicit Grade line was found, look in the header slice (first 600 characters)
+  if (!metadata.grade) {
+    const headerSlice = raw.slice(0, 600);
+    if (/senior\s*(?:university|college|undergrad)?|university\s*senior/i.test(headerSlice)) {
+      metadata.grade = 'Senior University';
+    } else {
+      const inlineGradeMatch = headerSlice.match(/\b(?:grade|class|g)\s*[:\-\s]?\s*(1[0-2]|[7-9])(?:th|st|nd|rd)?\b/i);
+      if (inlineGradeMatch) {
+        metadata.grade = inlineGradeMatch[1];
+      } else if (/\b(freshman|first\s*year)\b/i.test(headerSlice)) {
+        metadata.grade = 'Freshman';
+      } else if (/\b(university|college)\b/i.test(headerSlice)) {
+        metadata.grade = 'Freshman';
+      }
+    }
+  }
+
+  // Fallback 2: If no explicit Subject line was found, inspect header text or title for common subjects
+  if (!metadata.subject) {
+    const headerSlice = raw.slice(0, 600);
+    const commonSubjects = [
+      'Applied Mathematics', 'Engineering Mathematics', 'Mathematics', 'Math', 'Physics', 'Chemistry', 'Biology',
+      'General Science', 'Natural Science', 'History', 'Civics', 'Geography', 'Economics',
+      'English', 'Information Technology', 'Computer Science', 'Technical Drawing'
+    ];
+    for (const sub of commonSubjects) {
+      const regex = new RegExp(`\\b${sub}\\b`, 'i');
+      if (regex.test(headerSlice)) {
+        metadata.subject = sub === 'Math' ? 'Mathematics' : sub;
+        break;
+      }
+    }
+  }
+
+  // Infer Title if missing
   if (!metadata.name) {
     if (metadata.subject && metadata.topic) {
       metadata.name = `${metadata.subject}: ${metadata.topic}`;
     } else if (metadata.topic) {
       metadata.name = metadata.topic;
     } else if (metadata.subject) {
-      metadata.name = metadata.grade ? `Grade ${metadata.grade} ${metadata.subject}` : `${metadata.subject} Exam`;
+      const gradeStr = metadata.grade === 'Senior University' ? 'University Senior' : metadata.grade === 'Freshman' ? 'University Freshman' : metadata.grade ? `Grade ${metadata.grade}` : '';
+      metadata.name = gradeStr ? `${gradeStr} ${metadata.subject}` : `${metadata.subject} Exam`;
     }
   }
 
@@ -159,13 +222,9 @@ export const extractExamMetadataFromText = (raw: string): ExtractedExamMetadata 
 // Strips metadata headers and top divider lines before question parsing
 export const stripExamHeader = (raw: string): string => {
   let cleaned = raw;
-  // Strip top divider block enclosed by ===== or -----
   cleaned = cleaned.replace(/^[=\-\*]{3,}[\s\S]*?[=\-\*]{3,}/m, '');
-
-  // Strip FORMAT SPECIFICATION block if present without dividers
   cleaned = cleaned.replace(/^FORMAT\s*SPECIFICATION:?[\s\S]*?(?=(?:question\s*\d+|\d+[\.\)]|\#+\s*\d+))/i, '');
 
-  // Strip leading lines that are header metadata (EXAM:, Subject:, etc.) before the first question
   const lines = cleaned.split('\n');
   let firstQuestionIdx = -1;
   for (let i = 0; i < lines.length; i++) {
@@ -182,15 +241,12 @@ export const stripExamHeader = (raw: string): string => {
   return cleaned;
 };
 
-// Robust plain text parser supporting numbered questions, options A-D, answer keys, and vertical step-wise explanations
+// Robust plain text parser supporting numbered questions, options A-D, answers, and KaTeX math formulas
 const parsePlainTextRobust = (raw: string): Question[] => {
   const questions: Question[] = [];
   const cleanContent = stripExamHeader(raw).trim();
   if (!cleanContent) return questions;
 
-  // Split into question blocks.
-  // If questions are numbered (e.g. "1. ", "Question 1:", "Q1:", "1) "), split by question boundaries.
-  // This preserves all vertical step-wise derivation lines and empty lines within each question!
   let rawBlocks: string[] = [];
   const hasNumberedQuestions = /(?:^|\n)\s*(?:question\s*\d+[:\.]?|\bq\d+[:\.\)]|\d+[\.\)]|\#+\s*\d+[\.\)])\s+/i.test(cleanContent);
 
@@ -212,11 +268,10 @@ const parsePlainTextRobust = (raw: string): Question[] => {
     let inExplanation = false;
     let foundFirstOption = false;
 
-    // Check first line for question number (e.g. "1. Find the...", "Question 1: ...")
     const firstLine = lines[0].trim();
     const headerMatch = firstLine.match(/^(?:question\s*\d+[:\.]?|\bq\d+[:\.\)]|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s*(.*)/i);
     if (headerMatch) {
-      if (headerMatch[1].trim()) {
+      if (headerMatch[1]?.trim()) {
         textLines.push(headerMatch[1].trim());
       }
     } else {
@@ -225,82 +280,60 @@ const parsePlainTextRobust = (raw: string): Question[] => {
 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
-
-      // Check for Answer key line (e.g. "Answer: B", "Ans: C", "Correct: A")
-      const ansMatch = line.match(/^(?:answer|ans|correct(?:\s*answer)?|key)\s*[:\-\=]\s*\(?([A-D1-4])\)?(?:\s*[\.\)]|\s*$|\s+.*)/i);
-      if (ansMatch) {
-        const char = ansMatch[1].toUpperCase();
-        if (['A', 'B', 'C', 'D'].includes(char)) {
-          correct = ['A', 'B', 'C', 'D'].indexOf(char);
-        } else {
-          const num = parseInt(char, 10) - 1;
-          if (num >= 0 && num < 4) correct = num;
+      if (!line) {
+        if (inExplanation) {
+          explanationLines.push('');
         }
         continue;
       }
 
-      // Check for Explanation header (e.g. "Explanation:", "Explain:", "Solution:")
-      const expMatch = line.match(/^(?:explanation|explain|reasoning|\/\/|solution|steps?)\s*[:\-\=]\s*(.*)/i);
-      if (expMatch) {
+      if (/^explanation\s*[:\-]/i.test(line)) {
         inExplanation = true;
-        if (expMatch[1].trim()) {
-          explanationLines.push(expMatch[1].trim());
-        }
-        continue;
-      }
-
-      // Check for Option line: A) ..., A. ..., (A) ..., 1) ...
-      const optMatch = line.match(/^(?:\(([A-D1-4])\)|([A-D1-4])[\)\.\:\-])\s*(.*)/i);
-      if (!inExplanation && optMatch) {
-        foundFirstOption = true;
-        const char = (optMatch[1] || optMatch[2]).toUpperCase();
-        let letterIdx = ['A', 'B', 'C', 'D'].indexOf(char);
-        if (letterIdx === -1) {
-          letterIdx = parseInt(char, 10) - 1;
-        }
-        let optText = optMatch[3].trim();
-
-        if (optText.endsWith('*')) {
-          optText = optText.slice(0, -1).trim();
-          if (letterIdx >= 0 && letterIdx < 4) correct = letterIdx;
-        } else if (optText.includes('[correct]') || optText.includes('(correct)')) {
-          optText = optText.replace(/\[correct\]|\(correct\)/gi, '').trim();
-          if (letterIdx >= 0 && letterIdx < 4) correct = letterIdx;
-        }
-
-        options.push(optText);
+        const expText = line.replace(/^explanation\s*[:\-]\s*/i, '').trim();
+        if (expText) explanationLines.push(expText);
         continue;
       }
 
       if (inExplanation) {
-        // Collect all vertical steps and equations
-        if (line) {
-          explanationLines.push(line);
-        } else if (explanationLines.length > 0 && explanationLines[explanationLines.length - 1] !== '') {
-          explanationLines.push('');
+        explanationLines.push(line);
+        continue;
+      }
+
+      const optMatch = line.match(/^([A-Da-d])[\.\)\:\-]\s*(.*)/);
+      if (optMatch) {
+        foundFirstOption = true;
+        let optText = optMatch[2].trim();
+        if (optText.endsWith('*')) {
+          const letter = optMatch[1].toUpperCase();
+          correct = letter.charCodeAt(0) - 65;
+          optText = optText.slice(0, -1).trim();
         }
-      } else if (!foundFirstOption) {
-        // Multi-line question prompt text before options begin
-        if (line) {
-          textLines.push(line);
-        }
+        options.push(optText);
+        continue;
+      }
+
+      const ansMatch = line.match(/^(?:correct\s*answer|answer|ans)\s*[:\-\=]\s*([A-Da-d])/i);
+      if (ansMatch) {
+        const letter = ansMatch[1].toUpperCase();
+        correct = letter.charCodeAt(0) - 65;
+        continue;
+      }
+
+      if (!foundFirstOption) {
+        textLines.push(line);
       }
     }
 
-    const fullText = textLines.join(' ').trim();
-    const fullExplanation = explanationLines.join('\n').trim();
-
-    if (fullText && options.length >= 2) {
+    if (textLines.length && options.length >= 2) {
       while (options.length < 4) {
-        options.push(`Option ${String.fromCharCode(65 + options.length)}`);
+        options.push('');
       }
-
       questions.push({
         id: 'q_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-        text: fullText,
+        text: textLines.join('\n').trim(),
         options: options.slice(0, 4),
         correct: correct >= 0 && correct < 4 ? correct : 0,
-        explanation: fullExplanation,
+        explanation: explanationLines.join('\n').trim(),
       });
     }
   });
@@ -310,37 +343,314 @@ const parsePlainTextRobust = (raw: string): Question[] => {
 
 export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
   initialExam,
-  initialMode,
   onSaveExam,
   onCancel,
-  onOpenPasteModal,
   onOpenProfessorModal,
   userTier,
   onOpenSubscriptionModal,
   onOpenDatabaseUpload,
-  isAdmin = false,
+  isAdmin,
 }) => {
-  // If editing an existing exam, start in manual wizard; otherwise prompt selection mode or passed initialMode
-  const [creationMode, setCreationMode] = useState<'select' | 'manual' | 'paste'>(
-    initialExam ? 'manual' : (initialMode || 'select')
-  );
+  // Step 1: Info & Smart Paste | Step 2: Verification & Save
+  const [currentStep, setCurrentStep] = useState<1 | 2>(initialExam ? 2 : 1);
 
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Form State
+  // Metadata Form State
   const [name, setName] = useState(initialExam?.name || '');
   const [subject, setSubject] = useState(initialExam?.subject || '');
   const [topic, setTopic] = useState(initialExam?.topic || '');
+  const [grade, setGrade] = useState<string | number>(initialExam?.grade || '12');
   const [timeLimit, setTimeLimit] = useState<number>(initialExam?.timeLimit || 20);
   const [description, setDescription] = useState(initialExam?.description || '');
-  const [grade, setGrade] = useState<string | number | undefined>(initialExam?.grade || 10);
 
+  // Grade and Subject auto-detection tracking
+  const [userManuallySelectedGrade, setUserManuallySelectedGrade] = useState<boolean>(Boolean(initialExam?.grade));
+  const [detectedGradeFromText, setDetectedGradeFromText] = useState<string | null>(null);
+  const [userManuallySelectedSubject, setUserManuallySelectedSubject] = useState<boolean>(Boolean(initialExam?.subject));
+  const [detectedSubjectFromText, setDetectedSubjectFromText] = useState<string | null>(null);
+
+  // Questions State
   const [questions, setQuestions] = useState<Question[]>(() => {
     if (initialExam?.questions && initialExam.questions.length > 0) {
       return JSON.parse(JSON.stringify(initialExam.questions));
     }
-    return [
+    return [];
+  });
+
+  // Smart Paste State
+  const [pasteRawText, setPasteRawText] = useState('');
+  const [previewQuestions, setPreviewQuestions] = useState<Question[]>([]);
+  const [parsingError, setParsingError] = useState<string | null>(null);
+  const [importedFileName, setImportedFileName] = useState<string | null>(null);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+
+  // Verification View state & Optimizations
+  const [expandedIndex, setExpandedIndex] = useState<number>(0);
+  const [previewingIndices, setPreviewingIndices] = useState<Record<number, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isAllPreviewOpen, setIsAllPreviewOpen] = useState<boolean>(false);
+  const [isAllExpanded, setIsAllExpanded] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const txtFileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const maxQuestions = userTier?.maxQuestionsPerExam ?? 20;
+  const isPremium = userTier?.isPremium ?? false;
+
+  // Real-time Parser for Smart Paste
+  useEffect(() => {
+    const trimmed = pasteRawText.trim();
+    if (!trimmed) {
+      setPreviewQuestions([]);
+      setParsingError(null);
+      setDetectedGradeFromText(null);
+      setDetectedSubjectFromText(null);
+      return;
+    }
+
+    // Auto-infer metadata from text header if not already set or while typing
+    const meta = extractExamMetadataFromText(trimmed);
+    if (meta.name && !name) setName(meta.name);
+    if (meta.topic && !topic) setTopic(meta.topic);
+
+    // Auto-detect and sync Subject from Smart Paste text
+    if (meta.subject) {
+      setDetectedSubjectFromText(meta.subject);
+      if (!userManuallySelectedSubject || !subject) {
+        setSubject(meta.subject);
+      }
+    } else {
+      setDetectedSubjectFromText(null);
+    }
+
+    // Auto-detect and sync Grade/Level from Smart Paste text
+    if (meta.grade) {
+      const normalizedGrade = normalizeGrade(meta.grade);
+      setDetectedGradeFromText(normalizedGrade);
+      if (!userManuallySelectedGrade) {
+        setGrade(normalizedGrade);
+      }
+    } else {
+      setDetectedGradeFromText(null);
+    }
+
+    if (meta.timeLimit && (timeLimit === 20 || !initialExam)) {
+      setTimeLimit(meta.timeLimit);
+    }
+    if (meta.description && !description) {
+      setDescription(meta.description);
+    }
+
+    const parsed = parsePlainTextRobust(trimmed);
+    if (parsed.length > 0) {
+      setPreviewQuestions(parsed);
+      setParsingError(null);
+    } else {
+      setPreviewQuestions([]);
+      setParsingError('Formatting tip: Number each question (1. ...), provide options A) B) C) D), and specify Answer: [A/B/C/D].');
+    }
+  }, [pasteRawText, userManuallySelectedGrade, userManuallySelectedSubject]);
+
+  // Load sample exam
+  const handleInsertSample = () => {
+    setUserManuallySelectedGrade(false);
+    setUserManuallySelectedSubject(false);
+    const sample = `================================================================
+FORMAT SPECIFICATION:
+Grade: 12
+Subject: Physics
+Topic: Classical Mechanics & Work-Energy
+Time Limit: 25 minutes
+================================================================
+
+1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
+   A) \\( 240,000 \\text{ J} \\)*
+   B) \\( 120,000 \\text{ J} \\)
+   C) \\( 480,000 \\text{ J} \\)
+   D) \\( 24,000 \\text{ J} \\)
+   Answer: A
+   Explanation: **Formula:**
+\\[ E_k = \\frac{1}{2} m v^2 \\]
+**Calculation:**
+\\[ E_k = \\frac{1}{2} (1200)(20^2) = 600 \\times 400 = 240,000 \\text{ J} = 240 \\text{ kJ} \\]
+
+2. What is the SI unit of gravitational field strength?
+   A) \\( \\text{N/kg} \\)*
+   B) \\( \\text{J/s} \\)
+   C) \\( \\text{kg}\\cdot\\text{m/s} \\)
+   D) \\( \\text{W} \\)
+   Answer: A
+   Explanation: Gravitational field strength is defined as force per unit mass: \\( g = \\frac{F}{m} \\), giving units of \\( \\text{N/kg} \\) (equivalent to \\( \\text{m/s}^2 \\)).
+
+3. Evaluate the work done by a constant force \\( \\vec{F} = 50 \\text{ N} \\) pushing an object \\( d = 8 \\text{ m} \\) along its direction.
+   A) \\( 400 \\text{ J} \\)*
+   B) \\( 200 \\text{ J} \\)
+   C) \\( 58 \\text{ J} \\)
+   D) \\( 320 \\text{ J} \\)
+   Answer: A
+   Explanation: Work is defined as \\( W = F \\cdot d \\cos(\\theta) \\). With \\( \\theta = 0^\\circ \\), \\( W = 50 \\times 8 = 400 \\text{ J} \\).`;
+
+    setPasteRawText(sample);
+    setName('Grade 12 Physics: Classical Mechanics & Work-Energy');
+    setSubject('Physics');
+    setTopic('Classical Mechanics');
+    setGrade('12');
+    setTimeLimit(25);
+    setImportedFileName('Sample Exam (Physics Grade 12)');
+    setSuccessMsg('Sample exam loaded with Grade 12 & KaTeX formulas!');
+    setTimeout(() => setSuccessMsg(null), 3500);
+  };
+
+  const handlePasteClipboard = async () => {
+    setUserManuallySelectedGrade(false);
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setPasteRawText((prev) => (prev ? prev + '\n\n' + text : text));
+        setSuccessMsg('Pasted clipboard text into editor!');
+        setTimeout(() => setSuccessMsg(null), 3000);
+      }
+    } catch {
+      setErrorMsg('Clipboard permission denied. Please paste directly into the box.');
+    }
+  };
+
+  // Process .txt / plain text file
+  const handleProcessFile = (file: File) => {
+    if (!file) return;
+    setUserManuallySelectedGrade(false);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        setPasteRawText(content);
+        setImportedFileName(file.name);
+        setSuccessMsg(`Imported "${file.name}" (${(file.size / 1024).toFixed(1)} KB) successfully into Smart Paste!`);
+        setTimeout(() => setSuccessMsg(null), 4000);
+      }
+    };
+    reader.onerror = () => {
+      setErrorMsg(`Failed to read "${file.name}". Please ensure it is a valid text file.`);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleProcessFile(file);
+    }
+    e.target.value = '';
+  };
+
+  // Drag and Drop handlers for .txt import
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleProcessFile(files[0]);
+    }
+  };
+
+  // Export .txt file with current exam metadata and questions
+  const handleExportTxt = () => {
+    const currentQuestions = previewQuestions.length > 0 ? previewQuestions : questions;
+
+    let content = '';
+    if (currentQuestions.length > 0) {
+      const headerLines: string[] = [];
+      if (name.trim()) headerLines.push(`Exam Title: ${name.trim()}`);
+      if (grade) headerLines.push(`Grade: ${grade}`);
+      if (subject.trim()) headerLines.push(`Subject: ${subject.trim()}`);
+      if (topic.trim()) headerLines.push(`Topic: ${topic.trim()}`);
+      if (timeLimit) headerLines.push(`Time Limit: ${timeLimit} minutes`);
+      if (description.trim()) headerLines.push(`Description: ${description.trim()}`);
+
+      const formattedQuestions = currentQuestions.map((q, idx) => {
+        const lines: string[] = [
+          `${idx + 1}. ${q.text.trim()}`,
+          ...q.options.map((opt, oIdx) => `   ${String.fromCharCode(65 + oIdx)}) ${opt}${q.correct === oIdx ? '*' : ''}`),
+          `   Answer: ${String.fromCharCode(65 + q.correct)}`,
+        ];
+        if (q.explanation && q.explanation.trim()) {
+          lines.push(`   Explanation: ${q.explanation.trim()}`);
+        }
+        return lines.join('\n');
+      });
+
+      content = (headerLines.length > 0 ? headerLines.join('\n') + '\n\n' : '') + formattedQuestions.join('\n\n');
+    } else if (pasteRawText.trim()) {
+      content = pasteRawText.trim();
+    } else {
+      setErrorMsg('No exam content to export yet. Please paste or enter questions first.');
+      return;
+    }
+
+    const safeTitle = (name || 'sinahard_exam')
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/gi, '_')
+      .replace(/^_+|_+$/g, '');
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${safeTitle || 'exam'}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setSuccessMsg(`Exported "${link.download}" successfully!`);
+    setTimeout(() => setSuccessMsg(null), 3500);
+  };
+
+  // Move from Step 1 to Step 2
+  const handleProceedToVerify = () => {
+    if (!name.trim()) {
+      setErrorMsg('Please specify an Exam Title before continuing.');
+      return;
+    }
+
+    if (previewQuestions.length === 0 && questions.length === 0) {
+      setErrorMsg('No questions detected. Paste formatted questions into the editor or start with a blank question.');
+      return;
+    }
+
+    let resolvedQuestions = previewQuestions.length > 0 ? previewQuestions : questions;
+    if (!isPremium && resolvedQuestions.length > maxQuestions) {
+      resolvedQuestions = resolvedQuestions.slice(0, maxQuestions);
+      setSuccessMsg(`Loaded first ${maxQuestions} questions (Free plan cap). Upgrade for unlimited questions.`);
+    }
+
+    setQuestions(resolvedQuestions);
+    setExpandedIndex(0);
+    setErrorMsg(null);
+    setCurrentStep(2);
+  };
+
+  // Start with blank question directly in Step 2
+  const handleStartBlank = () => {
+    if (!name.trim()) {
+      setName('Custom Exam');
+    }
+    setQuestions([
       {
         id: 'q_' + Date.now(),
         text: '',
@@ -348,374 +658,17 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
         correct: 0,
         explanation: '',
       },
-    ];
-  });
-
-  const [expandedIndex, setExpandedIndex] = useState<number>(0);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // Quick Tips for Students - Collapsed by default at first
-  const [showTips, setShowTips] = useState<boolean>(() => {
-    return localStorage.getItem('show_create_tips') === 'true';
-  });
-  const [isMathTipsExpanded, setIsMathTipsExpanded] = useState<boolean>(false);
-  const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
-  const [copiedFormula, setCopiedFormula] = useState<string | null>(null);
-  const [testFormula, setTestFormula] = useState<string>('\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}');
-  const [showRawPrompt, setShowRawPrompt] = useState<boolean>(false);
-
-  const samplePrompt = `================================================================
-FORMAT SPECIFICATION:
-Grade: 10
-Subject: Physics
-Topic: Classical Mechanics
-Time Limit: 20 minutes
-================================================================
-
-Please generate 10 multiple choice questions in plain .txt format for Grade 10 Physics: Classical Mechanics.
-
-Format each question like this:
-1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
-   A) \\( 240,000 \\text{ J} \\)
-   B) \\( 120,000 \\text{ J} \\)
-   C) \\( 480,000 \\text{ J} \\)
-   D) \\( 24,000 \\text{ J} \\)
-   Answer: A
-   Explanation: **Formula:**
-\\[ E_k = \\frac{1}{2} m v^2 \\]
-**Calculation:**
-\\[ E_k = \\frac{1}{2} (1200)(20^2) = 600 \\times 400 = 240,000 \\text{ J} = 240 \\text{ kJ} \\]
-**Answer:** \\( 240,000 \\text{ J} \\)
-
-OUTPUT RULES:
-1. Output pure plain text (.txt format). No markdown code blocks, no greetings or conversational intro.
-2. Put Answer: [Letter] on its own line.
-3. STRICTLY NO NUMBERS IN EXPLANATION: Do NOT write "1. Formula 2. Calculation". Use only bold labels: **Formula:**, **Calculation:**, **Answer:**.
-4. For math and physics formulas, wrap display equations in \\[ ... \\] and inline variables in \\( ... \\).`;
-
-  const formulaShortcuts = [
-    { label: 'Fraction', code: '\\frac{a}{b}' },
-    { label: 'Square Root', code: '\\sqrt{x}' },
-    { label: 'Power / Exponent', code: 'x^2 + y^2 = r^2' },
-    { label: 'Plus or Minus', code: '\\pm' },
-    { label: 'Multiplication', code: '\\times' },
-    { label: 'Greek Symbols', code: '\\alpha, \\beta, \\theta, \\pi, \\Delta' },
-    { label: 'Integration', code: '\\int_{a}^{b} f(x) dx' },
-    { label: 'Limit', code: '\\lim_{x \\to 0} \\frac{\\sin(x)}{x} = 1' },
-  ];
-
-  const handleCopyFormula = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedFormula(code);
-    setTimeout(() => setCopiedFormula(null), 2000);
+    ]);
+    setExpandedIndex(0);
+    setCurrentStep(2);
   };
 
-  // Synchronize state whenever initialExam or initialMode changes
-  useEffect(() => {
-    if (initialExam) {
-      setCreationMode('manual');
-      setName(initialExam.name || '');
-      setSubject(initialExam.subject || '');
-      setTopic(initialExam.topic || '');
-      setTimeLimit(initialExam.timeLimit || 20);
-      setDescription(initialExam.description || '');
-      setGrade(initialExam.grade || 10);
-      if (initialExam.questions && initialExam.questions.length > 0) {
-        setQuestions(JSON.parse(JSON.stringify(initialExam.questions)));
-      } else {
-        setQuestions([
-          {
-            id: 'q_' + Date.now(),
-            text: '',
-            options: ['', '', '', ''],
-            correct: 0,
-            explanation: '',
-          },
-        ]);
-      }
-      setCurrentStep(1);
-      setErrorMsg(null);
-      setSuccessMsg(null);
-    } else if (initialMode) {
-      setCreationMode(initialMode);
-    }
-  }, [initialExam, initialMode]);
-
-  // Paste Text view internal state
-  const [pasteRawText, setPasteRawText] = useState('');
-  const [previewQuestions, setPreviewQuestions] = useState<Question[]>([]);
-  const [showAllPreview, setShowAllPreview] = useState<boolean>(false);
-  const [parsingError, setParsingError] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Automatically extract exam details (Name, Subject, Difficulty, Time Limit, etc.) from editor text in real-time
-  const extractedMeta = useMemo(() => extractExamMetadataFromText(pasteRawText), [pasteRawText]);
-
-  const maxManualQuestions = userTier?.maxQuestionsPerExam ?? 20;
-  const maxImportQuestions = userTier?.maxImportQuestions ?? 20;
-  const isPremium = userTier?.isPremium ?? false;
-
-  // Real-time parsing of pasted / imported text into preview questions
-  useEffect(() => {
-    const trimmed = pasteRawText.trim();
-    if (!trimmed) {
-      setParsingError(null);
-      setPreviewQuestions([]);
-      return;
-    }
-
-    const parsed = parsePlainTextRobust(trimmed);
-    if (parsed.length > 0) {
-      setParsingError(null);
-      setPreviewQuestions(parsed);
-    } else {
-      setParsingError(
-        'Unable to recognize questions. Ensure questions are numbered (e.g. 1. Question), options start with A) B) C) D), and answers are indicated (e.g. Answer: C).'
-      );
-      setPreviewQuestions([]);
-    }
-  }, [pasteRawText]);
-
-  // Handle .txt file import -> Loads directly into the text editor & extracts exam details
-  const handleTriggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (!content) return;
-
-      // 1. Paste imported content directly into text editor
-      setPasteRawText(content);
-
-      // 2. Extract and prefill metadata from file header if present
-      const meta = extractExamMetadataFromText(content);
-      if (meta.name) setName(meta.name);
-      if (meta.subject) setSubject(meta.subject);
-      if (meta.topic) setTopic(meta.topic);
-      if (meta.grade) setGrade(meta.grade);
-      if (meta.timeLimit) setTimeLimit(meta.timeLimit);
-      if (meta.description) setDescription(meta.description);
-
-      // 3. Switch to Paste Text workspace so user can review and edit in the text editor
-      setCreationMode('paste');
-
-      const linesCount = content.split('\n').length;
-      const detailsMsg = meta.name
-        ? ` • Detected Exam: "${meta.name}" (${meta.subject || 'General'}, Grade ${meta.grade || '10'})`
-        : '';
-      setSuccessMsg(`Imported "${file.name}" (${linesCount} lines) into editor${detailsMsg}.`);
-      setTimeout(() => setSuccessMsg(null), 6000);
-    };
-    reader.readAsText(file);
-    // Reset file input value
-    e.target.value = '';
-  };
-
-  // Clipboard Paste Helper
-  const handlePasteFromClipboard = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text) {
-        setPasteRawText((prev) => (prev ? prev + '\n\n' + text : text));
-        setSuccessMsg('Pasted content from clipboard into editor!');
-        setTimeout(() => setSuccessMsg(null), 3000);
-      }
-    } catch {
-      setErrorMsg('Could not read clipboard. Please paste manually into the editor.');
-    }
-  };
-
-  // Sample format preset: Exact header structure and standard numbered questions
-  const handleInsertSampleText = () => {
-    setPasteRawText(`================================================================
-FORMAT SPECIFICATION:
-Grade: 10
-Subject: Physics
-Topic: Classical Mechanics
-Time Limit: 20 minutes
-================================================================
-
-1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
-   A) \\( 240,000 \\text{ J} \\)
-   B) \\( 120,000 \\text{ J} \\)
-   C) \\( 480,000 \\text{ J} \\)
-   D) \\( 24,000 \\text{ J} \\)
-   Answer: A
-   Explanation: **Formula:**
-\\[ E_k = \\frac{1}{2} m v^2 \\]
-**Calculation:**
-\\[ E_k = \\frac{1}{2} (1200)(20^2) = 600 \\times 400 = 240,000 \\text{ J} = 240 \\text{ kJ} \\]
-**Answer:** \\( 240,000 \\text{ J} \\)
-
-2. What is the SI unit of electric force?
-   A) Joule
-   B) Newton
-   C) Watt
-   D) Pascal
-   Answer: B
-   Explanation: The SI unit of force, including electrical and gravitational forces, is the Newton (N).`);
-  };
-
-  // Preset for Freshman Applied Mathematics I (5 questions)
-  const handleInsertFreshmanMathSample = () => {
-    setPasteRawText(`================================================================
-FORMAT SPECIFICATION:
-Grade: Freshman
-Subject: Applied Mathematics
-Topic: Calculus & Linear Algebra
-Time Limit: 30 minutes
-================================================================
-
-1. Evaluate the limit: lim (x -> 0) [sin(3x) / (e^(2x) - 1)]
-   A) 3/2
-   B) 2/3
-   C) 1
-   D) 0
-   Answer: A
-   Explanation: Using L'Hopital's Rule for the 0/0 indeterminate form: differentiate the numerator d/dx[sin(3x)] = 3*cos(3x) and denominator d/dx[e^(2x) - 1] = 2*e^(2x). Evaluating at x = 0 yields (3 * 1) / (2 * 1) = 3/2. Alternatively, rewrite as [sin(3x)/(3x)] * [2x/(e^(2x)-1)] * (3/2) = 1 * 1 * (3/2) = 3/2.
-
-2. Given the function f(x) = ln(x^2 + 1), what is the equation of the tangent line to the graph of f(x) at x = 1?
-   A) y = x - 1 + ln(2)
-   B) y = 2x - 2 + ln(2)
-   C) y = x + ln(2)
-   D) y = 2x + ln(2)
-   Answer: A
-   Explanation: At x = 1, y0 = f(1) = ln(1^2 + 1) = ln(2). Taking the derivative via chain rule gives f'(x) = 2x / (x^2 + 1). At x = 1, the slope m = f'(1) = 2(1) / (1 + 1) = 1. Using the point-slope form y - y0 = m(x - x0): y - ln(2) = 1(x - 1), which simplifies to y = x - 1 + ln(2).
-
-3. Evaluate the definite integral: Integral from 0 to 1 of [x * e^(2x)] dx
-   A) (e^2 + 1) / 4
-   B) (e^2 - 1) / 4
-   C) (e^2 + 1) / 2
-   D) (e^2 - 2) / 4
-   Answer: A
-   Explanation: Using integration by parts with formula Integral(u dv) = u*v - Integral(v du). Set u = x -> du = dx, and dv = e^(2x) dx -> v = (1/2)*e^(2x). Then Integral[x*e^(2x) dx] = (1/2)*x*e^(2x) - (1/4)*e^(2x). Evaluating from 0 to 1: At x = 1, we get (1/2)*e^2 - (1/4)*e^2 = (1/4)*e^2. At x = 0, we get 0 - (1/4)*(1) = -1/4. Subtracting gives (1/4)*e^2 - (-1/4) = (e^2 + 1) / 4.
-
-4. For what real value of k is the 2x2 matrix A = [[2, k], [4, 6]] singular (non-invertible)?
-   A) k = 3
-   B) k = -3
-   C) k = 12
-   D) k = 0
-   Answer: A
-   Explanation: A square matrix is singular if and only if its determinant equals zero. det(A) = (2)(6) - (4)(k) = 12 - 4k. Setting det(A) = 0 gives 12 - 4k = 0 -> 4k = 12 -> k = 3.
-
-5. An open-top rectangular box with a square base is designed to hold a fixed volume of 32 m^3. What base side length x minimizes the surface area of the material used?
-   A) 4 m
-   B) 2 m
-   C) 8 m
-   D) sqrt(32) m
-   Answer: A
-   Explanation: Volume V = x^2 * h = 32 -> h = 32 / x^2. The surface area S of the open box is base area + 4 side walls: S(x) = x^2 + 4xh = x^2 + 4x(32 / x^2) = x^2 + 128/x. The first derivative is S'(x) = 2x - 128/x^2. Setting S'(x) = 0 gives 2x = 128/x^2 -> 2x^3 = 128 -> x^3 = 64 -> x = 4 m. S''(4) = 2 + 256/(4^3) = 6 > 0, confirming a minimum.`);
-  };
-
-  // Import parsed questions and extract exam details (Name, Subject, Difficulty, Time, Passing Score)
-  const handleImportParsedQuestions = (onlyWithinLimit: boolean = false) => {
-    if (previewQuestions.length === 0) {
-      setErrorMsg('No valid questions to import. Please review your text format in the editor above.');
-      return;
-    }
-
-    // 1. Extract and apply metadata details from header block
-    const meta = extractExamMetadataFromText(pasteRawText);
-    if (meta.name) setName(meta.name);
-    if (meta.subject) setSubject(meta.subject);
-    if (meta.topic) setTopic(meta.topic);
-    if (meta.timeLimit) setTimeLimit(meta.timeLimit);
-    if (meta.description) setDescription(meta.description);
-    if (meta.grade) setGrade(meta.grade);
-
-    let toAdd = previewQuestions;
-    if (onlyWithinLimit || (!isPremium && toAdd.length > maxImportQuestions)) {
-      toAdd = toAdd.slice(0, maxImportQuestions);
-      setSuccessMsg(
-        `Imported ${toAdd.length} questions (${userTier?.isTrial ? '5-Day Trial' : 'Free'} limit: ${maxImportQuestions} questions/exam). Details applied: ${meta.name || name || 'Exam'}.`
-      );
-    } else {
-      const detailsMsg = meta.name
-        ? ` • Exam Details applied: "${meta.name}" (${meta.subject || subject || 'General'}, ${meta.timeLimit || timeLimit} min)`
-        : '';
-      setSuccessMsg(`Imported ${toAdd.length} questions into exam${detailsMsg}!`);
-    }
-
-    if (toAdd.length === 0) {
-      setErrorMsg(`Limit reached (${maxImportQuestions} questions). Upgrade to Premium in ETB to import more questions.`);
-      return;
-    }
-
-    // 2. Populate questions
-    if (questions.length === 1 && !questions[0].text.trim()) {
-      setQuestions(toAdd);
-    } else {
-      setQuestions([...questions, ...toAdd]);
-    }
-
-    // 3. Return to manual wizard: if title exists (from extracted header or manual input), proceed to Step 2 (Questions)
-    setCreationMode('manual');
-    if (meta.name || name.trim()) {
-      setCurrentStep(2);
-    } else {
-      setCurrentStep(1);
-    }
-    setTimeout(() => setSuccessMsg(null), 5000);
-  };
-
-  // Direct instant save to local storage: bypasses manual steps and adds to app immediately
-  const handleInstantSaveFromPaste = (onlyWithinLimit: boolean = false) => {
-    if (previewQuestions.length === 0) {
-      setErrorMsg('No valid questions found to save. Please review the editor format above.');
-      return;
-    }
-
-    let toSave = previewQuestions;
-    const isExceeding = !isPremium && previewQuestions.length > maxImportQuestions;
-    if (isExceeding) {
-      if (onlyWithinLimit) {
-        toSave = previewQuestions.slice(0, maxImportQuestions);
-      } else {
-        setErrorMsg(
-          `Your ${userTier?.isTrial ? '5-Day Trial' : 'Free'} plan allows up to ${maxImportQuestions} questions per exam (found ${previewQuestions.length}). Please choose "Save First ${maxImportQuestions} Instantly" or upgrade to Premium in ETB.`
-        );
-        return;
-      }
-    }
-
-    const meta = extractExamMetadataFromText(pasteRawText);
-    const resolvedSubject = (meta.subject || subject).trim() || 'General';
-    const resolvedTopic = (meta.topic || topic).trim();
-    const resolvedName = (meta.name || name).trim() || (resolvedTopic ? `${resolvedSubject}: ${resolvedTopic}` : 'Imported Exam');
-
-    const examData: Exam = {
-      id: initialExam?.id || 'exam_' + Date.now(),
-      name: resolvedName,
-      subject: resolvedSubject,
-      topic: resolvedTopic || undefined,
-      timeLimit: meta.timeLimit || Number(timeLimit) || 20,
-      grade: meta.grade || grade || initialExam?.grade,
-      description: (meta.description || description).trim(),
-      questions: toSave,
-      createdAt: initialExam?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    onSaveExam(examData);
-  };
-
+  // Question editing helpers
   const handleAddQuestion = () => {
-    if (!isPremium && questions.length >= maxManualQuestions) {
-      setErrorMsg(
-        `Question limit reached (${maxManualQuestions} questions on your ${
-          userTier?.isTrial ? '5-Day Trial' : 'Free'
-        } plan). Upgrade to Premium in ETB to create exams with unlimited questions!`
-      );
+    if (!isPremium && questions.length >= maxQuestions) {
+      setErrorMsg(`Limit reached (${maxQuestions} questions). Upgrade to add more.`);
       return;
     }
-
     const newQ: Question = {
       id: 'q_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       text: '',
@@ -727,8 +680,29 @@ Time Limit: 30 minutes
     setExpandedIndex(questions.length);
   };
 
+  const handleDuplicateQuestion = (idx: number) => {
+    if (!isPremium && questions.length >= maxQuestions) {
+      setErrorMsg(`Limit reached (${maxQuestions} questions). Upgrade to add more.`);
+      return;
+    }
+    const target = questions[idx];
+    const dup: Question = {
+      ...JSON.parse(JSON.stringify(target)),
+      id: 'q_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    };
+    const updated = [...questions];
+    updated.splice(idx + 1, 0, dup);
+    setQuestions(updated);
+    setExpandedIndex(idx + 1);
+    setSuccessMsg(`Duplicated question ${idx + 1}`);
+    setTimeout(() => setSuccessMsg(null), 2500);
+  };
+
   const handleRemoveQuestion = (idx: number) => {
-    if (questions.length <= 1) return;
+    if (questions.length <= 1) {
+      setErrorMsg('An exam must have at least one question.');
+      return;
+    }
     const updated = questions.filter((_, i) => i !== idx);
     setQuestions(updated);
     if (expandedIndex >= updated.length) {
@@ -760,1752 +734,1028 @@ Time Limit: 30 minutes
     setQuestions(updated);
   };
 
-  const validateStep1 = () => {
+  const insertFormulaToQuestion = (qIdx: number, formula: string, targetField: 'text' | 'explanation') => {
+    const updated = [...questions];
+    if (targetField === 'text') {
+      updated[qIdx].text = (updated[qIdx].text ? updated[qIdx].text + ' ' : '') + formula;
+    } else {
+      updated[qIdx].explanation = (updated[qIdx].explanation ? updated[qIdx].explanation + ' ' : '') + formula;
+    }
+    setQuestions(updated);
+  };
+
+  const toggleQuestionPreview = (idx: number) => {
+    setPreviewingIndices((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  const toggleAllPreviews = () => {
+    const nextState = !isAllPreviewOpen;
+    setIsAllPreviewOpen(nextState);
+    const newPreviews: Record<number, boolean> = {};
+    questions.forEach((_, idx) => {
+      newPreviews[idx] = nextState;
+    });
+    setPreviewingIndices(newPreviews);
+  };
+
+  const toggleAllExpanded = () => {
+    const nextState = !isAllExpanded;
+    setIsAllExpanded(nextState);
+    // When expanding all, we can indicate all are expanded by setting -2 or toggling state
+  };
+
+  // Step 2 Question Stats
+  const questionsStats = useMemo(() => {
+    const total = questions.length;
+    const withFormulas = questions.filter(
+      (q) => q.text.includes('\\(') || q.text.includes('\\[') || q.options.some((o) => o.includes('\\('))
+    ).length;
+    const withSolutions = questions.filter((q) => q.explanation && q.explanation.trim().length > 0).length;
+    return { total, withFormulas, withSolutions };
+  }, [questions]);
+
+  // Step 2 Filtered Questions
+  const filteredQuestions = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return questions.map((q, idx) => ({ q, originalIndex: idx }));
+    }
+    const qLower = searchQuery.toLowerCase();
+    return questions
+      .map((q, idx) => ({ q, originalIndex: idx }))
+      .filter(({ q, originalIndex }) => {
+        const matchesIndex = String(originalIndex + 1).includes(qLower);
+        const matchesText = q.text.toLowerCase().includes(qLower);
+        const matchesOptions = q.options.some((opt) => opt.toLowerCase().includes(qLower));
+        const matchesExplanation = q.explanation ? q.explanation.toLowerCase().includes(qLower) : false;
+        return matchesIndex || matchesText || matchesOptions || matchesExplanation;
+      });
+  }, [questions, searchQuery]);
+
+  // Validation & Save
+  const handleFinalSave = () => {
     if (!name.trim()) {
       setErrorMsg('Please specify an Exam Title.');
       setCurrentStep(1);
-      return false;
+      return;
     }
-    setErrorMsg(null);
-    return true;
-  };
 
-  const validateStep2 = () => {
     if (questions.length === 0) {
-      setErrorMsg('Please add at least one question.');
-      setCurrentStep(2);
-      return false;
+      setErrorMsg('Exam must have at least one question.');
+      return;
     }
+
     for (let i = 0; i < questions.length; i++) {
       if (!questions[i].text.trim()) {
-        setErrorMsg(`Question ${i + 1} text cannot be empty.`);
+        setErrorMsg(`Question ${i + 1} prompt cannot be empty.`);
         setExpandedIndex(i);
-        setCurrentStep(2);
-        return false;
+        return;
       }
       for (let j = 0; j < questions[i].options.length; j++) {
         if (!questions[i].options[j]?.trim()) {
-          setErrorMsg(`Question ${i + 1}: Option ${String.fromCharCode(65 + j)} is empty.`);
+          setErrorMsg(`Question ${i + 1}: Option ${String.fromCharCode(65 + j)} cannot be empty.`);
           setExpandedIndex(i);
-          setCurrentStep(2);
-          return false;
+          return;
         }
       }
     }
-    setErrorMsg(null);
-    return true;
-  };
-
-  const handleNext = () => {
-    if (currentStep === 1 && validateStep1()) {
-      setCurrentStep(2);
-    } else if (currentStep === 2 && validateStep2()) {
-      setCurrentStep(3);
-    }
-  };
-
-  const handleSave = () => {
-    if (!validateStep1() || !validateStep2()) return;
 
     const resolvedSubject = subject.trim() || 'General';
     const resolvedTopic = topic.trim();
-    const resolvedName = name.trim() || (resolvedTopic ? `${resolvedSubject}: ${resolvedTopic}` : 'Custom Exam');
 
     const examData: Exam = {
       id: initialExam?.id || 'exam_' + Date.now(),
-      name: resolvedName,
+      name: name.trim(),
       subject: resolvedSubject,
       topic: resolvedTopic || undefined,
+      grade: grade || '12',
       timeLimit: Number(timeLimit) || 20,
-      grade: grade || initialExam?.grade,
-      description: description.trim(),
+      description: description.trim() || undefined,
       questions,
       createdAt: initialExam?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      isUploadedToCloud: initialExam?.isUploadedToCloud ?? false,
     };
 
     onSaveExam(examData);
   };
 
-  // 1. Initial Selection Screen: "Manual" or "Paste Text File"
-  if (creationMode === 'select') {
-    return (
-      <div className="max-w-2xl mx-auto pb-16">
-        <div className="rounded-[32px] sm:rounded-[38px] bg-white/40 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/60 dark:border-white/10 p-6 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center shadow-xs border border-white/80 dark:border-white/10">
-                <FileText className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
-                  Create Exam
-                </h1>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  Choose how you would like to compose your exam
-                </p>
-              </div>
-            </div>
+  return (
+    <div className="max-w-5xl mx-auto space-y-6 font-['Plus_Jakarta_Sans',sans-serif] pb-24">
+      {/* ─────────────────────────────────────────────────────────────
+          HERO CONTAINER: MATCHING SINAHARD APP COLOR DESIGN
+      ───────────────────────────────────────────────────────────── */}
+      <div className="relative rounded-[32px] sm:rounded-[38px] bg-white/70 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/70 dark:border-white/10 p-5 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] overflow-hidden space-y-6">
+        {/* Subtle Atmospheric Ambient Glow */}
+        <div className="absolute -top-24 -right-24 w-80 h-80 bg-zinc-400/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            <button
-              type="button"
-              onClick={onCancel}
-              className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white px-4 py-1.5 rounded-full bg-white/80 dark:bg-zinc-800/80 border border-white/60 dark:border-white/10 transition cursor-pointer shadow-xs"
-            >
-              Cancel
-            </button>
+        {/* Top Header Row with Sinahard Pro Brand & 2-Step Pill Bar */}
+        <div className="relative z-10 border-b border-zinc-200/70 dark:border-white/10 pb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <SinahardLogo size="lg" idSuffix="create-hero" className="shrink-0" />
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" />
+                <span>Sinahard Exam Studio</span>
+                <span className="text-zinc-400 dark:text-zinc-600">•</span>
+                <span className="font-normal text-zinc-500 dark:text-zinc-400">
+                  {currentStep === 1 ? 'Step 1: Info & Smart Paste' : 'Step 2: Verify & KaTeX Math'}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
+                {currentStep === 1 ? 'Create & Import Exam' : 'Verify Questions & KaTeX Formulas'}
+              </h1>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {currentStep === 1
+                  ? 'Configure grade level, subject, and paste questions with automatic KaTeX math & key detection'
+                  : 'Review rendered math expressions, verify answers, and save to your repository'}
+              </p>
+            </div>
           </div>
 
-          {/* Freemium Tier Status Info Card */}
-          {userTier && (
-            <div
-              className={`p-4 rounded-[22px] border flex items-center justify-between gap-3 text-xs bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 shadow-xs`}
+          {/* 2-Step Navigation Switcher */}
+          <div className="flex items-center p-1 rounded-full bg-white/80 dark:bg-[#0c182b]/80 backdrop-blur-md border border-white/80 dark:border-white/10 text-xs shadow-xs self-start sm:self-center">
+            <button
+              id="step-tab-1"
+              type="button"
+              onClick={() => setCurrentStep(1)}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold transition cursor-pointer active:scale-98 ${
+                currentStep === 1
+                  ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+              }`}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shrink-0">
-                  <Crown className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
-                </div>
-                <div>
-                  <span className="font-bold block text-zinc-900 dark:text-white">
-                    {userTier.isPremium
-                      ? 'Premium Scholar Active'
-                      : userTier.isTrial
-                      ? `3-Day Welcome Trial Active (${userTier.trialDaysRemaining} days remaining)`
-                      : userTier.isGuest
-                      ? 'Guest Mode (Local Storage)'
-                      : 'Free Student Tier (Cloud Synced)'}
-                  </span>
-                  <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    {userTier.isPremium
-                      ? 'Create & import unlimited questions with full step-by-step LaTeX math solutions.'
-                      : userTier.isTrial
-                      ? `Up to ${userTier.maxQuestionsPerExam} questions per exam and full import support.`
-                      : userTier.isGuest
-                      ? `Up to ${userTier.maxQuestionsPerExam} questions per exam. Sign in to activate your 3-Day Welcome Trial!`
-                      : `Up to ${userTier.maxQuestionsPerExam} questions per exam. Upgrade for unlimited bulk imports.`}
-                  </span>
-                </div>
-              </div>
+              <span>1. Info & Paste</span>
+            </button>
 
-              {!userTier.isPremium && onOpenSubscriptionModal && (
-                <button
-                  type="button"
-                  onClick={onOpenSubscriptionModal}
-                  className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs shrink-0 cursor-pointer shadow-xs transition"
-                >
-                  Upgrade in ETB
-                </button>
+            <button
+              id="step-tab-2"
+              type="button"
+              onClick={() => {
+                if (previewQuestions.length > 0 || questions.length > 0) {
+                  handleProceedToVerify();
+                }
+              }}
+              disabled={previewQuestions.length === 0 && questions.length === 0}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold transition cursor-pointer active:scale-98 ${
+                currentStep === 2
+                  ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                  : previewQuestions.length > 0 || questions.length > 0
+                  ? 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                  : 'opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600'
+              }`}
+            >
+              <span>2. Verify & Save</span>
+              {(previewQuestions.length > 0 || questions.length > 0) && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/70 dark:bg-zinc-800 font-bold">
+                  {previewQuestions.length || questions.length}
+                </span>
               )}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-            {/* Option A: Manual Creation */}
-            <button
-              type="button"
-              onClick={() => {
-                setCreationMode('manual');
-                setCurrentStep(1);
-              }}
-              className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 hover:shadow-md transition text-left group cursor-pointer flex flex-col justify-between shadow-xs"
-            >
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                  <Edit3 className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
-                </div>
-                <h2 className="text-base font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white mb-1">
-                  Manual
-                </h2>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Step-by-step wizard to specify exam details, questions, options, and solutions manually.
-                </p>
-              </div>
-              <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-white">
-                <span>Start wizard</span>
-                <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </button>
-
-            {/* Option B: Question Text Editor */}
-            <button
-              type="button"
-              onClick={() => {
-                setCreationMode('paste');
-              }}
-              className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 hover:shadow-md transition text-left group cursor-pointer flex flex-col justify-between shadow-xs"
-            >
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                  <FileText className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
-                </div>
-                <h2 className="text-base font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white mb-1">
-                  Question Text Editor
-                </h2>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Import .txt files, type or paste questions directly with real-time formatting and parsing.
-                </p>
-              </div>
-              <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-white">
-                <span>Open editor</span>
-                <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:translate-x-1 transition-transform" />
-              </div>
             </button>
           </div>
+        </div>
 
-          {/* Interactive Tips for Creating Questions */}
-          <div className="rounded-[28px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs overflow-hidden transition-all duration-200 font-['Plus_Jakarta_Sans',sans-serif]">
-            {/* Clickable Header Bar */}
-            <div
-              onClick={() => {
-                const next = !showTips;
-                setShowTips(next);
-                localStorage.setItem('show_create_tips', next.toString());
-              }}
-              className="p-5 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80 cursor-pointer select-none hover:bg-zinc-50/70 dark:hover:bg-white/[0.02] transition"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shadow-xs border border-white/60 dark:border-white/10 shrink-0">
-                  <BookOpen className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm sm:text-base font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
-                      Tips for Creating Questions
-                    </h3>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700">
-                      {showTips ? 'Guide Active' : 'Collapsed'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                    3 creation methods, ready-to-use AI generation prompt & LaTeX math guide
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const next = !showTips;
-                    setShowTips(next);
-                    localStorage.setItem('show_create_tips', next.toString());
-                  }}
-                  className="text-xs font-semibold px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:bg-black dark:hover:bg-zinc-100 transition cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-98 shrink-0"
-                >
-                  <span>{showTips ? 'Collapse Guide' : 'Expand Guide'}</span>
-                  {showTips ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-
-            {showTips && (
-              <div className="p-5 sm:p-6 space-y-5 text-xs">
-                {/* Academic Overview Banner */}
-                <div className="p-4 sm:p-5 rounded-[22px] bg-zinc-50/80 dark:bg-white/[0.02] border border-zinc-200/80 dark:border-zinc-800/80">
-                  <p className="text-zinc-700 dark:text-zinc-300 font-normal leading-relaxed text-xs sm:text-[13px]">
-                    <span className="font-bold text-zinc-900 dark:text-white">Sinahard</span> is built for high schools, colleges, and national exam preparation. You can build tailored multiple-choice tests with vertical step-by-step mathematical calculations, detailed solutions, and curriculum alignment across all disciplines.
-                  </p>
-                </div>
-
-                {/* 3 Interactive Methods to Add Questions */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                      Three Ways to Add Questions
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {/* Method 1: Manual */}
-                    <div className="p-4 rounded-[20px] bg-white dark:bg-[#081220] border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col justify-between space-y-3 shadow-xs">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="w-5 h-5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-[10px] flex items-center justify-center font-bold">1</span>
-                          <span className="font-bold text-xs text-zinc-900 dark:text-white font-['Outfit',sans-serif]">Interactive Wizard</span>
-                        </div>
-                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
-                          Type questions individually with custom options, point values, and step-by-step solutions.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCreationMode('manual');
-                          setCurrentStep(1);
-                        }}
-                        className="w-full py-2 px-3 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-98"
-                      >
-                        <Edit3 className="w-3 h-3 text-zinc-600 dark:text-zinc-400" />
-                        <span>Use Manual Wizard</span>
-                      </button>
-                    </div>
-
-                    {/* Method 2: AI Prompt */}
-                    <div className="p-4 rounded-[20px] bg-white dark:bg-[#081220] border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col justify-between space-y-3 shadow-xs">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="w-5 h-5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-[10px] flex items-center justify-center font-bold">2</span>
-                          <span className="font-bold text-xs text-zinc-900 dark:text-white font-['Outfit',sans-serif]">AI Assistant Prompt</span>
-                        </div>
-                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
-                          Ask Gemini, Claude, ChatGPT, or DeepSeek using our structured output prompt.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(samplePrompt);
-                          setCopiedPrompt(true);
-                          setTimeout(() => setCopiedPrompt(false), 2000);
-                        }}
-                        className="w-full py-2 px-3 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-98"
-                      >
-                        {copiedPrompt ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-500" />
-                            <span>Copied Prompt!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3 text-zinc-500" />
-                            <span>Copy AI Template</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {/* Method 3: Text Import */}
-                    <div className="p-4 rounded-[20px] bg-white dark:bg-[#081220] border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col justify-between space-y-3 shadow-xs">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="w-5 h-5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-[10px] flex items-center justify-center font-bold">3</span>
-                          <span className="font-bold text-xs text-zinc-900 dark:text-white font-['Outfit',sans-serif]">Import .txt Files</span>
-                        </div>
-                        <p className="text-zinc-500 dark:text-zinc-400 text-[11px] leading-relaxed">
-                          Bulk import questions shared on Telegram, study groups, or school portals with one click.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCreationMode('paste');
-                        }}
-                        className="w-full py-2 px-3 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-98"
-                      >
-                        <FileText className="w-3 h-3 text-zinc-600 dark:text-zinc-400" />
-                        <span>Open Text Editor</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Brief Explanation: Pre-Structured AI Question Prompt */}
-                <div className="p-4 sm:p-5 rounded-[22px] bg-white dark:bg-[#081220] border border-zinc-200/80 dark:border-zinc-800/80 space-y-3.5 shadow-xs">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                        <Bot className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white font-['Outfit',sans-serif]">
-                          Pre-Structured AI Question Format
-                        </h4>
-                        <p className="text-[11px] text-zinc-500">
-                          Brief guide on formatting questions when prompting Gemini, ChatGPT, Claude, or DeepSeek
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowRawPrompt((prev) => !prev)}
-                        className="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer active:scale-98"
-                      >
-                        <span>{showRawPrompt ? 'Hide Full Prompt' : 'View Full Prompt'}</span>
-                        {showRawPrompt ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(samplePrompt);
-                          setCopiedPrompt(true);
-                          setTimeout(() => setCopiedPrompt(false), 2000);
-                        }}
-                        className="px-3.5 py-1.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
-                      >
-                        {copiedPrompt ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-500" />
-                            <span>Copied Prompt!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>Copy Prompt</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Concise 4-Rule Visual Explanation */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div className="p-3 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800/80 space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-4 h-4 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-[10px] flex items-center justify-center font-bold">1</span>
-                        <span className="font-semibold text-xs text-zinc-900 dark:text-white">Numbered Questions</span>
-                      </div>
-                      <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                        Start each question with a sequential number and period (e.g., <code className="text-zinc-800 dark:text-zinc-200 font-mono">1. What is...</code>).
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800/80 space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-4 h-4 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-[10px] flex items-center justify-center font-bold">2</span>
-                        <span className="font-semibold text-xs text-zinc-900 dark:text-white">Asterisk (*) on Correct Choice</span>
-                      </div>
-                      <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                        Provide choices A, B, C, D and place an asterisk directly on the answer: <code className="text-emerald-600 dark:text-emerald-400 font-mono">C)* 42 N</code>.
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800/80 space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-4 h-4 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-[10px] flex items-center justify-center font-bold">3</span>
-                        <span className="font-semibold text-xs text-zinc-900 dark:text-white">Vertical Solutions</span>
-                      </div>
-                      <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                        Add <code className="text-zinc-800 dark:text-zinc-200 font-mono">Explanation:</code> below choices with line-by-line calculations so students learn from mistakes.
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800/80 space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-4 h-4 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-[10px] flex items-center justify-center font-bold">4</span>
-                        <span className="font-semibold text-xs text-zinc-900 dark:text-white">LaTeX Mathematical Notation</span>
-                      </div>
-                      <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                        Wrap math and chemistry formulas inside standard tags like <code className="text-zinc-800 dark:text-zinc-200 font-mono">\( \frac&#123;a&#125;&#123;b&#125; \)</code> or <code className="text-zinc-800 dark:text-zinc-200 font-mono">\( x^2 \)</code>.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Expandable Raw Prompt View (if user wants to inspect exact prompt text) */}
-                  {showRawPrompt && (
-                    <div className="mt-3 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 font-mono text-[11px] text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
-                      {samplePrompt}
-                    </div>
-                  )}
-                </div>
-
-                {/* Expandable Math & Science Formulas Help & Live Tester */}
-                <div className="rounded-[22px] border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-[#081220] overflow-hidden shadow-xs">
-                  <button
-                    type="button"
-                    onClick={() => setIsMathTipsExpanded((prev) => !prev)}
-                    className="w-full p-4 flex items-center justify-between hover:bg-zinc-50/70 dark:hover:bg-white/[0.02] transition text-left cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                        <Calculator className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
-                      </div>
-                      <div>
-                        <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white font-['Outfit',sans-serif]">
-                          LaTeX Math & Science Formula Cheatsheet
-                        </span>
-                        <p className="text-[11px] text-zinc-500">
-                          Click to copy syntax shortcuts and test live formula rendering
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500">
-                      <span>{isMathTipsExpanded ? 'Collapse Formulas' : 'Expand Formulas'}</span>
-                      {isMathTipsExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </div>
-                  </button>
-
-                  {isMathTipsExpanded && (
-                    <div className="p-4 sm:p-5 border-t border-zinc-200/80 dark:border-zinc-800/80 space-y-4 bg-zinc-50/50 dark:bg-zinc-900/30">
-                      {/* Live Formula Sandbox Tester */}
-                      <div className="space-y-1.5">
-                        <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-                          Interactive Live Formula Previewer:
-                        </label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            value={testFormula}
-                            onChange={(e) => setTestFormula(e.target.value)}
-                            placeholder="e.g. \\frac{a}{b} or \\sqrt{x^2 + y^2}"
-                            className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#0c182b] border border-zinc-200 dark:border-zinc-700 font-mono text-xs text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 shadow-xs"
-                          />
-                          <div className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#0c182b] border border-zinc-200 dark:border-zinc-700 flex items-center text-xs text-zinc-900 dark:text-white overflow-x-auto shadow-xs">
-                            <MathRenderer content={`\\[ ${testFormula} \\]`} />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Formula Shortcuts Pills */}
-                      <div className="space-y-1.5 pt-1">
-                        <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 block">
-                          Click any symbol to copy code:
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {formulaShortcuts.map((item) => (
-                            <button
-                              key={item.label}
-                              type="button"
-                              onClick={() => {
-                                handleCopyFormula(item.code);
-                                setTestFormula(item.code);
-                              }}
-                              className="px-2.5 py-1.5 rounded-lg text-[11px] bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-mono border border-zinc-200 dark:border-zinc-700 flex items-center gap-1.5 cursor-pointer transition shadow-2xs active:scale-98"
-                              title={`Copy ${item.code} and preview`}
-                            >
-                              {copiedFormula === item.code ? (
-                                <Check className="w-3 h-3 text-emerald-500" />
-                              ) : (
-                                <Copy className="w-2.5 h-2.5 text-zinc-400" />
-                              )}
-                              <span>{item.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Peer Sharing Banner */}
-                <div className="p-3.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800/80 flex items-center justify-between flex-wrap gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <Share2 className="w-4 h-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
-                    <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                      <strong>Offline Exam Sharing:</strong> After saving, click <strong>Export</strong> in your Library to generate shareable .txt files for study partners.
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-      </div>
-      </div>
-    );
-  }
-
-  // 2. "Question Text Editor" Screen: Exam Professor at TOP, Text Editor & Bulk Features at BOTTOM
-  if (creationMode === 'paste') {
-    const isExceedingLimit = !isPremium && previewQuestions.length > maxImportQuestions;
-
-    return (
-      <div className="max-w-4xl mx-auto pb-16 font-['Plus_Jakarta_Sans',sans-serif]">
-        <div className="relative rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 p-5 sm:p-7 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-5 overflow-hidden">
-          {/* Atmospheric Ambient Glows */}
-          <div className="absolute -top-24 -right-24 w-80 h-80 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          {/* Hidden File Input for .txt import */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".txt"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-
-          {/* Top Header */}
-          <div className="relative flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setCreationMode('select')}
-                className="p-2 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 transition cursor-pointer shadow-xs active:scale-98"
-                title="Back to options"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
-                  Questions Text Editor
-                </h1>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  Import .txt files or type & paste questions directly with real-time formatting
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setCreationMode('manual')}
-                className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] transition cursor-pointer shadow-xs active:scale-98"
-              >
-                Switch to Manual
-              </button>
-              <button
-                type="button"
-                onClick={onCancel}
-                className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white px-4 py-2 rounded-full hover:bg-white/60 dark:hover:bg-zinc-800 transition cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-
-          {/* System Messages */}
+        {/* Notifications / Alerts */}
+        <AnimatePresence>
           {errorMsg && (
-            <div className="relative p-3.5 rounded-[20px] bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center justify-between">
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between gap-3 shadow-xs"
+            >
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
-              <button type="button" onClick={() => setErrorMsg(null)} className="cursor-pointer p-1 hover:opacity-75">
+              <button
+                type="button"
+                onClick={() => setErrorMsg(null)}
+                className="p-1 hover:bg-rose-500/20 rounded-md transition cursor-pointer"
+              >
                 <X className="w-3.5 h-3.5" />
               </button>
-            </div>
+            </motion.div>
           )}
 
           {successMsg && (
-            <div className="relative p-3.5 rounded-[20px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-between">
-              <span className="flex items-center gap-2">
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-xs"
+            >
+              <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                {successMsg}
-              </span>
-              <button type="button" onClick={() => setSuccessMsg(null)} className="cursor-pointer p-1 hover:opacity-75">
+                <span>{successMsg}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSuccessMsg(null)}
+                className="p-1 hover:bg-emerald-500/20 rounded-md transition cursor-pointer"
+              >
                 <X className="w-3.5 h-3.5" />
               </button>
-            </div>
+            </motion.div>
           )}
+        </AnimatePresence>
 
-          {/* TOP SECTION: Exam Professor Banner */}
-          <div className="relative p-5 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
-              </div>
-              <div>
-                <div className="text-sm font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white flex items-center gap-2">
-                  <span>Exam Professor</span>
-                  <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                    AI Prompt Builder
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  Generate tailored .txt exam prompts for ChatGPT, Claude, Gemini, or DeepSeek.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onOpenProfessorModal}
-              className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs shrink-0 active:scale-98"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Open Exam Professor</span>
-            </button>
-          </div>
-
-          {/* BOTTOM SECTION: Integrated Text Editor & Bulk Parser Workspace */}
-          <div className="relative p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4">
-            {/* Header Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
-                  <ClipboardPaste className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+        {/* ─────────────────────────────────────────────────────────────
+            STEP 1: INFO & SMART PASTE (Single Cohesive View)
+        ───────────────────────────────────────────────────────────── */}
+        {currentStep === 1 && (
+          <div className="space-y-6 relative z-10">
+            {/* Prompts Page Button Above Exam Specification & Grade Level */}
+            <div className="p-4 sm:p-5 rounded-3xl bg-white/80 dark:bg-[#0c182b]/90 backdrop-blur-xl border border-white/80 dark:border-white/10 shadow-[0_8px_30px_rgba(25,50,80,0.04)] dark:shadow-[0_12px_35px_rgba(0,0,0,0.3)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-white/10 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5 text-black dark:text-white" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-zinc-900 dark:text-white">
-                    Questions Text Editor
-                  </h2>
+                  <div className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                    <span>AI Exam Prompts Studio</span>
+                    <span className="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-white/10 text-black dark:text-white text-[10px] font-bold">
+                      Prompts Page
+                    </span>
+                  </div>
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Type, paste, or import questions with exam header details (EXAM, Subject, Time Limit, etc.)
+                    Generate ready-to-use prompts for ChatGPT, Claude, or Gemini to create exams for Sinahard
                   </p>
                 </div>
               </div>
-            </div>
-
-          {/* Action Bar: Import .txt, Paste Clipboard, Sample Preset */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Import .txt File button */}
               <button
                 type="button"
-                onClick={handleTriggerFileInput}
-                className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition shadow-xs active:scale-98"
-                title="Import .txt file with exam details and questions directly into editor"
+                onClick={onOpenProfessorModal}
+                className="w-full sm:w-auto px-4 py-2 rounded-2xl bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shrink-0 shadow-xs active:scale-98"
               >
-                <FileUp className="w-3.5 h-3.5" />
-                <span>Import .txt File</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handlePasteFromClipboard}
-                className="px-3.5 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition shadow-2xs active:scale-98"
-                title="Paste from clipboard"
-              >
-                <Clipboard className="w-3.5 h-3.5" />
-                <span>Paste Clipboard</span>
-              </button>
-
-              {/* Add Question Manually Template */}
-              <button
-                type="button"
-                onClick={() => {
-                  const nextNum = previewQuestions.length + 1;
-                  const newQTemplate = `\n\n${nextNum}. Question text goes here\nA) Option A\nB) Option B\nC) Option C\nD) Option D\nAnswer: A\nExplanation:\nStep 1: First step of solution.\nStep 2: Second step of solution.\nConclusion: Option A is correct.`;
-                  setPasteRawText((prev) => (prev ? prev.trimEnd() + newQTemplate : newQTemplate.trimStart()));
-                  setTimeout(() => {
-                    if (textareaRef.current) {
-                      textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
-                      textareaRef.current.focus();
-                    }
-                  }, 100);
-                }}
-                className="px-3.5 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition shadow-2xs active:scale-98"
-                title="Add a question template to edit manually"
-              >
-                <Plus className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
-                <span>+ Add Question</span>
+                <Sparkles className="w-3.5 h-3.5 text-white dark:text-black" />
+                <span>Prompts Page</span>
               </button>
             </div>
 
-            {/* Presets & Clear */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={handleInsertFreshmanMathSample}
-                className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-xs font-semibold cursor-pointer transition flex items-center gap-1.5 shadow-2xs active:scale-98"
-                title="Insert 5 Freshman Applied Mathematics I exam questions"
-              >
-                <FileCode className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Freshman Math (5 Qs)</span>
-              </button>
+            {/* Metadata Section */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-white/80 dark:bg-[#0c182b]/90 backdrop-blur-xl border border-white/80 dark:border-white/10 shadow-[0_8px_30px_rgba(25,50,80,0.04)] dark:shadow-[0_12px_35px_rgba(0,0,0,0.3)] space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-white/5 pb-3 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-black dark:text-white" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+                    Exam Specification & Grade Level
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {detectedGradeFromText && (
+                    <span className="text-[11px] text-zinc-900 dark:text-white font-semibold flex items-center gap-1 bg-zinc-100 dark:bg-white/10 px-2.5 py-0.5 rounded-full border border-zinc-200/80 dark:border-white/10">
+                      <Sparkles className="w-3 h-3 text-black dark:text-white" />
+                      <span>{detectedGradeFromText === 'Senior University' ? 'Univ Senior' : detectedGradeFromText === 'Freshman' ? 'Univ Freshman' : `Grade ${detectedGradeFromText}`} Detected</span>
+                    </span>
+                  )}
+                  {detectedSubjectFromText && (
+                    <span className="text-[11px] text-zinc-900 dark:text-white font-semibold flex items-center gap-1 bg-zinc-100 dark:bg-white/10 px-2.5 py-0.5 rounded-full border border-zinc-200/80 dark:border-white/10">
+                      <BookOpen className="w-3 h-3 text-black dark:text-white" />
+                      <span>{detectedSubjectFromText}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
 
-              <button
-                type="button"
-                onClick={handleInsertSampleText}
-                className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-xs font-semibold cursor-pointer transition flex items-center gap-1.5 shadow-2xs active:scale-98"
-                title="Insert standard exam format sample with header metadata"
-              >
-                <FileCode className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Grammar Sample</span>
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
+                {/* Title */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <span>Exam Title <span className="text-rose-500">*</span></span>
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Grade 12 Physics: Classical Mechanics"
+                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 focus:border-black/40 dark:focus:border-white/40 shadow-2xs"
+                  />
+                </div>
 
-              {pasteRawText && (
-                <button
-                  type="button"
-                  onClick={() => setPasteRawText('')}
-                  className="px-3 py-1.5 rounded-full text-rose-500 hover:bg-rose-500/10 text-xs font-semibold cursor-pointer transition ml-1"
-                >
-                  Clear All
-                </button>
+                {/* Grade / Level */}
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5 text-black dark:text-white" />
+                      <span>Grade / Level</span>
+                    </span>
+                    {detectedGradeFromText && (
+                      <span className="text-[10px] text-zinc-900 dark:text-white font-semibold">
+                        Auto-detected
+                      </span>
+                    )}
+                  </label>
+                  <select
+                    value={String(grade)}
+                    onChange={(e) => {
+                      setUserManuallySelectedGrade(true);
+                      setGrade(e.target.value);
+                    }}
+                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
+                  >
+                    {GRADE_OPTIONS.map((g) => (
+                      <option key={g} value={g} className="bg-white dark:bg-[#0c182b] text-zinc-900 dark:text-white">
+                        {g === 'Freshman' ? 'University Freshman' : g === 'Senior University' ? 'University Senior' : g === 'All' ? 'All Grades' : `Grade ${g}`}
+                      </option>
+                    ))}
+                    {!GRADE_OPTIONS.includes(String(grade)) && (
+                      <option value={String(grade)} className="bg-white dark:bg-[#0c182b] text-zinc-900 dark:text-white">
+                        {String(grade).toLowerCase().startsWith('grade') ? grade : `Grade ${grade}`}
+                      </option>
+                    )}
+                  </select>
+
+                  {/* Feedback indicator for auto-extracted grade */}
+                  {detectedGradeFromText && detectedGradeFromText === String(grade) ? (
+                    <div className="flex items-center gap-1 text-[11px] text-zinc-800 dark:text-zinc-200 font-medium mt-1">
+                      <Check className="w-3 h-3 text-black dark:text-white" />
+                      <span>Auto-synced: {grade === 'Senior University' ? 'University Senior' : grade === 'Freshman' ? 'University Freshman' : `Grade ${grade}`}</span>
+                    </div>
+                  ) : detectedGradeFromText ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGrade(detectedGradeFromText);
+                        setUserManuallySelectedGrade(false);
+                      }}
+                      className="flex items-center gap-1 text-[11px] text-zinc-900 dark:text-white font-semibold mt-1 hover:underline cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-black dark:text-white" />
+                      <span>Use detected {detectedGradeFromText === 'Senior University' ? 'University Senior' : detectedGradeFromText === 'Freshman' ? 'University Freshman' : `Grade ${detectedGradeFromText}`}</span>
+                    </button>
+                  ) : null}
+                </div>
+
+                {/* Duration */}
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <span>Time Limit (min)</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={timeLimit}
+                    onChange={(e) => setTimeLimit(Math.max(1, parseInt(e.target.value, 10) || 20))}
+                    min={1}
+                    max={240}
+                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
+                  />
+                </div>
+
+                {/* Subject */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5 text-black dark:text-white" />
+                      <span>Subject</span>
+                    </span>
+                    {detectedSubjectFromText && (
+                      <span className="text-[10px] text-zinc-900 dark:text-white font-semibold">
+                        Auto-detected
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    value={subject}
+                    onChange={(e) => {
+                      setSubject(e.target.value);
+                      setUserManuallySelectedSubject(true);
+                    }}
+                    placeholder="e.g. Physics, Mathematics, Biology..."
+                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
+                  />
+
+                  {/* Feedback indicator for auto-extracted subject */}
+                  {detectedSubjectFromText && detectedSubjectFromText.toLowerCase() === subject.trim().toLowerCase() ? (
+                    <div className="flex items-center gap-1 text-[11px] text-zinc-800 dark:text-zinc-200 font-medium mt-1">
+                      <Check className="w-3 h-3 text-black dark:text-white" />
+                      <span>Auto-synced: {subject}</span>
+                    </div>
+                  ) : detectedSubjectFromText ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubject(detectedSubjectFromText);
+                        setUserManuallySelectedSubject(false);
+                      }}
+                      className="flex items-center gap-1 text-[11px] text-zinc-900 dark:text-white font-semibold mt-1 hover:underline cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-black dark:text-white" />
+                      <span>Use detected Subject: {detectedSubjectFromText}</span>
+                    </button>
+                  ) : null}
+                </div>
+
+                {/* Topic */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <span>Topic / Chapter (Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    placeholder="e.g. Work-Energy Theorem, Calculus I..."
+                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 shadow-2xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Smart Paste Section */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-white/80 dark:bg-[#0c182b]/90 backdrop-blur-xl border border-white/80 dark:border-white/10 shadow-[0_8px_30px_rgba(25,50,80,0.04)] dark:shadow-[0_12px_35px_rgba(0,0,0,0.3)] space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-zinc-100 dark:border-white/5 pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                    <ClipboardPaste className="w-4 h-4 text-black dark:text-white" />
+                    <span>Smart Paste</span>
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Paste exam questions with options and answer keys, or import a .txt exam file
+                  </p>
+                </div>
+
+                {/* Action Buttons Toolbar with Black Button Style */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Dedicated Import .txt File */}
+                  <input
+                    type="file"
+                    ref={txtFileInputRef}
+                    onChange={handleFileChange}
+                    accept=".txt,text/plain"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => txtFileInputRef.current?.click()}
+                    className="px-3.5 py-1.5 rounded-full bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black font-bold text-xs transition cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-98"
+                    title="Import .txt exam file directly into Smart Paste"
+                  >
+                    <FileUp className="w-3.5 h-3.5 text-white dark:text-black" />
+                    <span>Import .txt</span>
+                  </button>
+
+                  {/* Export .txt File */}
+                  <button
+                    type="button"
+                    onClick={handleExportTxt}
+                    className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-white/10 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-98"
+                    title="Export exam questions to a .txt file"
+                  >
+                    <Download className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <span>Export (.txt)</span>
+                  </button>
+
+                  {/* Paste from Clipboard */}
+                  <button
+                    type="button"
+                    onClick={handlePasteClipboard}
+                    className="px-3 py-1.5 rounded-full bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 border border-zinc-200/80 dark:border-white/10 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-98"
+                  >
+                    <ClipboardPaste className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <span>Paste</span>
+                  </button>
+
+                  {/* Load Sample Exam */}
+                  <button
+                    type="button"
+                    onClick={handleInsertSample}
+                    className="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-white/10 hover:bg-zinc-200 dark:hover:bg-white/15 text-zinc-800 dark:text-zinc-200 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 border border-zinc-200/80 dark:border-white/10 shadow-xs active:scale-98"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <span>Sample</span>
+                  </button>
+
+                  {pasteRawText && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPasteRawText('');
+                        setPreviewQuestions([]);
+                        setImportedFileName(null);
+                      }}
+                      className="p-1.5 rounded-full text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition cursor-pointer"
+                      title="Clear editor text"
+                    >
+                      <Trash2 className="w-4 h-4 text-black dark:text-white" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Imported File Info Banner */}
+              {importedFileName && (
+                <div className="flex items-center justify-between p-2.5 px-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-xs text-emerald-800 dark:text-emerald-300 shadow-2xs">
+                  <div className="flex items-center gap-2 truncate">
+                    <FileText className="w-4 h-4 text-black dark:text-white shrink-0" />
+                    <span className="truncate">
+                      <strong>Imported:</strong> {importedFileName}
+                    </span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
+                      • {previewQuestions.length} Questions detected
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => txtFileInputRef.current?.click()}
+                    className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:underline shrink-0 ml-2 cursor-pointer"
+                  >
+                    Re-import .txt
+                  </button>
+                </div>
+              )}
+
+              {/* Smart Paste Textarea with Drag & Drop */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className="relative"
+              >
+                <textarea
+                  ref={textareaRef}
+                  rows={12}
+                  value={pasteRawText}
+                  onChange={(e) => setPasteRawText(e.target.value)}
+                  placeholder={`Paste or drag-and-drop your .txt exam file here. Format example:\n\nGrade: 12\nSubject: Physics\nTopic: Mechanics\n\n1. What is the derivative of f(x) = x^2?\n   A) 2x*\n   B) x\n   C) 2\n   D) x^3\n   Answer: A\n   Explanation: Using the power rule, d/dx[x^2] = 2x.`}
+                  className="w-full p-4 text-xs sm:text-sm font-mono rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/50 leading-relaxed resize-y shadow-2xs"
+                />
+
+                {/* Drag-and-drop Active Indicator */}
+                {isDraggingFile && (
+                  <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-emerald-500 bg-emerald-500/15 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-20 pointer-events-none">
+                    <FileUp className="w-10 h-10 text-black dark:text-white animate-bounce" />
+                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                      Drop your .txt exam file here to import!
+                    </span>
+                  </div>
+                )}
+
+                {/* Status Pill in Corner */}
+                <div className="absolute bottom-3 right-3 flex items-center gap-2 pointer-events-none z-10">
+                  {previewQuestions.length > 0 ? (
+                    <span className="px-3 py-1 rounded-full bg-emerald-500 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-xs">
+                      <FileCheck2 className="w-3.5 h-3.5 text-black" />
+                      <span>{previewQuestions.length} Questions Detected</span>
+                    </span>
+                  ) : pasteRawText.trim() ? (
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold text-xs border border-emerald-500/30">
+                      Parsing format...
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              {parsingError && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
+                  <HelpCircle className="w-3.5 h-3.5 shrink-0 text-black dark:text-white" />
+                  <span>{parsingError}</span>
+                </p>
               )}
             </div>
-          </div>
 
-          {/* Extracted Exam Details Indicator Card */}
-          {(extractedMeta.name || extractedMeta.subject || extractedMeta.topic || extractedMeta.grade || extractedMeta.timeLimit) && (
-            <div className="p-4 rounded-[22px] bg-zinc-50/70 dark:bg-white/[0.02] border border-white/80 dark:border-white/10 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                  <FileCheck2 className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-                  Detected Exam Header Details
-                </span>
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                  Auto-applies when continuing
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                {extractedMeta.grade && (
-                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-900 dark:text-white font-bold shadow-2xs">
-                    <strong className="text-zinc-900 dark:text-white">Grade:</strong> {extractedMeta.grade}
-                  </span>
-                )}
-                {extractedMeta.subject && (
-                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
-                    <strong className="text-zinc-900 dark:text-white">Subject:</strong> {extractedMeta.subject}
-                  </span>
-                )}
-                {extractedMeta.topic && (
-                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
-                    <strong className="text-zinc-900 dark:text-white">Topic:</strong> {extractedMeta.topic}
-                  </span>
-                )}
-                {extractedMeta.timeLimit && (
-                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
-                    <strong className="text-zinc-900 dark:text-white">Time Limit:</strong> {extractedMeta.timeLimit} min
-                  </span>
-                )}
-                {extractedMeta.name && (
-                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
-                    <strong className="text-zinc-900 dark:text-white">Exam:</strong> {extractedMeta.name}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
+            {/* Bottom Controls */}
+            <div className="p-4 rounded-2xl bg-white/80 dark:bg-[#0c182b]/90 backdrop-blur-xl border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-4 py-2 rounded-full border border-zinc-200/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white text-xs font-semibold transition cursor-pointer active:scale-98"
+              >
+                Cancel
+              </button>
 
-          {/* The Textarea Editor */}
-          <div>
-            <textarea
-              ref={textareaRef}
-              rows={13}
-              value={pasteRawText}
-              onChange={(e) => setPasteRawText(e.target.value)}
-              placeholder={`================================================================
-FORMAT SPECIFICATION:
-Grade: 10
-Subject: Physics
-Topic: Classical Mechanics
-Time Limit: 20 minutes
-================================================================
-
-1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
-   A) \\( 240,000 \\text{ J} \\)
-   B) \\( 120,000 \\text{ J} \\)
-   C) \\( 480,000 \\text{ J} \\)
-   D) \\( 24,000 \\text{ J} \\)
-   Answer: A
-   Explanation: **Formula:**
-\\[ E_k = \\frac{1}{2} m v^2 \\]
-**Calculation:**
-\\[ E_k = \\frac{1}{2} (1200)(20^2) = 600 \\times 400 = 240,000 \\text{ J} = 240 \\text{ kJ} \\]
-**Answer:** \\( 240,000 \\text{ J} \\)`}
-              className="w-full px-4 py-3.5 rounded-[22px] bg-white/70 dark:bg-[#08101d] border border-white/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 font-mono text-xs focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 leading-relaxed shadow-xs"
-            />
-          </div>
-
-          {/* Stats Bar & Parser Status */}
-          <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
-            <div className="flex items-center gap-3 text-zinc-500 dark:text-zinc-400 text-[11px]">
-              <span>Lines: <strong className="text-zinc-800 dark:text-zinc-200">{pasteRawText ? pasteRawText.split('\n').length : 0}</strong></span>
-              <span>•</span>
-              <span>Characters: <strong className="text-zinc-800 dark:text-zinc-200">{pasteRawText.length}</strong></span>
-            </div>
-
-            {/* Questions count badge */}
-            <div className="flex items-center gap-2">
-              {previewQuestions.length > 0 ? (
-                <span className="px-3.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs flex items-center gap-1.5 shadow-2xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>{previewQuestions.length} Questions Detected</span>
-                </span>
-              ) : pasteRawText.trim() ? (
-                <span className="px-3.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 font-bold text-xs flex items-center gap-1.5">
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Scanning format...</span>
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          {/* Parsing error alert */}
-          {parsingError && pasteRawText.trim() && (
-            <div className="p-3.5 rounded-[20px] bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
-              <span>{parsingError}</span>
-            </div>
-          )}
-
-          {/* Freemium / Trial Limit Warning Banner */}
-          {isExceedingLimit && (
-            <div className="p-4 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5 font-bold text-xs text-amber-700 dark:text-amber-300">
-                  <Crown className="w-4 h-4 text-amber-500 shrink-0" />
-                  <span>
-                    Questions Cap Reached ({previewQuestions.length} detected vs. {maxImportQuestions} allowed)
-                  </span>
-                </div>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Your current {userTier?.isTrial ? '3-Day Trial' : userTier?.isGuest ? 'Guest' : 'Free'} plan allows up to {maxImportQuestions} imported questions per exam. Upgrade to Premium in ETB for unlimited questions!
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => handleImportParsedQuestions(true)}
-                  className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs hover:bg-zinc-800 dark:hover:bg-zinc-100 transition cursor-pointer shadow-xs active:scale-98"
+                  onClick={handleStartBlank}
+                  className="px-4 py-2 rounded-full bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 text-xs font-semibold transition cursor-pointer shadow-xs active:scale-98"
                 >
-                  Import First {maxImportQuestions}
+                  Or Start Blank
                 </button>
-                {onOpenSubscriptionModal && (
-                  <button
-                    type="button"
-                    onClick={onOpenSubscriptionModal}
-                    className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-800 dark:text-zinc-200 font-bold text-xs hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
-                  >
-                    Upgrade in ETB
-                  </button>
-                )}
+
+                <button
+                  type="button"
+                  onClick={handleProceedToVerify}
+                  disabled={previewQuestions.length === 0 && questions.length === 0}
+                  className={`px-5 py-2.5 rounded-full font-semibold text-xs flex items-center gap-2 transition cursor-pointer active:scale-98 ${
+                    previewQuestions.length > 0 || questions.length > 0
+                      ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs hover:bg-black dark:hover:bg-zinc-100'
+                      : 'opacity-40 cursor-not-allowed bg-zinc-200 dark:bg-zinc-800 text-zinc-500'
+                  }`}
+                >
+                  <span>Next: Verify & Save ({previewQuestions.length || questions.length} Qs)</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Live Preview of Parsed Questions */}
-          {previewQuestions.length > 0 && (
-            <div className="space-y-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-                  <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
-                    Questions Preview
-                  </h3>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold border border-zinc-200 dark:border-zinc-700">
-                    Showing {showAllPreview ? previewQuestions.length : Math.min(3, previewQuestions.length)} of {previewQuestions.length}
-                  </span>
+        {/* ─────────────────────────────────────────────────────────────
+            STEP 2: VERIFICATION & SAVE (Questions Review & Editing)
+        ───────────────────────────────────────────────────────────── */}
+        {currentStep === 2 && (
+          <div className="space-y-6 relative z-10">
+            {/* Header Summary Strip */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-white/80 dark:bg-[#0c182b]/90 backdrop-blur-xl border border-white/80 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
+              <div>
+                <h3 className="font-bold text-sm text-zinc-900 dark:text-white font-['Outfit',sans-serif]">
+                  {name || 'Untitled Exam'}
+                </h3>
+                <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">Grade {grade}</span>
+                  <span>•</span>
+                  <span>{subject || 'General'}</span>
+                  {topic && (
+                    <>
+                      <span>•</span>
+                      <span>{topic}</span>
+                    </>
+                  )}
+                  <span>•</span>
+                  <span>{timeLimit}m</span>
                 </div>
-                {previewQuestions.length > 3 && (
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-500/30">
+                  {questionsStats.total} Questions
+                </span>
+                {questionsStats.withFormulas > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-medium text-xs border border-emerald-500/20 hidden sm:inline-flex">
+                    {questionsStats.withFormulas} KaTeX
+                  </span>
+                )}
+                {questionsStats.withSolutions > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-white/5 text-zinc-700 dark:text-zinc-300 font-medium text-xs border border-zinc-200/80 dark:border-white/10 hidden sm:inline-flex">
+                    {questionsStats.withSolutions} Solutions
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleAddQuestion}
+                  className="px-3.5 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1 cursor-pointer active:scale-98 transition shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5 text-black" />
+                  <span>Add Question</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter & View Toolbar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-white/70 dark:bg-[#0c182b]/80 backdrop-blur-md border border-white/80 dark:border-white/10 shadow-2xs">
+              {/* Search Bar */}
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 text-black dark:text-white absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search questions by formula, keywords or options..."
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30"
+                />
+                {searchQuery && (
                   <button
                     type="button"
-                    onClick={() => setShowAllPreview(!showAllPreview)}
-                    className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white cursor-pointer"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
                   >
-                    {showAllPreview ? 'Show Less (First 3)' : `Show All (${previewQuestions.length})`}
+                    <X className="w-3 h-3 text-black dark:text-white" />
                   </button>
                 )}
               </div>
 
-              <div className="max-h-72 overflow-y-auto space-y-2.5 pr-1">
-                {(showAllPreview ? previewQuestions : previewQuestions.slice(0, 3)).map((q, idx) => {
-                  const isLocked = !isPremium && idx >= maxImportQuestions;
+              {/* View Control Buttons */}
+              <div className="flex items-center gap-1.5 shrink-0 justify-end">
+                <button
+                  type="button"
+                  onClick={toggleAllPreviews}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer active:scale-98 ${
+                    isAllPreviewOpen
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-white dark:bg-[#0c182b] border-zinc-200/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-[#0f1d33]'
+                  }`}
+                  title={isAllPreviewOpen ? 'Hide all live math previews' : 'Preview all questions with rendered KaTeX'}
+                >
+                  {isAllPreviewOpen ? (
+                    <EyeOff className="w-3.5 h-3.5 text-black dark:text-white" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5 text-black dark:text-white" />
+                  )}
+                  <span>{isAllPreviewOpen ? 'Hide Math' : 'Preview KaTeX'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleAllExpanded}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer active:scale-98 ${
+                    isAllExpanded
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-white dark:bg-[#0c182b] border-zinc-200/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-[#0f1d33]'
+                  }`}
+                  title={isAllExpanded ? 'Collapse all questions' : 'Expand all questions for full review'}
+                >
+                  {isAllExpanded ? (
+                    <Minimize2 className="w-3.5 h-3.5 text-black dark:text-white" />
+                  ) : (
+                    <Maximize2 className="w-3.5 h-3.5 text-black dark:text-white" />
+                  )}
+                  <span>{isAllExpanded ? 'Collapse' : 'Expand All'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Question List */}
+            {filteredQuestions.length === 0 ? (
+              <div className="p-8 text-center rounded-2xl border border-dashed border-zinc-200 dark:border-white/10 bg-white/40 dark:bg-[#08111e]/40 space-y-2">
+                <Search className="w-8 h-8 text-black dark:text-white mx-auto" />
+                <p className="text-xs sm:text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                  No questions match "{searchQuery}"
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                >
+                  Clear search filter
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredQuestions.map(({ q, originalIndex }) => {
+                  const isExpanded = isAllExpanded || expandedIndex === originalIndex;
                   return (
                     <div
-                      key={idx}
-                      className={`p-4 rounded-[22px] border text-xs transition shadow-xs ${
-                        isLocked
-                          ? 'bg-zinc-50/50 dark:bg-zinc-900/30 border-zinc-200/50 dark:border-zinc-800/50 opacity-60'
-                          : 'bg-zinc-50/70 dark:bg-[#091322] border-white/80 dark:border-white/10'
-                      }`}
+                      key={q.id || originalIndex}
+                      className="rounded-2xl border border-white/80 dark:border-white/10 bg-white/80 dark:bg-[#0c182b]/90 backdrop-blur-md shadow-2xs overflow-hidden"
                     >
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="font-semibold text-zinc-900 dark:text-white flex items-start gap-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold text-[11px] shrink-0">
-                            Q{idx + 1}
+                      {/* Accordion Row */}
+                      <div
+                        onClick={() => setExpandedIndex(isExpanded && !isAllExpanded ? -1 : originalIndex)}
+                        className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-zinc-50/80 dark:hover:bg-[#08111e]/80 transition"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <span className="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">
+                            {originalIndex + 1}
                           </span>
-                          <div className="leading-relaxed">
-                            <MathRenderer text={q.text} />
-                          </div>
+                          <span className="text-xs sm:text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+                            {q.text.trim() ? q.text : <span className="text-zinc-400 italic">Empty question prompt...</span>}
+                          </span>
                         </div>
 
-                        {isLocked && (
-                          <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-[10px] shrink-0 flex items-center gap-1 border border-amber-500/20">
-                            <Crown className="w-3 h-3" />
-                            <span>Requires Premium</span>
-                          </span>
-                        )}
-                      </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleQuestionPreview(originalIndex);
+                            }}
+                            className={`p-1.5 rounded-lg transition cursor-pointer ${
+                              previewingIndices[originalIndex]
+                                ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                                : 'text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400'
+                            }`}
+                            title={previewingIndices[originalIndex] ? 'Hide live preview' : 'Preview KaTeX math'}
+                          >
+                            {previewingIndices[originalIndex] ? <EyeOff className="w-3.5 h-3.5 text-black dark:text-white" /> : <Eye className="w-3.5 h-3.5 text-black dark:text-white" />}
+                          </button>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pl-7">
-                        {q.options.map((opt, optIdx) => {
-                          const isCorrect = optIdx === q.correct;
-                          return (
-                            <div
-                              key={optIdx}
-                              className={`px-3 py-2 rounded-xl border flex items-center gap-2 ${
-                                isCorrect
-                                  ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold border-transparent shadow-xs'
-                                  : 'bg-white dark:bg-zinc-800/60 border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300'
-                              }`}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDuplicateQuestion(originalIndex);
+                            }}
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer"
+                            title="Duplicate question"
+                          >
+                            <Copy className="w-3.5 h-3.5 text-black dark:text-white" />
+                          </button>
+
+                          {questions.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveQuestion(originalIndex);
+                              }}
+                              className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 transition cursor-pointer"
+                              title="Delete question"
                             >
-                              <span className="font-mono text-[10px] font-bold">
-                                {String.fromCharCode(65 + optIdx)})
-                              </span>
-                              <div className="truncate flex-1">
-                                <MathRenderer text={opt} />
-                              </div>
-                              {isCorrect && <Check className="w-3 h-3 text-emerald-400 shrink-0 ml-auto" />}
-                            </div>
-                          );
-                        })}
+                              <Trash2 className="w-3.5 h-3.5 text-black dark:text-white" />
+                            </button>
+                          )}
+
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4 text-black dark:text-white" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-black dark:text-white" />
+                          )}
+                        </div>
                       </div>
 
-                      {q.explanation && (
-                        <div className="mt-2.5 pl-7 text-[11px] text-zinc-600 dark:text-zinc-300 flex items-start gap-2">
-                          <span className="font-semibold text-zinc-900 dark:text-white shrink-0">
-                            Explanation:
-                          </span>
-                          <div className="leading-relaxed whitespace-pre-line">
-                            <MathRenderer text={q.explanation} />
+                      {/* Expanded Edit Form */}
+                      {isExpanded && (
+                        <div className="p-4 sm:p-5 pt-2 border-t border-zinc-100 dark:border-white/5 space-y-3.5 bg-zinc-50/50 dark:bg-[#08111e]/40">
+                          {/* Live Preview Box */}
+                          {previewingIndices[originalIndex] && (
+                            <div className="p-4 rounded-2xl bg-white/90 dark:bg-[#0c182b] border border-emerald-500/30 text-xs space-y-2 shadow-xs">
+                              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                <span className="flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3 text-black dark:text-white" />
+                                  <span>Live Math Preview</span>
+                                </span>
+                                <span>Correct: Option {String.fromCharCode(65 + q.correct)}</span>
+                              </div>
+                              <div className="text-zinc-900 dark:text-white font-medium">
+                                <MathRenderer content={q.text || '*(No question text entered yet)*'} />
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                {q.options.map((opt, oIdx) => (
+                                  <div
+                                    key={oIdx}
+                                    className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 ${
+                                      q.correct === oIdx
+                                        ? 'border-emerald-500 bg-emerald-500/10 font-semibold'
+                                        : 'border-zinc-200/80 dark:border-white/10 bg-white/80 dark:bg-[#08111e]/60'
+                                    }`}
+                                  >
+                                    <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${
+                                      q.correct === oIdx ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
+                                    }`}>
+                                      {String.fromCharCode(65 + oIdx)}
+                                    </span>
+                                    <div className="min-w-0 flex-1 truncate">
+                                      <MathRenderer content={opt || `Option ${String.fromCharCode(65 + oIdx)}`} inline />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              {q.explanation && (
+                                <div className="pt-2 border-t border-zinc-200/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400">
+                                  <span className="font-bold text-[10px] uppercase text-emerald-600 dark:text-emerald-400 block mb-0.5">Solution:</span>
+                                  <MathRenderer content={q.explanation} />
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Prompt */}
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                Question Prompt
+                              </label>
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {[
+                                  { label: '½ frac', code: '\\(\\frac{a}{b}\\)' },
+                                  { label: '√ root', code: '\\(\\sqrt{x}\\)' },
+                                  { label: 'x² pow', code: '\\(x^2\\)' },
+                                  { label: '±', code: '\\(\\pm\\)' },
+                                  { label: '×', code: '\\(\\times\\)' },
+                                  { label: 'π', code: '\\(\\pi\\)' },
+                                  { label: 'display eq', code: '\\[ E_k = \\frac{1}{2}mv^2 \\]' },
+                                ].map((sc) => (
+                                  <button
+                                    key={sc.label}
+                                    type="button"
+                                    onClick={() => insertFormulaToQuestion(originalIndex, sc.code, 'text')}
+                                    className="px-2 py-0.5 rounded-full bg-white dark:bg-[#0c182b] hover:bg-emerald-500/15 dark:hover:bg-emerald-500/20 text-zinc-700 dark:text-zinc-300 text-[10px] font-mono border border-zinc-200/80 dark:border-white/10 cursor-pointer shadow-2xs transition"
+                                  >
+                                    {sc.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <textarea
+                              rows={2}
+                              value={q.text}
+                              onChange={(e) => updateQuestionText(originalIndex, e.target.value)}
+                              placeholder="Question prompt or math formula..."
+                              className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30 shadow-2xs"
+                            />
+                          </div>
+
+                          {/* Options */}
+                          <div className="space-y-2">
+                            <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                              Options (Click circle to set correct answer)
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              {q.options.map((opt, optIndex) => {
+                                const isCorrect = q.correct === optIndex;
+                                const char = String.fromCharCode(65 + optIndex);
+
+                                return (
+                                  <div
+                                    key={optIndex}
+                                    className={`flex items-center gap-2 p-2.5 rounded-2xl border transition ${
+                                      isCorrect
+                                        ? 'border-emerald-500 bg-emerald-500/10'
+                                        : 'border-zinc-200/80 dark:border-white/10 bg-white/90 dark:bg-[#08111e]/90'
+                                    }`}
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => updateCorrectOption(originalIndex, optIndex)}
+                                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition cursor-pointer ${
+                                        isCorrect
+                                          ? 'bg-emerald-500 text-zinc-950 font-extrabold shadow-2xs'
+                                          : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-emerald-500/30'
+                                      }`}
+                                      title={`Mark ${char} as correct`}
+                                    >
+                                      {isCorrect ? '✓' : char}
+                                    </button>
+
+                                    <input
+                                      type="text"
+                                      value={opt}
+                                      onChange={(e) => updateOptionText(originalIndex, optIndex, e.target.value)}
+                                      placeholder={`Option ${char}`}
+                                      className="w-full text-xs sm:text-sm bg-transparent border-none text-zinc-900 dark:text-white focus:outline-hidden placeholder-zinc-400"
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Solution */}
+                          <div>
+                            <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">
+                              Step-by-step Solution (Optional)
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={q.explanation || ''}
+                              onChange={(e) => updateExplanation(originalIndex, e.target.value)}
+                              placeholder="Reasoning, derivation, or formula proof..."
+                              className="w-full px-3.5 py-2 text-xs rounded-2xl bg-white/90 dark:bg-[#08111e]/90 border border-zinc-200/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30 resize-none shadow-2xs"
+                            />
                           </div>
                         </div>
                       )}
                     </div>
                   );
                 })}
+              </div>
+            )}
 
-                {!showAllPreview && previewQuestions.length > 3 && (
-                  <div className="p-3 text-center rounded-[18px] bg-zinc-100 dark:bg-zinc-800/60 text-xs text-zinc-500">
-                    Showing first 3 sample questions.{' '}
-                    <button
-                      type="button"
-                      onClick={() => setShowAllPreview(true)}
-                      className="font-semibold text-zinc-900 dark:text-white hover:underline cursor-pointer ml-1"
-                    >
-                      Show all {previewQuestions.length} questions
-                    </button>
-                  </div>
+            {/* Bottom Actions Bar */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-white/80 dark:bg-[#0c182b]/90 backdrop-blur-xl border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                className="px-4 py-2 rounded-full border border-zinc-200/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer hover:bg-zinc-50 dark:hover:bg-[#08111e] transition active:scale-98"
+              >
+                <ChevronLeft className="w-4 h-4 text-black dark:text-white" />
+                <span>Back to Edit & Paste</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                {onOpenDatabaseUpload && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleFinalSave();
+                      onOpenDatabaseUpload({
+                        id: initialExam?.id || 'exam_' + Date.now(),
+                        name,
+                        subject: subject || 'General',
+                        topic: topic || undefined,
+                        grade: grade || '12',
+                        timeLimit: Number(timeLimit) || 20,
+                        questions,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                      });
+                    }}
+                    className="px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer active:scale-98 transition shadow-xs hover:bg-emerald-500/20"
+                  >
+                    <CloudUpload className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <span>Publish to Firestore</span>
+                  </button>
                 )}
+
+                <button
+                  type="button"
+                  onClick={handleFinalSave}
+                  className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
+                >
+                  <Save className="w-3.5 h-3.5 text-black" />
+                  <span>Save Exam</span>
+                </button>
               </div>
             </div>
-          )}
-
-          {/* Action Footer */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={() => setCreationMode('manual')}
-                className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-600 dark:text-zinc-400 text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition shadow-xs active:scale-98 w-full sm:w-auto text-center"
-              >
-                Switch to Manual
-              </button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
-              {isExceedingLimit ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleInstantSaveFromPaste(true)}
-                    className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
-                    title="Save first questions directly to local library and update app instantly"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>Save First {maxImportQuestions} Instantly</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleImportParsedQuestions(true)}
-                    className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-xs font-bold transition cursor-pointer shadow-xs active:scale-98"
-                  >
-                    Review First {maxImportQuestions}
-                  </button>
-
-                  {onOpenSubscriptionModal && (
-                    <button
-                      type="button"
-                      onClick={onOpenSubscriptionModal}
-                      className="px-5 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition active:scale-98"
-                    >
-                      <Crown className="w-4 h-4" />
-                      <span>Upgrade for All {previewQuestions.length}</span>
-                    </button>
-                  )}
-                </>
-              ) : (
-                <>
-                  {previewQuestions.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => handleInstantSaveFromPaste(false)}
-                      className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition shadow-xs cursor-pointer active:scale-98"
-                      title="Directly save to local storage and add to app instantly"
-                    >
-                      <Save className="w-4 h-4" />
-                      <span>Save Exam Instantly</span>
-                    </button>
-                  )}
-
-                  {isAdmin && onOpenDatabaseUpload && previewQuestions.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const meta = extractExamMetadataFromText(pasteRawText);
-                        const examData: Exam = {
-                          id: initialExam?.id || 'exam_' + Date.now(),
-                          name: (meta.name || name).trim() || 'Imported Exam',
-                          subject: (meta.subject || subject).trim() || 'General',
-                          topic: (meta.topic || topic).trim() || undefined,
-                          grade: meta.grade || grade || initialExam?.grade,
-                          timeLimit: meta.timeLimit || Number(timeLimit) || 20,
-                          description: (meta.description || description).trim(),
-                          questions: previewQuestions,
-                          createdAt: initialExam?.createdAt || new Date().toISOString(),
-                          updatedAt: new Date().toISOString(),
-                        };
-                        onOpenDatabaseUpload(examData);
-                      }}
-                      className="px-4 py-2.5 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] font-bold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-xs active:scale-98"
-                      title="Upload questions directly to Cloud Firestore"
-                    >
-                      <CloudUpload className="w-3.5 h-3.5" />
-                      <span>Upload to Firestore</span>
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    disabled={previewQuestions.length === 0}
-                    onClick={() => handleImportParsedQuestions(false)}
-                    className={`px-5 py-2.5 rounded-full font-bold text-xs flex items-center gap-1.5 transition shadow-xs active:scale-98 ${
-                      previewQuestions.length > 0
-                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 cursor-pointer'
-                        : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <span>
-                      {previewQuestions.length > 0
-                        ? extractedMeta.name
-                          ? `Review & Configure "${extractedMeta.name}"`
-                          : `Review & Configure (${previewQuestions.length} Qs)`
-                        : 'Enter or Paste Questions Above'}
-                    </span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </>
-              )}
-            </div>
           </div>
-        </div>
-      </div>
-      </div>
-    );
-  }
-
-  // 3. Manual Wizard Flow (Steps 1 to 4)
-  return (
-    <div className="max-w-4xl mx-auto pb-16">
-      <div className="rounded-[32px] sm:rounded-[38px] bg-white/40 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/60 dark:border-white/10 p-5 sm:p-7 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-5">
-        {/* Hidden File Input for .txt import */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".txt"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-
-        {/* Top Header */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center shadow-xs border border-white/80 dark:border-white/10">
-              <FileText className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
-                {initialExam ? 'Edit Exam' : 'Create Exam'}
-              </h1>
-              {initialExam && (
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  Updating &ldquo;{name || initialExam.name}&rdquo;
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {!initialExam && (
-              <button
-                type="button"
-                onClick={() => setCreationMode('select')}
-                className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white px-4 py-1.5 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800/80 transition cursor-pointer shadow-xs"
-              >
-                Change Mode
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onCancel}
-              className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white px-3.5 py-1.5 rounded-full hover:bg-white/60 dark:hover:bg-zinc-800 transition cursor-pointer"
-            >
-              Cancel
-            </button>
-            {initialExam && (
-              <button
-                type="button"
-                onClick={handleSave}
-                className="px-4 py-1.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
-                title="Save changes to this exam"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>Save Changes</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Stepper Navigation: Capsule pill bar */}
-        <div className="p-1.5 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
-          <div className="grid grid-cols-3 gap-1">
-            {[
-              { step: 1, label: 'Details', icon: BookOpen },
-              { step: 2, label: `Questions (${questions.length})`, icon: HelpCircle },
-              { step: 3, label: 'Review', icon: CheckCircle2 },
-            ].map(({ step, label, icon: Icon }) => {
-              const isActive = currentStep === step;
-              const isDone = currentStep > step;
-              return (
-                <button
-                  key={step}
-                  type="button"
-                  onClick={() => {
-                    if (step === 1) setCurrentStep(1);
-                    else if (step === 2 && validateStep1()) setCurrentStep(2);
-                    else if (step === 3 && validateStep1() && validateStep2()) setCurrentStep(3);
-                  }}
-                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-full transition cursor-pointer text-xs font-semibold ${
-                    isActive
-                      ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                      : isDone
-                      ? 'text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
-                      : 'text-zinc-400 dark:text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-      {/* Messages */}
-      {errorMsg && (
-        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center justify-between">
-          <span>{errorMsg}</span>
-          <button type="button" onClick={() => setErrorMsg(null)} className="cursor-pointer">
-            ✕
-          </button>
-        </div>
-      )}
-
-      {successMsg && (
-        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <Check className="w-3.5 h-3.5" />
-            {successMsg}
-          </span>
-          <button type="button" onClick={() => setSuccessMsg(null)} className="cursor-pointer">
-            ✕
-          </button>
-        </div>
-      )}
-
-      {/* Step 1: Details */}
-      {currentStep === 1 && (
-        <div className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-                Exam Title *
-              </label>
-              <input
-                id="exam-title"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Physics: Classical Mechanics"
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-                Grade / Academic Level
-              </label>
-              <input
-                id="exam-grade"
-                type="text"
-                value={grade !== undefined ? String(grade) : ''}
-                onChange={(e) => setGrade(e.target.value)}
-                placeholder="e.g. 10 or Freshman"
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-                Subject
-              </label>
-              <input
-                id="exam-subject"
-                type="text"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g. Physics, Mathematics, Chemistry"
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-                Topic / Unit
-              </label>
-              <input
-                id="exam-topic"
-                type="text"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g. Classical Mechanics"
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-                Time Limit (Minutes)
-              </label>
-              <input
-                id="exam-time"
-                type="number"
-                min="1"
-                max="180"
-                value={timeLimit}
-                onChange={(e) => setTimeLimit(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-                Description (Optional)
-              </label>
-              <input
-                id="exam-desc"
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Exam instructions or syllabus goals..."
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <div>
-              {initialExam && (
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="px-4 py-2 rounded-full bg-white/80 dark:bg-zinc-800 border border-white/60 dark:border-white/10 hover:bg-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Save Changes</span>
-                </button>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={handleNext}
-              className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
-            >
-              <span>Next: Questions</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 2: Questions Editor */}
-      {currentStep === 2 && (
-        <div className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4">
-          {/* Action Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-zinc-900 dark:text-white">
-                Questions ({questions.length}{!isPremium ? ` / ${maxManualQuestions}` : ''})
-              </span>
-              {userTier && (
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                    userTier.isPremium
-                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400'
-                      : userTier.isTrial
-                      ? 'bg-blue-500/15 border-blue-500/40 text-blue-600 dark:text-blue-400'
-                      : 'bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'
-                  }`}
-                >
-                  {userTier.isPremium
-                    ? '👑 Premium'
-                    : userTier.isTrial
-                    ? `🎁 Trial: ${userTier.trialDaysRemaining}d left`
-                    : '🎓 Free (Max 20)'}
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {/* Import .txt File button */}
-              <button
-                type="button"
-                onClick={handleTriggerFileInput}
-                className="px-3 py-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center gap-1.5 hover:bg-emerald-500/20 cursor-pointer transition"
-                title="Import .txt file and paste in editor"
-              >
-                <FileUp className="w-3.5 h-3.5" />
-                <span>Import .txt File</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setCreationMode('paste')}
-                className="px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer transition"
-                title="Open Paste Text editor workspace"
-              >
-                <FileText className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                <span>Paste Text</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={onOpenProfessorModal}
-                className="px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer transition"
-                title="Generate AI prompt"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>AI Prompt</span>
-              </button>
-
-              {isAdmin && onOpenDatabaseUpload && questions.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!validateStep1() || !validateStep2()) return;
-                    const currentExam: Exam = {
-                      id: initialExam?.id || 'exam_' + Date.now(),
-                      name: name.trim(),
-                      subject: subject.trim() || 'General',
-                      timeLimit: Number(timeLimit) || 20,
-                      description: description.trim(),
-                      questions,
-                      createdAt: initialExam?.createdAt || new Date().toISOString(),
-                      updatedAt: new Date().toISOString(),
-                    };
-                    onOpenDatabaseUpload(currentExam);
-                  }}
-                  className="px-3.5 py-1.5 rounded-full border border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold text-xs flex items-center gap-1.5 hover:bg-amber-500/25 cursor-pointer transition shadow-2xs"
-                  title="Upload created questions to Cloud Firestore"
-                >
-                  <CloudUpload className="w-3.5 h-3.5" />
-                  <span>Upload to Firestore</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={handleAddQuestion}
-                disabled={!isPremium && questions.length >= maxManualQuestions}
-                className="px-3.5 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
-                title="Add new question"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Question</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Freemium Limit Warning if reaching or at cap */}
-          {!isPremium && questions.length >= maxManualQuestions && (
-            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-medium">
-                <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>
-                  {userTier?.isTrial
-                    ? `Trial limit reached (${maxManualQuestions} questions). Upgrade to Sinahard Premium for unlimited questions.`
-                    : `Free plan limit reached (${maxManualQuestions} questions). Upgrade to Premium (starts at 19.9 ETB) for unlimited questions.`}
-                </span>
-              </div>
-              {onOpenSubscriptionModal && (
-                <button
-                  type="button"
-                  onClick={onOpenSubscriptionModal}
-                  className="px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold text-xs shrink-0 cursor-pointer shadow-xs transition"
-                >
-                  Upgrade in ETB
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Collapsible Questions List */}
-          <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
-            {questions.map((q, qIndex) => {
-              const isExpanded = expandedIndex === qIndex;
-              return (
-                <div
-                  key={q.id || qIndex}
-                  className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 overflow-hidden"
-                >
-                  {/* Accordion Bar */}
-                  <div
-                    onClick={() => setExpandedIndex(isExpanded ? -1 : qIndex)}
-                    className="p-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40 transition"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <span className="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center shrink-0">
-                        {qIndex + 1}
-                      </span>
-                      <span className="text-xs sm:text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate">
-                        {q.text.trim() ? q.text : <span className="text-zinc-400 italic">Empty question...</span>}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {questions.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveQuestion(qIndex);
-                          }}
-                          className="p-1 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
-                          title="Delete question"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-zinc-400" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-zinc-400" />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Question Content Form */}
-                  {isExpanded && (
-                    <div className="p-4 pt-2 border-t border-zinc-200/60 dark:border-zinc-800 space-y-3.5 bg-white dark:bg-[#0a1220]">
-                      {/* Question Text */}
-                      <div>
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                            Question Prompt
-                          </label>
-                        </div>
-
-                        <textarea
-                          rows={2}
-                          value={q.text}
-                          onChange={(e) => updateQuestionText(qIndex, e.target.value)}
-                          placeholder="Type question prompt or math formula..."
-                          className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                        />
-                      </div>
-
-                      {/* Options Grid */}
-                      <div className="space-y-2">
-                        <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                          Options (Select checkmark for correct answer)
-                        </label>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          {q.options.map((opt, optIndex) => {
-                            const isCorrect = q.correct === optIndex;
-                            const char = String.fromCharCode(65 + optIndex);
-
-                            return (
-                              <div
-                                key={optIndex}
-                                className={`flex items-center gap-2 p-2 rounded-xl border transition ${
-                                  isCorrect
-                                    ? 'border-emerald-500 bg-emerald-500/5'
-                                    : 'border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50'
-                                }`}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => updateCorrectOption(qIndex, optIndex)}
-                                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition cursor-pointer ${
-                                    isCorrect
-                                      ? 'bg-emerald-500 text-zinc-950 font-extrabold shadow-xs'
-                                      : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-emerald-500/30'
-                                  }`}
-                                  title={`Mark ${char} as correct`}
-                                >
-                                  {isCorrect ? '✓' : char}
-                                </button>
-
-                                <input
-                                  type="text"
-                                  value={opt}
-                                  onChange={(e) => updateOptionText(qIndex, optIndex, e.target.value)}
-                                  placeholder={`Option ${char}`}
-                                  className="w-full text-xs sm:text-sm bg-transparent border-none text-zinc-900 dark:text-white focus:outline-none placeholder-zinc-400"
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Explanation */}
-                      <div>
-                        <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                          Step-by-step Solution (Optional)
-                        </label>
-                        <textarea
-                          rows={2}
-                          value={q.explanation || ''}
-                          onChange={(e) => updateExplanation(qIndex, e.target.value)}
-                          placeholder="Reasoning, proof, or derivation..."
-                          className="w-full px-3.5 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <button
-              type="button"
-              onClick={() => setCurrentStep(1)}
-              className="px-4 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Back</span>
-            </button>
-            <div className="flex items-center gap-2">
-              {initialExam && (
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="px-4 py-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs transition"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Save Changes</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handleNext}
-                className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
-              >
-                <span>Next: Review</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Review & Save */}
-      {currentStep === 3 && (
-        <div className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4">
-          {/* Exam Summary Header */}
-          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2">
-            <h3 className="text-lg font-bold font-['Syne',sans-serif] text-zinc-900 dark:text-white">
-              {name}
-            </h3>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-              <span>Grade: <strong className="text-zinc-800 dark:text-zinc-200">{grade || 'N/A'}</strong></span>
-              <span>•</span>
-              <span>Subject: <strong className="text-zinc-800 dark:text-zinc-200">{subject || 'General'}</strong></span>
-              {topic && (
-                <>
-                  <span>•</span>
-                  <span>Topic: <strong className="text-zinc-800 dark:text-zinc-200">{topic}</strong></span>
-                </>
-              )}
-              <span>•</span>
-              <span>Duration: <strong className="text-zinc-800 dark:text-zinc-200">{timeLimit}m</strong></span>
-              <span>•</span>
-              <span>Questions: <strong className="text-zinc-800 dark:text-zinc-200">{questions.length}</strong></span>
-            </div>
-            {description && (
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 pt-1 border-t border-zinc-200 dark:border-zinc-800">
-                {description}
-              </p>
-            )}
-          </div>
-
-          {/* Questions Summary */}
-          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-            {questions.map((q, idx) => (
-              <div
-                key={idx}
-                className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 text-xs space-y-1"
-              >
-                <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-start gap-2">
-                  <span className="text-emerald-500 font-bold shrink-0">Q{idx + 1}:</span>
-                  <span className="truncate">{q.text}</span>
-                </div>
-                <div className="text-emerald-600 dark:text-emerald-400 font-medium pl-6">
-                  ✓ Correct: {String.fromCharCode(65 + q.correct)}. {q.options[q.correct]}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Footer Save / Cancel Buttons */}
-          <div className="flex items-center justify-between pt-3 border-t border-zinc-200 dark:border-zinc-800">
-            <button
-              type="button"
-              onClick={() => setCurrentStep(2)}
-              className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Back</span>
-            </button>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 hover:bg-white/60 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white font-semibold text-xs cursor-pointer transition"
-              >
-                Cancel
-              </button>
-
-              {isAdmin && onOpenDatabaseUpload && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!validateStep1() || !validateStep2()) return;
-                    const examData: Exam = {
-                      id: initialExam?.id || 'exam_' + Date.now(),
-                      name: name.trim(),
-                      subject: subject.trim() || 'General',
-                      topic: topic.trim() || undefined,
-                      grade: grade || initialExam?.grade,
-                      timeLimit: Number(timeLimit) || 20,
-                      description: description.trim(),
-                      questions,
-                      createdAt: initialExam?.createdAt || new Date().toISOString(),
-                      updatedAt: new Date().toISOString(),
-                    };
-                    onOpenDatabaseUpload(examData);
-                  }}
-                  className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
-                  title="Upload questions to Cloud Firestore"
-                >
-                  <CloudUpload className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-                  <span>Upload to Firestore</span>
-                </button>
-              )}
-
-              <button
-                id="saveExamBtn"
-                type="button"
-                onClick={handleSave}
-                className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
-              >
-                <Save className="w-4 h-4" />
-                <span>{initialExam ? 'Save Changes' : 'Save Exam'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );
 };
-
-// Helper parser for .txt files
-export function parseTextQuestions(content: string): Question[] {
-  return parsePlainTextRobust(content);
-}

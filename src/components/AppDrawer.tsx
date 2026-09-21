@@ -46,7 +46,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   onOpenSubscriptionModal,
 }) => {
   const { user, signOut } = useAuth();
-  const { unreadAlertsCount, dailyReminderEnabled } = useNotifications();
+  const { unreadAlertsCount, completedToday, dailyGoal, studyStreakDays } = useNotifications();
   const [copiedPhone, setCopiedPhone] = React.useState(false);
 
   const handleCopyPhone = (e: React.MouseEvent) => {
@@ -287,15 +287,13 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   </div>
                   <div>
                     <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                      <span>Study Cadence & Push</span>
-                      {dailyReminderEnabled && (
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold border border-zinc-200 dark:border-zinc-700">
-                          Daily
-                        </span>
-                      )}
+                      <span>Daily Target & Streak</span>
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
+                        🔥 {studyStreakDays}d streak
+                      </span>
                     </div>
                     <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                      Reminders & browser alerts
+                      Goal: {completedToday}/{dailyGoal} completed today
                     </div>
                   </div>
                 </div>

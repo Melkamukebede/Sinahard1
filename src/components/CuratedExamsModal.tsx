@@ -69,7 +69,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
   }, [officialExams]);
 
   // Dynamic filter lists
-  const availableGrades = ['All', 'Freshman', '12', '11', '10', '9'];
+  const availableGrades = ['All', 'Freshman', 'Senior University', '12', '11', '10', '9'];
 
   const availableSubjects = useMemo(() => {
     const subjects = new Set<string>();
@@ -240,7 +240,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
           {!onlyShowRegisteredGrade && (
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                <GraduationCap className="w-4 h-4 text-emerald-500" />
+                <GraduationCap className="w-4 h-4 text-black dark:text-white" />
                 <span>Select Grade to Browse:</span>
                 <div className="flex items-center gap-1.5">
                   {availableGrades.map((g) => {
@@ -253,13 +253,13 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                         onClick={() => handleGradeFilterClick(g)}
                         className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
                           isActive
-                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
-                            : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
+                            ? 'bg-black dark:bg-white text-white dark:text-black shadow-xs'
+                            : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500'
                         }`}
                       >
-                        {g === 'All' ? 'All Grades' : g === 'Freshman' ? 'Freshman' : `Grade ${g}`}
+                        {g === 'All' ? 'All Grades' : g === 'Freshman' ? 'Freshman' : g === 'Senior University' ? 'Univ Senior' : `Grade ${g}`}
                         {isStudentPrimary && (
-                          <span className="ml-1.5 text-[9px] px-1 py-0.2 rounded-full bg-emerald-400 text-zinc-950 font-extrabold">
+                          <span className="ml-1.5 text-[9px] px-1 py-0.2 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-extrabold">
                             Registered
                           </span>
                         )}
@@ -284,7 +284,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                 placeholder="Search subject or unit..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-emerald-500 text-zinc-900 dark:text-white placeholder:text-zinc-400"
+                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-500 text-zinc-900 dark:text-white placeholder:text-zinc-400"
               />
             </div>
 
@@ -333,7 +333,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                 <button
                   type="button"
                   onClick={openRegistrationModal}
-                  className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 cursor-pointer"
+                  className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 cursor-pointer font-bold"
                 >
                   Change Registered Grade
                 </button>
@@ -355,12 +355,12 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                     <div className="space-y-1.5 flex-1">
                       {/* Tags */}
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white border border-zinc-200/80 dark:border-white/10">
                           {exam.subject}
                         </span>
                         {exam.grade && (
-                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-600 text-white">
-                            Grade {exam.grade}
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-black dark:bg-white text-white dark:text-black">
+                            {exam.grade === 'Senior University' ? 'Univ Senior' : exam.grade === 'Freshman' ? 'Freshman' : `Grade ${exam.grade}`}
                           </span>
                         )}
                         {matchesStream && (
@@ -374,8 +374,8 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                           </span>
                         )}
                         {exam.isUploadedToCloud && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white border border-zinc-200/80 dark:border-white/10">
+                            <span className="w-1.5 h-1.5 rounded-full bg-zinc-900 dark:bg-white animate-pulse" />
                             Official Cloud
                           </span>
                         )}
@@ -425,8 +425,8 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                     {/* Download & Preview Actions */}
                     <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800">
                       {isDownloaded ? (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-xs font-semibold border border-emerald-500/25">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white text-xs font-semibold border border-zinc-200/80 dark:border-white/10">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                           <span>In Your Exams</span>
                         </div>
                       ) : (
@@ -472,7 +472,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                         className="mt-3.5 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2 overflow-hidden"
                       >
                         <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-emerald-500" />
+                          <Sparkles className="w-3 h-3 text-black dark:text-white" />
                           Sample Question Preview (Q1 of {exam.questions.length})
                         </div>
                         <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-zinc-700/80 text-xs">
@@ -483,7 +483,7 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                                 key={optIdx}
                                 className={`px-2.5 py-1 rounded-lg text-[11px] border ${
                                   optIdx === exam.questions[0].correct
-                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-semibold'
+                                    ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
                                     : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'
                                 }`}
                               >

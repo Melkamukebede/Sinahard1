@@ -40,6 +40,7 @@ interface DatabaseUploadModalProps {
 }
 
 const ACADEMIC_GRADE_OPTIONS = [
+  { id: 'Senior University', label: 'University Senior', subtitle: 'Undergrad Exit & Advanced Degree Exam Prep' },
   { id: 'Freshman', label: 'University Freshman', subtitle: 'Higher Education Remedial & Degree Core' },
   { id: '12', label: 'Grade 12', subtitle: 'National University Entrance Examination (NEAEA / MoE)' },
   { id: '11', label: 'Grade 11', subtitle: 'Senior Secondary Preparatory Curriculum' },
@@ -441,7 +442,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                   <GraduationCap className="w-4 h-4 text-amber-500" />
                   Academic Level & Curriculum Configuration
                 </h4>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white border border-zinc-200/80 dark:border-white/10">
                   Live Catalog Sync
                 </span>
               </div>
@@ -675,12 +676,12 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
             {/* Success Message */}
             {statusMessage && (
-              <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+              <div className="p-4 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs flex items-start gap-2.5 shadow-sm">
+                <CheckCircle2 className="w-4 h-4 text-white dark:text-zinc-950 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <p className="font-bold">{statusMessage}</p>
-                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300/85">
-                    Exam ID: <span className="font-mono font-bold">{exam.id}</span> • Grade Level: <span className="font-bold">{effectiveGrade === 'Freshman' ? 'University Freshman' : `Grade ${effectiveGrade}`}</span> • Stream: <span className="font-bold">{selectedStream}</span>
+                  <p className="text-[11px] text-zinc-300 dark:text-zinc-600">
+                    Exam ID: <span className="font-mono font-bold">{exam.id}</span> • Grade Level: <span className="font-bold">{effectiveGrade === 'Freshman' ? 'University Freshman' : effectiveGrade === 'Senior University' ? 'University Senior' : `Grade ${effectiveGrade}`}</span> • Stream: <span className="font-bold">{selectedStream}</span>
                   </p>
                 </div>
               </div>

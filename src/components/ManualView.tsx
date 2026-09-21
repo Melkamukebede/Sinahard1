@@ -91,7 +91,7 @@ OUTPUT RULES:
       ───────────────────────────────────────────────────────────── */}
       <div className="relative p-6 sm:p-7 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] overflow-hidden">
         {/* Subtle Atmospheric Ambient Glow */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-80 h-80 bg-zinc-500/5 dark:bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="space-y-3 relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 text-xs font-semibold shadow-xs">
@@ -248,7 +248,7 @@ OUTPUT RULES:
           >
             {copiedPrompt ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                <Check className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                 <span>Prompt Copied!</span>
               </>
             ) : (
@@ -352,7 +352,7 @@ OUTPUT RULES:
                       className="px-3 py-1.5 rounded-full text-xs bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 border border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 font-mono flex items-center gap-1.5 cursor-pointer transition shadow-xs active:scale-98"
                     >
                       {copiedSymbol === item.code ? (
-                        <Check className="w-3 h-3 text-emerald-500" />
+                        <Check className="w-3 h-3 text-zinc-900 dark:text-white" />
                       ) : (
                         <Copy className="w-3 h-3 text-zinc-400" />
                       )}

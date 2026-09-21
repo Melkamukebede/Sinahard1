@@ -44,14 +44,13 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
   const [timeLimit, setTimeLimit] = useState<number>(20);
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('Medium');
   const [promptStyle, setPromptStyle] = useState<PromptStyle>('brief');
-  const [showProTips, setShowProTips] = useState<boolean>(false);
 
   // UI View Tab
   const [activeView, setActiveView] = useState<ActiveView>('prompt');
   const [copied, setCopied] = useState<boolean>(false);
 
   // Quick curriculum presets
-  const applyPreset = (preset: 'physics' | 'math12' | 'chemistry' | 'freshman' | 'biology' | 'social') => {
+  const applyPreset = (preset: 'physics' | 'math12' | 'chemistry' | 'freshman' | 'senior' | 'biology' | 'social') => {
     if (preset === 'physics') {
       setSubjectType('calculation');
       setGrade(10);
@@ -87,6 +86,15 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
       setTotalQuestions(10);
       setEduLevel('University Freshman');
       setTimeLimit(30);
+      setDifficulty('Hard');
+    } else if (preset === 'senior') {
+      setSubjectType('calculation');
+      setGrade('Senior University');
+      setSubject('Applied Mathematics / Engineering');
+      setTopics('Differential Equations & Systems');
+      setTotalQuestions(10);
+      setEduLevel('University Senior');
+      setTimeLimit(35);
       setDifficulty('Hard');
     } else if (preset === 'biology') {
       setSubjectType('theory');
@@ -397,8 +405,8 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
         className="relative w-full max-w-3xl max-h-[92vh] flex flex-col rounded-[32px] bg-white/95 dark:bg-[#070e1a]/95 border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl"
       >
         {/* Subtle Atmospheric Ambient Glow */}
-        <div className="absolute top-0 right-1/4 w-80 h-80 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-1/4 w-80 h-80 bg-zinc-500/5 dark:bg-white/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-zinc-500/5 dark:bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Header - Frosted Glass Bar */}
         <div className="relative px-6 py-4 border-b border-white/60 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl">
@@ -407,14 +415,9 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
               <Sparkles className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
-                  Exam Professor
-                </h3>
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold border border-zinc-200 dark:border-zinc-700">
-                  AI Prompt Builder
-                </span>
-              </div>
+              <h3 className="font-bold text-base font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
+                AI Prompt Builder
+              </h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 Step-wise math & science exam prompts for ChatGPT, Claude, Gemini & DeepSeek
               </p>
@@ -426,7 +429,7 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
             type="button"
             onClick={onClose}
             className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-            aria-label="Close Professor Modal"
+            aria-label="Close AI Prompt Builder"
           >
             <X className="w-4 h-4" />
           </button>
@@ -458,6 +461,7 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                 { id: 'math12', label: 'Grade 12 Math' },
                 { id: 'chemistry', label: 'Chemistry' },
                 { id: 'freshman', label: 'Freshman Math' },
+                { id: 'senior', label: 'Univ Senior' },
                 { id: 'biology', label: 'Biology' },
                 { id: 'social', label: 'History & Civics' },
               ].map((p) => (
@@ -554,19 +558,20 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
               </label>
               <div className="flex items-center gap-1.5">
                 <select
-                  value={['9', '10', '11', '12', 'Freshman'].includes(String(grade)) ? String(grade) : 'custom'}
+                  value={['9', '10', '11', '12', 'Freshman', 'Senior University', 'University Senior'].includes(String(grade)) ? (String(grade) === 'University Senior' ? 'Senior University' : String(grade)) : 'custom'}
                   onChange={(e) => {
                     if (e.target.value !== 'custom') {
                       setGrade(e.target.value);
                     }
                   }}
-                  className="w-28 px-3 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
+                  className="w-32 px-3 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 cursor-pointer"
                 >
                   <option value="9">Grade 9</option>
                   <option value="10">Grade 10</option>
                   <option value="11">Grade 11</option>
                   <option value="12">Grade 12</option>
                   <option value="Freshman">Freshman</option>
+                  <option value="Senior University">University Senior</option>
                   <option value="custom">Other</option>
                 </select>
                 <input
@@ -714,64 +719,6 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
             </div>
           </div>
 
-          {/* Interactive Pro Guide: How to Make Professional Questions with Brief Prompts */}
-          <div className="p-4 rounded-[22px] bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-blue-500/10 border border-amber-500/20 dark:border-amber-500/30 space-y-2">
-            <button
-              type="button"
-              onClick={() => setShowProTips((prev) => !prev)}
-              className="w-full flex items-center justify-between text-left cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                  <Lightbulb className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-xs text-zinc-900 dark:text-white flex items-center gap-2">
-                    <span>💡 Pro Ideas: How to Create Professional Questions with Brief Prompts</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
-                      Exam Quality
-                    </span>
-                  </h4>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    4 golden rules to force AI models to write high-rigor, step-wise exam questions
-                  </p>
-                </div>
-              </div>
-              <div className="p-1 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">
-                {showProTips ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </div>
-            </button>
-
-            {showProTips && (
-              <div className="pt-2 border-t border-amber-500/20 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-zinc-700 dark:text-zinc-300 animate-in fade-in duration-200">
-                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-[#0c182b]/70 border border-amber-500/20 space-y-0.5">
-                  <span className="font-bold text-amber-800 dark:text-amber-300 block">1. Anchor the Standard</span>
-                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    Explicitly specify &quot;Ethiopian Grade 12 National Exam&quot; or &quot;Freshman Remedial&quot;. This immediately calibrates mathematical depth.
-                  </p>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-[#0c182b]/70 border border-amber-500/20 space-y-0.5">
-                  <span className="font-bold text-amber-800 dark:text-amber-300 block">2. Strictly Ban Step Numbers</span>
-                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    Instruct: &quot;Never write 1. Formula 2. Calculation; only use bold headers: **Formula:**, **Calculation:**, **Answer:**&quot;.
-                  </p>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-[#0c182b]/70 border border-amber-500/20 space-y-0.5">
-                  <span className="font-bold text-amber-800 dark:text-amber-300 block">3. Mandate KaTeX Display Math</span>
-                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    Enforce <code className="font-mono text-zinc-900 dark:text-white">\[ ... \]</code> for equations and <code className="font-mono text-zinc-900 dark:text-white">\( ... \)</code> for variables and units so calculations render vertically.
-                  </p>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/70 dark:bg-[#0c182b]/70 border border-amber-500/20 space-y-0.5">
-                  <span className="font-bold text-amber-800 dark:text-amber-300 block">4. Target Realistic Distractor Traps</span>
-                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    Tell the AI: &quot;Options B, C, D must reflect common mistakes (e.g. forgetting 1/2 in kinetic energy, sign errors, or missed unit conversions)&quot;.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* View Selector: Master Prompt vs .txt Output Preview + Brief vs Detailed */}
           <div className="pt-2 space-y-2">
             <div className="flex items-center justify-between flex-wrap gap-2 border-b border-white/60 dark:border-white/10 pb-2">
@@ -841,7 +788,7 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                 onClick={handleCopy}
                 className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-xs active:scale-98"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-zinc-950 dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied ? 'Copied to Clipboard!' : 'Copy Prompt'}</span>
               </button>
             </div>
@@ -859,7 +806,7 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                 <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1 flex-wrap gap-2">
                   <span>Works seamlessly with ChatGPT, Claude, Gemini, and DeepSeek.</span>
                   <span className="text-zinc-900 dark:text-white font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-900 dark:bg-white" />
                     Clean plain text format ready for instant import
                   </span>
                 </div>

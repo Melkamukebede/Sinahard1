@@ -35,22 +35,15 @@ export interface Exam {
   downloadCount?: number;
   // Cloud Database Storage tracking
   isUploadedToCloud?: boolean;
-  cloudStorageEngine?: 'firestore' | 'supabase';
+  cloudStorageEngine?: 'firestore';
   cloudUploadedAt?: string;
   authorEmail?: string;
   adminTag?: string;
 }
 
-export interface SupabaseConfig {
-  url: string;
-  anonKey: string;
-  examTable: string;
-  questionTable: string;
-}
-
 export interface CloudUploadProgress {
   status: 'idle' | 'testing' | 'uploading' | 'success' | 'error';
-  engine: 'firestore' | 'supabase';
+  engine: 'firestore';
   progressPercent: number;
   message: string;
   uploadedExamsCount: number;

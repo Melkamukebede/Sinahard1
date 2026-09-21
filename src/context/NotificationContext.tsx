@@ -17,6 +17,11 @@ interface NotificationContextType {
   dailyReminderEnabled: boolean;
   dailyReminderTime: string;
   setDailyReminder: (enabled: boolean, time: string) => void;
+  // Study Target & Streak metrics
+  dailyGoal: number;
+  setDailyGoal: (goal: number) => void;
+  completedToday: number;
+  studyStreakDays: number;
   alerts: InAppAlert[];
   unreadAlertsCount: number;
   markAlertAsRead: (id: string) => void;
@@ -27,9 +32,33 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isSupported = typeof window !== 'undefined' && 'Notification' in window;
-  const [permission, setPermission] = useState<NotificationPermission>(() => {
-    return isSupported ? Notification.permission : 'denied';
+  const isSupported = false; // Background browser push replaced with lightweight in-app notifications
+  const permission: NotificationPermission = 'default';
+
+  // Daily Study Target (default: 2 exams per day)
+  const [dailyGoal, setDailyGoalState] = useState<number>(() => {
+    const saved = localStorage.getItem('study_daily_goal');
+    return saved ? Math.max(1, Number(saved) || 2) : 2;
+  });
+
+  const setDailyGoal = (goal: number) => {
+    const valid = Math.max(1, Math.min(10, goal));
+    setDailyGoalState(valid);
+    localStorage.setItem('study_daily_goal', String(valid));
+  };
+
+  // Completed Today & Streak
+  const [completedToday, setCompletedToday] = useState<number>(() => {
+    const lastDate = localStorage.getItem('study_last_completed_date');
+    const todayStr = new Date().toDateString();
+    if (lastDate === todayStr) {
+      return Number(localStorage.getItem('study_today_count') || 0);
+    }
+    return 0;
+  });
+
+  const [studyStreakDays, setStudyStreakDays] = useState<number>(() => {
+    return Math.max(1, Number(localStorage.getItem('study_streak_days') || 1));
   });
 
   const [dailyReminderEnabled, setDailyReminderEnabled] = useState<boolean>(() => {
@@ -78,44 +107,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, []);
 
   const requestPermission = async (): Promise<boolean> => {
-    if (!isSupported) return false;
-    try {
-      const result = await Notification.requestPermission();
-      setPermission(result);
-      if (result === 'granted') {
-        new Notification('Sinahard Pro', {
-          body: 'Push notifications activated! We will notify you about study reminders and test results.',
-          icon: '/favicon.ico',
-        });
-        addInAppAlert('Notifications Activated', 'You will now receive study reminders and exam updates.', 'success');
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.warn('Could not request notification permission:', err);
-      return false;
-    }
+    addInAppAlert('In-App Alerts Active', 'Study reminders and test score updates appear in your alerts center.', 'success');
+    return true;
   };
 
   const sendNotification = useCallback(
     (title: string, options?: NotificationOptions) => {
-      // Always add to in-app notification center
       addInAppAlert(title, options?.body || '', 'info');
-
-      // Send browser push notification if permitted
-      if (isSupported && Notification.permission === 'granted') {
-        try {
-          new Notification(title, {
-            icon: '/favicon.ico',
-            badge: '/favicon.ico',
-            ...options,
-          });
-        } catch (err) {
-          console.warn('Browser notification error:', err);
-        }
-      }
     },
-    [isSupported, addInAppAlert]
+    [addInAppAlert]
   );
 
   const notifyExamCompleted = useCallback(
@@ -129,18 +129,25 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       addInAppAlert(title, body, type);
 
-      if (isSupported && Notification.permission === 'granted') {
-        try {
-          new Notification(title, {
-            body,
-            icon: '/favicon.ico',
-          });
-        } catch {
-          // ignore
-        }
+      // Update today's completed count
+      const todayStr = new Date().toDateString();
+      const lastDate = localStorage.getItem('study_last_completed_date');
+      let newCount = 1;
+      if (lastDate === todayStr) {
+        newCount = Number(localStorage.getItem('study_today_count') || 0) + 1;
+      }
+      localStorage.setItem('study_last_completed_date', todayStr);
+      localStorage.setItem('study_today_count', String(newCount));
+      setCompletedToday(newCount);
+
+      // Check streak
+      if (lastDate !== todayStr) {
+        const streak = Number(localStorage.getItem('study_streak_days') || 0) + 1;
+        localStorage.setItem('study_streak_days', String(streak));
+        setStudyStreakDays(streak);
       }
     },
-    [isSupported, addInAppAlert]
+    [addInAppAlert]
   );
 
   const setDailyReminder = (enabled: boolean, time: string) => {
@@ -152,39 +159,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (enabled) {
       addInAppAlert(
         'Study Reminder Configured',
-        `Daily reminder set for ${time}. Time to stay consistent!`,
+        `Daily target scheduled for ${time}. Time to stay consistent!`,
         'reminder'
       );
-      if (isSupported && Notification.permission !== 'granted') {
-        requestPermission();
-      }
     }
   };
-
-  // Background check for daily reminder
-  useEffect(() => {
-    if (!dailyReminderEnabled) return;
-
-    const checkReminder = () => {
-      const now = new Date();
-      const currentHours = String(now.getHours()).padStart(2, '0');
-      const currentMinutes = String(now.getMinutes()).padStart(2, '0');
-      const currentTime = `${currentHours}:${currentMinutes}`;
-
-      const lastSentDate = localStorage.getItem('last_reminder_sent_date');
-      const todayStr = now.toDateString();
-
-      if (currentTime === dailyReminderTime && lastSentDate !== todayStr) {
-        localStorage.setItem('last_reminder_sent_date', todayStr);
-        sendNotification('Time for Daily Practice! 📚', {
-          body: "Stay on track for your exams. Take a 10-minute quiz on Sinahard Pro today!",
-        });
-      }
-    };
-
-    const interval = setInterval(checkReminder, 30000); // check every 30s
-    return () => clearInterval(interval);
-  }, [dailyReminderEnabled, dailyReminderTime, sendNotification]);
 
   const markAlertAsRead = (id: string) => {
     setAlerts((prev) =>
@@ -208,6 +187,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         dailyReminderEnabled,
         dailyReminderTime,
         setDailyReminder,
+        dailyGoal,
+        setDailyGoal,
+        completedToday,
+        studyStreakDays,
         alerts,
         unreadAlertsCount,
         markAlertAsRead,

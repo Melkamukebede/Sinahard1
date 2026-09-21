@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import {
   Bell,
   Clock,
+  Target,
+  Flame,
   CheckCircle2,
-  AlertCircle,
   X,
   Send,
   Trash2,
   Check,
-  ShieldCheck,
-  ShieldAlert,
+  Award,
 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 
@@ -23,16 +23,17 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
   onClose,
 }) => {
   const {
-    permission,
-    isSupported,
-    requestPermission,
-    sendNotification,
+    dailyGoal,
+    setDailyGoal,
+    completedToday,
+    studyStreakDays,
     dailyReminderEnabled,
     dailyReminderTime,
     setDailyReminder,
     alerts,
     markAlertAsRead,
     clearAllAlerts,
+    sendNotification,
   } = useNotifications();
 
   const [reminderTime, setReminderTime] = useState<string>(dailyReminderTime);
@@ -46,8 +47,8 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
   };
 
   const handleSendTest = () => {
-    sendNotification('Sinahard Pro Test Alert', {
-      body: 'Notifications are working perfectly! You are set to receive study reminders.',
+    sendNotification('Study Milestone Unlocked! 🎯', {
+      body: `You are on a ${studyStreakDays}-day practice streak. Keep up the high performance!`,
     });
     setTestSent(true);
     setTimeout(() => setTestSent(false), 2500);
@@ -60,11 +61,11 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02]">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center shadow-2xs">
-              <Bell className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+              <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <h3 className="font-bold text-base font-['Outfit',sans-serif]">Push & Study Notifications</h3>
-              <p className="text-xs text-zinc-500">Configure browser push alerts and study cadence</p>
+              <h3 className="font-bold text-base font-['Outfit',sans-serif]">Study Targets & Alerts</h3>
+              <p className="text-xs text-zinc-500">Track daily practice goal, study streak, and exam results</p>
             </div>
           </div>
           <button
@@ -78,53 +79,89 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Permission Status Banner */}
-          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {permission === 'granted' ? (
-                <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-              ) : (
-                <div className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                  <ShieldAlert className="w-5 h-5" />
-                </div>
-              )}
+          {/* Daily Goal & Streak Hero Banner */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Streak Card */}
+            <div className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <Flame className="w-6 h-6" />
+              </div>
               <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                  Browser Push Status
+                <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                  Study Consistency
                 </div>
-                <div className="text-sm font-bold capitalize text-zinc-900 dark:text-white">
-                  {permission === 'granted'
-                    ? 'Active & Permitted'
-                    : permission === 'denied'
-                    ? 'Blocked by Browser'
-                    : 'Permission Not Requested'}
+                <div className="text-lg font-black text-zinc-900 dark:text-white flex items-center gap-1.5">
+                  <span>{studyStreakDays} Day Streak</span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                    Active
+                  </span>
                 </div>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Practicing regularly boosts retention</p>
               </div>
             </div>
 
-            {permission !== 'granted' && (
-              <button
-                type="button"
-                onClick={requestPermission}
-                className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs cursor-pointer transition shadow-xs active:scale-98"
-              >
-                Enable Push Alerts
-              </button>
-            )}
+            {/* Daily Target Card */}
+            <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                  Today's Progress
+                </div>
+                <div className="text-lg font-black text-zinc-900 dark:text-white">
+                  {completedToday} / {dailyGoal} Exams
+                </div>
+                <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  {completedToday >= dailyGoal ? 'Goal completed! 🌟' : `${dailyGoal - completedToday} more to reach target`}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Daily Study Schedule */}
+          {/* Goal Selector */}
+          <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-sm text-zinc-900 dark:text-white flex items-center gap-2">
+                  <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  Daily Exam Goal
+                </h4>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Set how many practice exams or quizzes you want to complete each day
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2 pt-1">
+              {[1, 2, 3, 5].map((target) => (
+                <button
+                  key={target}
+                  type="button"
+                  onClick={() => setDailyGoal(target)}
+                  className={`py-2 px-3 rounded-xl font-bold text-xs cursor-pointer border transition flex flex-col items-center gap-0.5 ${
+                    dailyGoal === target
+                      ? 'bg-emerald-500 text-zinc-950 border-emerald-500 shadow-xs'
+                      : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                  }`}
+                >
+                  <span className="text-sm font-black">{target}</span>
+                  <span className="text-[10px] opacity-80">{target === 1 ? 'Exam/day' : 'Exams/day'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Daily Schedule Prompt */}
           <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-sm text-zinc-900 dark:text-white flex items-center gap-2">
                   <Clock className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
-                  Daily Practice Reminder
+                  Preferred Study Time
                 </h4>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  Receive a gentle prompt every day to complete a short quiz session
+                  Designate your peak study hour for consistent focus
                 </p>
               </div>
 
@@ -142,7 +179,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
             {reminderEnabled && (
               <div className="flex items-center gap-3 pt-2">
-                <label className="text-xs font-semibold text-zinc-500">Reminder Time:</label>
+                <label className="text-xs font-semibold text-zinc-500">Study Hour:</label>
                 <input
                   type="time"
                   value={reminderTime}
@@ -160,14 +197,14 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
             )}
 
             <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-              <span className="text-xs text-zinc-500">Verify notification delivery:</span>
+              <span className="text-xs text-zinc-500">Test in-app alert banner:</span>
               <button
                 type="button"
                 onClick={handleSendTest}
                 className="px-3.5 py-1.5 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition"
               >
                 {testSent ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Send className="w-3.5 h-3.5 text-zinc-500" />}
-                {testSent ? 'Test Alert Sent!' : 'Send Test Notification'}
+                {testSent ? 'Alert Sent!' : 'Preview In-App Alert'}
               </button>
             </div>
           </div>
@@ -176,7 +213,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-500">
-                Notification History ({alerts.length})
+                Recent Alerts & Milestones ({alerts.length})
               </h4>
               {alerts.length > 0 && (
                 <button
@@ -206,7 +243,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                        {!alert.read && <span className="w-2 h-2 rounded-full bg-zinc-900 dark:bg-white" />}
+                        {!alert.read && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
                         {alert.title}
                       </span>
                       <span className="text-[10px] text-zinc-400">
@@ -235,3 +272,4 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
     </div>
   );
 };
+
