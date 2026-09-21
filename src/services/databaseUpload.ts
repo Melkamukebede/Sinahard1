@@ -1,6 +1,6 @@
 import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Exam, Question, AppUser, SubjectType, DifficultyLevel } from '../types';
+import { Exam, Question, AppUser } from '../types';
 import { getLocalExams, saveLocalExams, ADMIN_EMAIL, isUserAdmin } from './db';
 import { publishOfficialExamLocally } from './officialExams';
 
@@ -9,12 +9,10 @@ export interface FirestoreUploadOptions {
   isPublic?: boolean;
   adminTag?: string;
   grade?: number | string;
+  topic?: string;
   stream?: string;
   unit?: string;
-  subjectType?: SubjectType;
-  difficulty?: DifficultyLevel | string;
   timeLimit?: number;
-  passingScore?: number;
   targetExamYear?: string;
   curator?: string;
   asOfficialExam?: boolean;
@@ -87,12 +85,10 @@ export async function uploadExamToFirestore(
     isPublic = true,
     adminTag,
     grade,
+    topic,
     stream,
     unit,
-    subjectType,
-    difficulty,
     timeLimit,
-    passingScore,
     targetExamYear,
     curator,
     asOfficialExam = true,
@@ -123,6 +119,7 @@ export async function uploadExamToFirestore(
   }));
 
   const finalGrade = String(grade || exam.grade || inferGrade(`${exam.name} ${exam.title || ''}`));
+  const finalTopic = (topic || exam.topic || (exam.name.includes(':') ? exam.name.split(':')[1].trim() : '')).trim();
   const finalStream = stream || (exam as any).stream || inferStream(exam.subject, `${exam.name} ${exam.title || ''}`, finalGrade);
   const finalUnit = (unit || exam.unit || (finalGrade === 'Freshman' ? 'University Core Curriculum' : 'National Curriculum Unit')).trim();
   const finalCurator = (
@@ -135,10 +132,7 @@ export async function uploadExamToFirestore(
     exam.adminTag ||
     (finalGrade === 'Freshman' ? 'University Freshman Curriculum' : `Grade ${finalGrade} National Curriculum Exam`)
   ).trim();
-  const finalSubjectType: SubjectType = subjectType || exam.subjectType || 'theory';
-  const finalDifficulty = difficulty || exam.difficulty || 'Medium';
   const finalTimeLimit = Number(timeLimit ?? exam.timeLimit) || 20;
-  const finalPassingScore = Number(passingScore ?? exam.passingScore) || 70;
   const finalTargetExamYear = targetExamYear || (exam as any).targetExamYear || '2026 (2018 E.C.)';
   const nowIso = new Date().toISOString();
 
@@ -148,10 +142,8 @@ export async function uploadExamToFirestore(
     name: exam.name.trim(),
     title: (exam.title || exam.name).trim(),
     subject: (exam.subject || 'General').trim(),
-    difficulty: finalDifficulty,
+    topic: finalTopic || undefined,
     timeLimit: finalTimeLimit,
-    passingScore: finalPassingScore,
-    subjectType: finalSubjectType,
     description: (exam.description || '').trim(),
     questions: sanitizedQuestions,
     grade: finalGrade,
@@ -205,6 +197,7 @@ export async function uploadExamToFirestore(
             examId,
             examName: exam.name.trim(),
             subject: exam.subject || 'General',
+            topic: finalTopic || undefined,
             text: q.text,
             options: q.options,
             correct: q.correct,

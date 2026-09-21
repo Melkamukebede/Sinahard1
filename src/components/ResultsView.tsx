@@ -46,7 +46,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     : 0;
 
   const passCount = results.filter(
-    (r) => (r.percentage || 0) >= (r.passingScore || 70)
+    (r) => (r.percentage || 0) >= 70
   ).length;
 
   const toggleExpand = (idx: number) => {
@@ -195,7 +195,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
           <div className="space-y-3">
             {results.map((result, idx) => {
-              const isPassed = (result.percentage || 0) >= (result.passingScore || 70);
+              const isPassed = (result.percentage || 0) >= 70;
               const isExpanded = expandedIndex === idx;
 
               return (

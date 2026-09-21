@@ -171,12 +171,11 @@ export const FilesView: React.FC<FilesViewProps> = ({
     try {
       const lines: string[] = [];
       lines.push('================================================================');
-      lines.push(`EXAM: ${exam.name}`);
+      lines.push('FORMAT SPECIFICATION:');
       lines.push(`Grade: ${getExamGrade(exam)}`);
       lines.push(`Subject: ${exam.subject || 'General'}`);
-      lines.push(`Topic/Unit: ${getExamTopic(exam)}`);
-      lines.push(`Time Limit: ${exam.timeLimit} minutes`);
-      lines.push(`Passing Score: ${exam.passingScore}%`);
+      lines.push(`Topic: ${getExamTopic(exam)}`);
+      lines.push(`Time Limit: ${exam.timeLimit || 20} minutes`);
       lines.push('================================================================\n');
 
       exam.questions.forEach((q, idx) => {

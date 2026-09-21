@@ -71,10 +71,7 @@ export const INITIAL_SAMPLE_EXAMS: Exam[] = [
     name: 'Advanced Mathematics & Calculus',
     title: 'Advanced Mathematics & Calculus',
     subject: 'Mathematics',
-    difficulty: 'Medium',
     timeLimit: 25,
-    passingScore: 70,
-    subjectType: 'calculation',
     description: 'Master quadratic formulas, differentiation, limits, and integral calculus with step-by-step solutions.',
     isPublic: true,
     questions: [
@@ -141,10 +138,7 @@ export const INITIAL_SAMPLE_EXAMS: Exam[] = [
     name: 'Physics: Classical Mechanics & Energy',
     title: 'Physics: Classical Mechanics & Energy',
     subject: 'Physics',
-    difficulty: 'Medium',
     timeLimit: 20,
-    passingScore: 70,
-    subjectType: 'calculation',
     description: 'Kinematics, Newton\'s laws of motion, work, and conservation of energy.',
     isPublic: true,
     questions: [
@@ -187,10 +181,7 @@ export const INITIAL_SAMPLE_EXAMS: Exam[] = [
     name: 'Cell Biology & Genetics',
     title: 'Cell Biology & Genetics',
     subject: 'Biology',
-    difficulty: 'Easy',
     timeLimit: 15,
-    passingScore: 70,
-    subjectType: 'theory',
     description: 'Cell structure, organelle functions, DNA replication, and Mendelian inheritance.',
     isPublic: true,
     questions: [

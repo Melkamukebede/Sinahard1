@@ -14,12 +14,11 @@ export interface Exam {
   name: string;
   title?: string;
   subject: string;
-  difficulty: DifficultyLevel | string;
+  topic?: string;
+  grade?: number | string; // e.g. 9, 10, 11, 12, 'Freshman', 'National Exam'
   timeLimit: number; // in minutes
-  passingScore: number; // e.g. 70 (%)
-  subjectType: SubjectType;
-  description?: string;
   questions: Question[];
+  description?: string;
   userId?: string;
   isPublic?: boolean;
   createdAt?: string;
@@ -28,7 +27,6 @@ export interface Exam {
   sourceType?: 'user_created' | 'curated_catalog';
   isDownloaded?: boolean;
   catalogId?: string;
-  grade?: number | string; // e.g. 9, 10, 11, 12, 'Freshman', 'National Exam'
   stream?: string;
   targetExamYear?: string;
   unit?: string;
@@ -76,9 +74,7 @@ export interface ExamResult {
   score: number; // correct count
   total: number; // total count
   percentage: number;
-  passingScore: number;
   timeSpent: number; // in seconds
-  subjectType?: SubjectType;
   answers: ExamAnswerRecord[];
   userId?: string;
 }

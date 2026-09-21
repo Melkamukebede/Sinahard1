@@ -295,10 +295,7 @@ function MainApp() {
         name: 'Imported Exam (' + new Date().toLocaleDateString() + ')',
         title: 'Imported Exam',
         subject: 'General',
-        difficulty: 'Medium',
         timeLimit: 25,
-        passingScore: 70,
-        subjectType: 'theory',
         questions: questionsToAdd,
         createdAt: new Date().toISOString(),
       };

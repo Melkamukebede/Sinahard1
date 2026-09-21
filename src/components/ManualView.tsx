@@ -42,12 +42,11 @@ export const ManualView: React.FC<ManualViewProps> = ({
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
 
   const samplePrompt = `================================================================
-EXAM: Physics: Classical Mechanics & Energy
+FORMAT SPECIFICATION:
+Grade: 10
 Subject: Physics
-Difficulty: Medium
-Subject Type: Formulas & Calculations
+Topic: Classical Mechanics
 Time Limit: 20 minutes
-Passing Score: 70%
 ================================================================
 
 1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?

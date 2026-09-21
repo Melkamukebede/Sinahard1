@@ -21,7 +21,7 @@ import {
   Compass,
   FileText,
 } from 'lucide-react';
-import { Exam, AppUser, SubjectType, DifficultyLevel } from '../types';
+import { Exam, AppUser } from '../types';
 import {
   uploadExamToFirestore,
   canUserUploadToFirestore,
@@ -72,13 +72,11 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   const [selectedGrade, setSelectedGrade] = useState<string>('12');
   const [customGradeText, setCustomGradeText] = useState<string>('');
   const [selectedStream, setSelectedStream] = useState<string>('Natural Science');
+  const [topic, setTopic] = useState<string>('');
   const [unitName, setUnitName] = useState<string>('');
   const [adminTag, setAdminTag] = useState<string>('Official Curriculum Exam');
   const [curatorName, setCuratorName] = useState<string>('Ministry of Education (MoE)');
-  const [subjectType, setSubjectType] = useState<SubjectType>('theory');
-  const [difficulty, setDifficulty] = useState<DifficultyLevel>('Medium');
   const [timeLimit, setTimeLimit] = useState<number>(20);
-  const [passingScore, setPassingScore] = useState<number>(70);
   const [targetExamYear, setTargetExamYear] = useState<string>('2026 (2018 E.C.)');
 
   // Upload toggles
@@ -117,11 +115,9 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     setSelectedStream(detectedStream);
 
     // Metadata defaults
+    setTopic(exam.topic || (exam.name.includes(':') ? exam.name.split(':')[1].trim() : ''));
     setUnitName(exam.unit || (detectedGrade === 'Freshman' ? 'University Core Curriculum' : 'National Curriculum Unit'));
-    setSubjectType(exam.subjectType || (exam.subject?.toLowerCase().includes('math') || exam.subject?.toLowerCase().includes('physic') ? 'calculation' : 'theory'));
-    setDifficulty((exam.difficulty as DifficultyLevel) || 'Medium');
     setTimeLimit(Number(exam.timeLimit) || 20);
-    setPassingScore(Number(exam.passingScore) || 70);
     setTargetExamYear((exam as any).targetExamYear || '2026 (2018 E.C.)');
 
     setCuratorName(
@@ -236,14 +232,12 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
         isPublic,
         asOfficialExam,
         grade: effectiveGrade,
+        topic: topic.trim() || undefined,
         stream: selectedStream,
         unit: unitName.trim() || exam.unit,
         adminTag: adminTag.trim() || (effectiveGrade === 'Freshman' ? 'University Freshman Curriculum' : `Grade ${effectiveGrade} Exam`),
         curator: curatorName.trim(),
-        subjectType,
-        difficulty,
         timeLimit,
-        passingScore,
         targetExamYear,
         onProgress: (percent, text) => {
           setUploadProgress(percent);
@@ -260,13 +254,11 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
             cloudStorageEngine: 'firestore',
             cloudUploadedAt: new Date().toISOString(),
             grade: effectiveGrade,
+            topic: topic.trim() || undefined,
             stream: selectedStream,
             unit: unitName.trim() || exam.unit,
             curator: curatorName.trim(),
-            subjectType,
-            difficulty,
             timeLimit,
-            passingScore,
             sourceType: asOfficialExam ? 'curated_catalog' : exam.sourceType,
           } as Exam,
           'firestore'
@@ -484,8 +476,8 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 )}
               </div>
 
-              {/* 2. Stream & Unit Selection */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* 2. Stream, Topic & Unit Selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
                     <Compass className="w-3.5 h-3.5 text-blue-500" />
@@ -506,6 +498,20 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
+                    <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                    Topic / Sub-Topic
+                  </label>
+                  <input
+                    type="text"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    placeholder="e.g. Classical Mechanics"
+                    className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
                     <BookOpen className="w-3.5 h-3.5 text-amber-500" />
                     Curriculum Unit / Chapter
                   </label>
@@ -519,53 +525,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 </div>
               </div>
 
-              {/* 3. Subject Type & Difficulty & Session Year */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Subject Assessment Type
-                  </label>
-                  <select
-                    value={subjectType}
-                    onChange={(e) => setSubjectType(e.target.value as SubjectType)}
-                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white cursor-pointer"
-                  >
-                    <option value="theory">Theory & Conceptual</option>
-                    <option value="calculation">Calculation & Problem Solving</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    Difficulty Level
-                  </label>
-                  <select
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value as DifficultyLevel)}
-                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white cursor-pointer"
-                  >
-                    <option value="Easy">Easy (Foundation)</option>
-                    <option value="Medium">Medium (Standard)</option>
-                    <option value="Hard">Hard (Challenging)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-                    Target Exam Session
-                  </label>
-                  <input
-                    type="text"
-                    value={targetExamYear}
-                    onChange={(e) => setTargetExamYear(e.target.value)}
-                    placeholder="2026 (2018 E.C.)"
-                    className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              {/* 4. Time Limit & Passing Score & Curator */}
+              {/* 3. Session Year, Duration & Curator */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
@@ -584,15 +544,14 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
-                    <Target className="w-3.5 h-3.5 text-emerald-500" />
-                    Passing Score (%)
+                    <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                    Target Exam Session
                   </label>
                   <input
-                    type="number"
-                    min={10}
-                    max={100}
-                    value={passingScore}
-                    onChange={(e) => setPassingScore(Math.min(100, Math.max(1, Number(e.target.value) || 70)))}
+                    type="text"
+                    value={targetExamYear}
+                    onChange={(e) => setTargetExamYear(e.target.value)}
+                    placeholder="2026 (2018 E.C.)"
                     className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-zinc-900 dark:text-white"
                   />
                 </div>

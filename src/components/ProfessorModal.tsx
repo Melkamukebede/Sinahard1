@@ -36,10 +36,11 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
 }) => {
   // Core Configuration - Brief & Focused
   const [subjectType, setSubjectType] = useState<SubjectType>('calculation');
+  const [grade, setGrade] = useState<string | number>(10);
   const [subject, setSubject] = useState<string>('Physics');
-  const [topics, setTopics] = useState<string>('Classical Mechanics, Kinetic Energy, Newton Laws, Free Fall');
+  const [topics, setTopics] = useState<string>('Classical Mechanics');
   const [totalQuestions, setTotalQuestions] = useState<number>(10);
-  const [eduLevel, setEduLevel] = useState<string>('Grade 11-12 / National Exam');
+  const [eduLevel, setEduLevel] = useState<string>('Grade 10 (Secondary)');
   const [timeLimit, setTimeLimit] = useState<number>(20);
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('Medium');
   const [promptStyle, setPromptStyle] = useState<PromptStyle>('brief');
@@ -53,48 +54,54 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
   const applyPreset = (preset: 'physics' | 'math12' | 'chemistry' | 'freshman' | 'biology' | 'social') => {
     if (preset === 'physics') {
       setSubjectType('calculation');
+      setGrade(10);
       setSubject('Physics');
-      setTopics('Classical Mechanics, Kinetic Energy, Newton Laws, Work & Energy, Free Fall');
+      setTopics('Classical Mechanics');
       setTotalQuestions(10);
-      setEduLevel('Grade 11-12 / National Exam');
+      setEduLevel('Grade 10 (Secondary)');
       setTimeLimit(20);
       setDifficulty('Medium');
     } else if (preset === 'math12') {
       setSubjectType('calculation');
-      setSubject('Grade 12 Mathematics');
-      setTopics('Quadratic Equations, Limits, Derivatives, Matrices, Vectors');
+      setGrade(12);
+      setSubject('Mathematics');
+      setTopics('Quadratic Equations & Calculus');
       setTotalQuestions(10);
       setEduLevel('Grade 12 / National Exam');
       setTimeLimit(25);
       setDifficulty('Medium');
     } else if (preset === 'chemistry') {
       setSubjectType('calculation');
+      setGrade(11);
       setSubject('Chemistry');
-      setTopics('Mole Concept, Stoichiometry, Gas Laws, Chemical Equilibrium, Acids & Bases');
-      setTotalQuestions(8);
-      setEduLevel('Grade 12 / National Exam');
+      setTopics('Chemical Equilibrium & Stoichiometry');
+      setTotalQuestions(10);
+      setEduLevel('Grade 11-12');
       setTimeLimit(20);
       setDifficulty('Medium');
     } else if (preset === 'freshman') {
       setSubjectType('calculation');
-      setSubject('Freshman Applied Mathematics I');
-      setTopics('Limits & Continuity, Derivatives, Optimization, Integrals, Taylor Series');
+      setGrade('Freshman');
+      setSubject('Applied Mathematics I');
+      setTopics('Limits & Derivatives');
       setTotalQuestions(10);
       setEduLevel('University Freshman');
       setTimeLimit(30);
       setDifficulty('Hard');
     } else if (preset === 'biology') {
       setSubjectType('theory');
+      setGrade(10);
       setSubject('Biology');
-      setTopics('Cell Biology, Enzymes, Cellular Respiration, Photosynthesis, Genetics');
+      setTopics('Cell Energetics & Molecular Biology');
       setTotalQuestions(10);
-      setEduLevel('Grade 12 / National Exam');
+      setEduLevel('Grade 10 (Secondary)');
       setTimeLimit(20);
       setDifficulty('Medium');
     } else if (preset === 'social') {
       setSubjectType('theory');
+      setGrade(11);
       setSubject('History & Civics');
-      setTopics('Ethiopian History, Modern World History, Governance, Constitutional Law');
+      setTopics('Ethiopian History & Governance');
       setTotalQuestions(10);
       setEduLevel('Grade 11-12');
       setTimeLimit(20);
@@ -150,26 +157,24 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
   // Generate standardized Plain Text (.TXT format) prompt for AI
   const generatedPrompt = useMemo(() => {
     const isMath = subjectType === 'calculation';
-    const mainTopic = topics.split(',')[0]?.trim() || 'Core Curriculum';
-    const fullExamTitle = `${subject}: ${mainTopic}`;
+    const mainTopic = topics.split(',')[0]?.trim() || 'Classical Mechanics';
+    const cleanGrade = String(grade || (eduLevel.match(/\d+/)?.[0] || '10'));
 
     // BRIEF PROMPT MODE: High-impact, concise, laser-focused
     if (promptStyle === 'brief') {
       if (isMath) {
         return `Please generate ${totalQuestions} professional multiple choice questions in plain .txt format for:
+Grade: ${cleanGrade}
 Subject: ${subject}
-Academic Level: ${eduLevel}
-Topics: ${topics || 'Standard curriculum'}
-Difficulty: ${difficulty} (${difficultyConfig.briefGuide})
+Topic: ${mainTopic}
+Time Limit: ${timeLimit} minutes
 
 FORMAT SPECIFICATION:
 ================================================================
-EXAM: ${fullExamTitle}
+Grade: ${cleanGrade}
 Subject: ${subject}
-Difficulty: ${difficulty}
-Subject Type: Formulas & Calculations
+Topic: ${mainTopic}
 Time Limit: ${timeLimit} minutes
-Passing Score: 70%
 ================================================================
 
 For each question:
@@ -190,22 +195,20 @@ CRITICAL RULES:
 2. LATEX NOTATION: Wrap display equations in \\[ ... \\] and inline variables/numbers in \\( ... \\).
 3. DIFFICULTY CALIBRATION (${difficulty.toUpperCase()}): ${difficultyConfig.briefGuide}
 4. REALISTIC DISTRACTORS: Options B, C, D must reflect realistic student calculation slips (${difficultyConfig.distractorRule}).
-5. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the EXAM header.`;
+5. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the FORMAT SPECIFICATION header.`;
       } else {
         return `Please generate ${totalQuestions} professional multiple choice questions in plain .txt format for:
+Grade: ${cleanGrade}
 Subject: ${subject}
-Academic Level: ${eduLevel}
-Topics: ${topics || 'Standard curriculum'}
-Difficulty: ${difficulty} (${difficultyConfig.briefGuide})
+Topic: ${mainTopic}
+Time Limit: ${timeLimit} minutes
 
 FORMAT SPECIFICATION:
 ================================================================
-EXAM: ${fullExamTitle}
+Grade: ${cleanGrade}
 Subject: ${subject}
-Difficulty: ${difficulty}
-Subject Type: Conceptual & Theory
+Topic: ${mainTopic}
 Time Limit: ${timeLimit} minutes
-Passing Score: 70%
 ================================================================
 
 For each question:
@@ -226,7 +229,7 @@ For each question:
 CRITICAL RULES:
 1. STRICTLY NO NUMBERS IN EXPLANATION: Do NOT write "1. Concept 2. Reason". Use ONLY bold thematic labels (**Core Concept:**, **Key Reason:**, **Distractor Analysis:**, **Answer:**).
 2. DIFFICULTY CALIBRATION (${difficulty.toUpperCase()}): ${difficultyConfig.briefGuide}
-3. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the EXAM header.`;
+3. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the FORMAT SPECIFICATION header.`;
       }
     }
 
@@ -260,22 +263,21 @@ CRITICAL RULES:
      **Answer:** [Option Letter and summary statement]`;
     }
 
-    return `You are an expert exam professor and national curriculum specialist creating a standardized ${totalQuestions}-question examination for ${eduLevel} students in ${subject}.
+    return `You are an expert exam professor and national curriculum specialist creating a standardized ${totalQuestions}-question examination for Grade ${cleanGrade} students in ${subject}.
 
 OUTPUT FORMAT REQUIREMENT:
 Return the exam strictly in clean plain text (.TXT format), ready for direct import into Exam Master.
 - DO NOT wrap the output in markdown code fences (\`\`\`txt or \`\`\`).
 - DO NOT include conversational greetings, intros ("Here is your exam"), or outros.
-- Start directly on line 1 with the EXAM header below, followed by question 1.
+- Start directly on line 1 with the FORMAT SPECIFICATION header below, followed by question 1.
 
 REQUIRED EXAM HEADER:
 ================================================================
-EXAM: ${fullExamTitle}
+FORMAT SPECIFICATION:
+Grade: ${cleanGrade}
 Subject: ${subject}
-Difficulty: ${difficulty}
-Subject Type: ${isMath ? 'Formulas & Calculations' : 'Conceptual & Theory'}
+Topic: ${mainTopic}
 Time Limit: ${timeLimit} minutes
-Passing Score: 70%
 ================================================================
 
 QUESTION STRUCTURE (Repeat for all ${totalQuestions} questions):
@@ -294,22 +296,23 @@ ${subjectRules}
 
 EXAM PARAMETERS:
 - Total Questions: ${totalQuestions}
-- Academic Level: ${eduLevel}
+- Grade Level: Grade ${cleanGrade}
 - Specific Topics to Cover: ${topics || 'Standard curriculum'}
 - Difficulty Setting: ${difficulty}
 - Answer Key Balance: Randomize correct option letters evenly across A, B, C, and D.`;
-  }, [subjectType, subject, topics, totalQuestions, eduLevel, timeLimit, difficulty, promptStyle, difficultyConfig]);
+  }, [subjectType, grade, subject, topics, totalQuestions, eduLevel, timeLimit, difficulty, promptStyle, difficultyConfig]);
 
   // Sample TXT Output Preview matching user request
   const sampleTxtPreview = useMemo(() => {
+    const cleanGrade = String(grade || '10');
+    const mainTopic = topics.split(',')[0]?.trim() || 'Classical Mechanics';
     if (subjectType === 'calculation') {
       return `================================================================
-EXAM: Physics: Classical Mechanics & Energy
-Subject: Physics
-Difficulty: Medium
-Subject Type: Formulas & Calculations
-Time Limit: 20 minutes
-Passing Score: 70%
+FORMAT SPECIFICATION:
+Grade: ${cleanGrade}
+Subject: ${subject || 'Physics'}
+Topic: ${mainTopic}
+Time Limit: ${timeLimit} minutes
 ================================================================
 
 1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
@@ -349,12 +352,11 @@ Passing Score: 70%
 **Answer:** \\( 19.8 \\text{ m/s} \\)`;
     } else {
       return `================================================================
-EXAM: Biology: Cell Energetics & Molecular Biology
-Subject: Biology
-Difficulty: Medium
-Subject Type: Conceptual & Theory
-Time Limit: 20 minutes
-Passing Score: 70%
+FORMAT SPECIFICATION:
+Grade: ${cleanGrade}
+Subject: ${subject || 'Biology'}
+Topic: ${mainTopic || 'Cell Biology'}
+Time Limit: ${timeLimit} minutes
 ================================================================
 
 1. Which cellular organelle is primarily responsible for generating adenosine triphosphate (ATP) through aerobic cellular respiration?
@@ -368,24 +370,10 @@ Mitochondria are known as the powerhouses of eukaryotic cells.
 **Key Reason:**
 They carry out the citric acid (Krebs) cycle and oxidative phosphorylation to produce the bulk of cellular ATP.
 **Distractor Analysis:**
-Ribosomes synthesize polypeptides, whereas the Golgi apparatus packages and routes secretory proteins.
-**Answer:** Option B (Mitochondria)
-
-2. In flowering plants, where do the light-dependent reactions of photosynthesis take place?
-   A) Thylakoid membranes
-   B) Stroma
-   C) Outer chloroplast membrane
-   D) Cytosol
-   Answer: A
-   Explanation: **Core Concept:**
-Light-dependent reactions require embedded chlorophyll pigment complexes and electron transport chains.
-**Key Reason:**
-These photophosphorylation complexes are embedded inside the thylakoid membranes of the chloroplast.
-**Distractor Analysis:**
-The light-independent Calvin cycle takes place in the fluid stroma.
-**Answer:** Option A (Thylakoid membranes)`;
+Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids and proteins, and the Golgi apparatus packages macromolecules.
+**Answer:** Option B`;
     }
-  }, [subjectType]);
+  }, [subjectType, grade, subject, topics, timeLimit]);
 
   const handleCopy = async () => {
     try {
@@ -562,44 +550,89 @@ The light-independent Calvin cycle takes place in the fluid stroma.
           <div className="p-5 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
-                Subject Name
+                Grade
+              </label>
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={['9', '10', '11', '12', 'Freshman'].includes(String(grade)) ? String(grade) : 'custom'}
+                  onChange={(e) => {
+                    if (e.target.value !== 'custom') {
+                      setGrade(e.target.value);
+                    }
+                  }}
+                  className="w-28 px-3 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
+                >
+                  <option value="9">Grade 9</option>
+                  <option value="10">Grade 10</option>
+                  <option value="11">Grade 11</option>
+                  <option value="12">Grade 12</option>
+                  <option value="Freshman">Freshman</option>
+                  <option value="custom">Other</option>
+                </select>
+                <input
+                  type="text"
+                  value={grade}
+                  onChange={(e) => setGrade(e.target.value)}
+                  placeholder="e.g. 10"
+                  className="flex-1 px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                Subject
               </label>
               <input
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="e.g. Physics"
-                className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
+                className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
               />
             </div>
 
             <div>
               <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
-                Academic Level
-              </label>
-              <select
-                value={eduLevel}
-                onChange={(e) => setEduLevel(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
-              >
-                <option value="Grade 9-10 (Secondary)">Grade 9-10 (Secondary)</option>
-                <option value="Grade 11-12 / National Exam">Grade 11-12 / National Exam</option>
-                <option value="University Freshman">University Freshman</option>
-                <option value="University Advanced">University Advanced</option>
-              </select>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
-                Topics or Syllabus Chapters
+                Topic
               </label>
               <input
                 type="text"
                 value={topics}
                 onChange={(e) => setTopics(e.target.value)}
-                placeholder="e.g. Classical Mechanics, Kinetic Energy, Newton Laws, Free Fall"
-                className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
+                placeholder="e.g. Classical Mechanics"
+                className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
               />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                Time Limit (minutes)
+              </label>
+              <div className="flex items-center gap-2">
+                {[15, 20, 30].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTimeLimit(t)}
+                    className={`px-2.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition border ${
+                      timeLimit === t
+                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent font-bold'
+                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
+                    }`}
+                  >
+                    {t}m
+                  </button>
+                ))}
+                <input
+                  type="number"
+                  min="1"
+                  max="180"
+                  value={timeLimit}
+                  onChange={(e) => setTimeLimit(Math.max(1, parseInt(e.target.value, 10) || 20))}
+                  className="w-20 px-2.5 py-1.5 text-xs rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-medium text-center focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
+                />
+              </div>
             </div>
 
             <div>

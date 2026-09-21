@@ -37,7 +37,7 @@ import {
   Copy,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Exam, Question, SubjectType, DifficultyLevel } from '../types';
+import { Exam, Question } from '../types';
 import { MathRenderer } from './MathRenderer';
 import { UserTierStatus } from '../services/subscriptionLimits';
 
@@ -57,25 +57,21 @@ interface CreateExamWizardProps {
 export interface ExtractedExamMetadata {
   name?: string;
   subject?: string;
+  topic?: string;
   grade?: string | number;
-  difficulty?: DifficultyLevel;
-  subjectType?: SubjectType;
   timeLimit?: number;
-  passingScore?: number;
   description?: string;
 }
 
 /**
- * Extracts exam details (Name, Subject, Difficulty, Time Limit, Passing Score, Focus)
+ * Extracts exam details (Grade, Subject, Topic, Time Limit)
  * from file headers structured like:
  * ================================================================
- * EXAM: English Grammar Test
- * Subject: English
- * Difficulty: Medium
- * Subject Type: Theory & Concepts
- * Time Limit: 25 minutes
- * Passing Score: 70%
- * Total Questions: 10
+ * FORMAT SPECIFICATION:
+ * Grade: 10
+ * Subject: Physics
+ * Topic: Classical Mechanics
+ * Time Limit: 20 minutes
  * ================================================================
  */
 export const extractExamMetadataFromText = (raw: string): ExtractedExamMetadata => {
@@ -91,47 +87,37 @@ export const extractExamMetadataFromText = (raw: string): ExtractedExamMetadata 
     }
 
     // Stop extracting if we hit the first numbered question
-    if (/^(?:question\s*\d+[:\.]?|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s+[a-zA-Z]/i.test(trimmed)) {
+    if (/^(?:question\s*\d+[:\.]?|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s+[a-zA-Z0-9\\]/i.test(trimmed)) {
       break;
     }
 
-    // 1. Exam Name / Title
-    const nameMatch = trimmed.match(/^(?:EXAM(?:\s*NAME)?|TITLE)\s*[:\-\=]\s*(.+)$/i);
-    if (nameMatch && !metadata.name) {
-      metadata.name = nameMatch[1].trim();
+    // Skip FORMAT SPECIFICATION label line
+    if (/^FORMAT\s*SPECIFICATION/i.test(trimmed)) {
       continue;
     }
 
-    // 2. Subject Type / Focus (checked before Subject to prevent false match)
-    const subjectTypeMatch = trimmed.match(/^SUBJECT\s*TYPE\s*[:\-\=]\s*(.+)$/i);
-    if (subjectTypeMatch) {
-      const val = subjectTypeMatch[1].toLowerCase();
-      if (val.includes('calc') || val.includes('math') || val.includes('problem')) {
-        metadata.subjectType = 'calculation';
-      } else {
-        metadata.subjectType = 'theory';
-      }
+    // 1. Grade / Academic Level
+    const gradeMatch = trimmed.match(/^(?:GRADE(?:\s*LEVEL)?|ACADEMIC\s*LEVEL|CLASS)\s*[:\-\=]\s*(.+)$/i);
+    if (gradeMatch && !metadata.grade) {
+      metadata.grade = gradeMatch[1].trim();
+      continue;
+    }
+
+    // 2. Topic / Unit / Chapter
+    const topicMatch = trimmed.match(/^(?:TOPIC|CHAPTER|UNIT(?:\s*NAME)?)\s*[:\-\=]\s*(.+)$/i);
+    if (topicMatch && !metadata.topic) {
+      metadata.topic = topicMatch[1].trim();
       continue;
     }
 
     // 3. Subject Name
-    const subjectMatch = trimmed.match(/^SUBJECT\s*[:\-\=]\s*(.+)$/i);
+    const subjectMatch = trimmed.match(/^SUBJECT(?:\s*NAME)?\s*[:\-\=]\s*(.+)$/i);
     if (subjectMatch && !metadata.subject) {
       metadata.subject = subjectMatch[1].trim();
       continue;
     }
 
-    // 4. Difficulty Level
-    const diffMatch = trimmed.match(/^DIFFICULTY(?:\s*LEVEL)?\s*[:\-\=]\s*(.+)$/i);
-    if (diffMatch && !metadata.difficulty) {
-      const d = diffMatch[1].toLowerCase();
-      if (d.includes('easy')) metadata.difficulty = 'Easy';
-      else if (d.includes('hard')) metadata.difficulty = 'Hard';
-      else metadata.difficulty = 'Medium';
-      continue;
-    }
-
-    // 5. Time Limit / Duration
+    // 4. Time Limit / Duration
     const timeMatch = trimmed.match(/^(?:TIME(?:\s*LIMIT)?|DURATION)\s*[:\-\=]\s*(\d+)/i);
     if (timeMatch && !metadata.timeLimit) {
       const mins = parseInt(timeMatch[1], 10);
@@ -141,28 +127,29 @@ export const extractExamMetadataFromText = (raw: string): ExtractedExamMetadata 
       continue;
     }
 
-    // 6. Passing Score / Pass Mark
-    const passMatch = trimmed.match(/^(?:PASSING(?:\s*SCORE)?|PASS\s*MARK|PASS)\s*[:\-\=]\s*(\d+)/i);
-    if (passMatch && !metadata.passingScore) {
-      const score = parseInt(passMatch[1], 10);
-      if (!isNaN(score) && score > 0 && score <= 100) {
-        metadata.passingScore = score;
-      }
+    // 5. Exam Name / Title (fallback if explicitly specified)
+    const nameMatch = trimmed.match(/^(?:EXAM(?:\s*NAME)?|TITLE)\s*[:\-\=]\s*(.+)$/i);
+    if (nameMatch && !metadata.name) {
+      metadata.name = nameMatch[1].trim();
       continue;
     }
 
-    // 7. Description
+    // 6. Description (optional)
     const descMatch = trimmed.match(/^DESCRIPTION\s*[:\-\=]\s*(.+)$/i);
     if (descMatch && !metadata.description) {
       metadata.description = descMatch[1].trim();
       continue;
     }
+  }
 
-    // 8. Grade / Academic Level
-    const gradeMatch = trimmed.match(/^(?:GRADE(?:\s*LEVEL)?|ACADEMIC\s*LEVEL|CLASS)\s*[:\-\=]\s*(.+)$/i);
-    if (gradeMatch && !metadata.grade) {
-      metadata.grade = gradeMatch[1].trim();
-      continue;
+  // Auto-compose exam name if not explicitly set
+  if (!metadata.name) {
+    if (metadata.subject && metadata.topic) {
+      metadata.name = `${metadata.subject}: ${metadata.topic}`;
+    } else if (metadata.topic) {
+      metadata.name = metadata.topic;
+    } else if (metadata.subject) {
+      metadata.name = metadata.grade ? `Grade ${metadata.grade} ${metadata.subject}` : `${metadata.subject} Exam`;
     }
   }
 
@@ -175,13 +162,16 @@ export const stripExamHeader = (raw: string): string => {
   // Strip top divider block enclosed by ===== or -----
   cleaned = cleaned.replace(/^[=\-\*]{3,}[\s\S]*?[=\-\*]{3,}/m, '');
 
+  // Strip FORMAT SPECIFICATION block if present without dividers
+  cleaned = cleaned.replace(/^FORMAT\s*SPECIFICATION:?[\s\S]*?(?=(?:question\s*\d+|\d+[\.\)]|\#+\s*\d+))/i, '');
+
   // Strip leading lines that are header metadata (EXAM:, Subject:, etc.) before the first question
   const lines = cleaned.split('\n');
   let firstQuestionIdx = -1;
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i].trim();
     if (!l) continue;
-    if (/^(?:question\s*\d+[:\.]?|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s+/i.test(l)) {
+    if (/^(?:question\s*\d+[:\.]?|\d+[\.\)]|\#+\s*\d+[\.\)]?)\s+[a-zA-Z0-9\\]/i.test(l)) {
       firstQuestionIdx = i;
       break;
     }
@@ -341,12 +331,10 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
   // Form State
   const [name, setName] = useState(initialExam?.name || '');
   const [subject, setSubject] = useState(initialExam?.subject || '');
-  const [difficulty, setDifficulty] = useState<DifficultyLevel>(initialExam?.difficulty || 'Medium');
-  const [timeLimit, setTimeLimit] = useState<number>(initialExam?.timeLimit || 25);
-  const [passingScore, setPassingScore] = useState<number>(initialExam?.passingScore || 70);
-  const [subjectType, setSubjectType] = useState<SubjectType>(initialExam?.subjectType || 'theory');
+  const [topic, setTopic] = useState(initialExam?.topic || '');
+  const [timeLimit, setTimeLimit] = useState<number>(initialExam?.timeLimit || 20);
   const [description, setDescription] = useState(initialExam?.description || '');
-  const [grade, setGrade] = useState<string | number | undefined>(initialExam?.grade);
+  const [grade, setGrade] = useState<string | number | undefined>(initialExam?.grade || 10);
 
   const [questions, setQuestions] = useState<Question[]>(() => {
     if (initialExam?.questions && initialExam.questions.length > 0) {
@@ -378,15 +366,14 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
   const [showRawPrompt, setShowRawPrompt] = useState<boolean>(false);
 
   const samplePrompt = `================================================================
-EXAM: Physics: Classical Mechanics & Energy
+FORMAT SPECIFICATION:
+Grade: 10
 Subject: Physics
-Difficulty: Medium
-Subject Type: Formulas & Calculations
+Topic: Classical Mechanics
 Time Limit: 20 minutes
-Passing Score: 70%
 ================================================================
 
-Please generate 10 multiple choice questions in plain .txt format for [Subject & Topic, e.g. Physics Mechanics or Grade 12 Math].
+Please generate 10 multiple choice questions in plain .txt format for Grade 10 Physics: Classical Mechanics.
 
 Format each question like this:
 1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
@@ -430,12 +417,10 @@ OUTPUT RULES:
       setCreationMode('manual');
       setName(initialExam.name || '');
       setSubject(initialExam.subject || '');
-      setDifficulty(initialExam.difficulty || 'Medium');
-      setTimeLimit(initialExam.timeLimit || 25);
-      setPassingScore(initialExam.passingScore || 70);
-      setSubjectType(initialExam.subjectType || 'theory');
+      setTopic(initialExam.topic || '');
+      setTimeLimit(initialExam.timeLimit || 20);
       setDescription(initialExam.description || '');
-      setGrade(initialExam.grade);
+      setGrade(initialExam.grade || 10);
       if (initialExam.questions && initialExam.questions.length > 0) {
         setQuestions(JSON.parse(JSON.stringify(initialExam.questions)));
       } else {
@@ -513,10 +498,9 @@ OUTPUT RULES:
       const meta = extractExamMetadataFromText(content);
       if (meta.name) setName(meta.name);
       if (meta.subject) setSubject(meta.subject);
-      if (meta.difficulty) setDifficulty(meta.difficulty);
-      if (meta.subjectType) setSubjectType(meta.subjectType);
+      if (meta.topic) setTopic(meta.topic);
+      if (meta.grade) setGrade(meta.grade);
       if (meta.timeLimit) setTimeLimit(meta.timeLimit);
-      if (meta.passingScore) setPassingScore(meta.passingScore);
       if (meta.description) setDescription(meta.description);
 
       // 3. Switch to Paste Text workspace so user can review and edit in the text editor
@@ -524,7 +508,7 @@ OUTPUT RULES:
 
       const linesCount = content.split('\n').length;
       const detailsMsg = meta.name
-        ? ` • Detected Exam: "${meta.name}" (${meta.subject || 'General'}, ${meta.difficulty || 'Medium'})`
+        ? ` • Detected Exam: "${meta.name}" (${meta.subject || 'General'}, Grade ${meta.grade || '10'})`
         : '';
       setSuccessMsg(`Imported "${file.name}" (${linesCount} lines) into editor${detailsMsg}.`);
       setTimeout(() => setSuccessMsg(null), 6000);
@@ -551,44 +535,42 @@ OUTPUT RULES:
   // Sample format preset: Exact header structure and standard numbered questions
   const handleInsertSampleText = () => {
     setPasteRawText(`================================================================
-EXAM: English Grammar & Syntax Test
-Subject: English
-Difficulty: Medium
-Subject Type: Theory & Concepts
-Time Limit: 25 minutes
-Passing Score: 70%
-Total Questions: 2
+FORMAT SPECIFICATION:
+Grade: 10
+Subject: Physics
+Topic: Classical Mechanics
+Time Limit: 20 minutes
 ================================================================
 
-1. By the time we arrived at the station, the train ______.
-   A) already leaves
-   B) has already left
-   C) had already left
-   D) was already leaving
-   Answer: C
-   Explanation: The past perfect (had + past participle) is used for an action that happened before another past action.
+1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
+   A) \\( 240,000 \\text{ J} \\)
+   B) \\( 120,000 \\text{ J} \\)
+   C) \\( 480,000 \\text{ J} \\)
+   D) \\( 24,000 \\text{ J} \\)
+   Answer: A
+   Explanation: **Formula:**
+\\[ E_k = \\frac{1}{2} m v^2 \\]
+**Calculation:**
+\\[ E_k = \\frac{1}{2} (1200)(20^2) = 600 \\times 400 = 240,000 \\text{ J} = 240 \\text{ kJ} \\]
+**Answer:** \\( 240,000 \\text{ J} \\)
 
-2. She ______ in London for five years before she moved to Paris.
-   A) lives
-   B) lived
-   C) has lived
-   D) is living
+2. What is the SI unit of electric force?
+   A) Joule
+   B) Newton
+   C) Watt
+   D) Pascal
    Answer: B
-   Explanation: The simple past is used for a completed period of time in the past that has no connection to the present.`);
+   Explanation: The SI unit of force, including electrical and gravitational forces, is the Newton (N).`);
   };
 
   // Preset for Freshman Applied Mathematics I (5 questions)
   const handleInsertFreshmanMathSample = () => {
     setPasteRawText(`================================================================
-EXAM: Applied Mathematics I - Freshman Evaluation Exam
-Subject: Applied Mathematics
+FORMAT SPECIFICATION:
 Grade: Freshman
-Difficulty: Medium
-Subject Type: Calculation & Analytical
+Subject: Applied Mathematics
+Topic: Calculus & Linear Algebra
 Time Limit: 30 minutes
-Passing Score: 70%
-Total Questions: 5
-Description: Ethiopian University Freshman Applied Mathematics I test questions covering Limits, Calculus & Chain Rule, Integration by Parts, Matrices & Invertibility, and Optimization.
 ================================================================
 
 1. Evaluate the limit: lim (x -> 0) [sin(3x) / (e^(2x) - 1)]
@@ -643,10 +625,8 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
     const meta = extractExamMetadataFromText(pasteRawText);
     if (meta.name) setName(meta.name);
     if (meta.subject) setSubject(meta.subject);
-    if (meta.difficulty) setDifficulty(meta.difficulty);
-    if (meta.subjectType) setSubjectType(meta.subjectType);
+    if (meta.topic) setTopic(meta.topic);
     if (meta.timeLimit) setTimeLimit(meta.timeLimit);
-    if (meta.passingScore) setPassingScore(meta.passingScore);
     if (meta.description) setDescription(meta.description);
     if (meta.grade) setGrade(meta.grade);
 
@@ -706,14 +686,16 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
     }
 
     const meta = extractExamMetadataFromText(pasteRawText);
+    const resolvedSubject = (meta.subject || subject).trim() || 'General';
+    const resolvedTopic = (meta.topic || topic).trim();
+    const resolvedName = (meta.name || name).trim() || (resolvedTopic ? `${resolvedSubject}: ${resolvedTopic}` : 'Imported Exam');
+
     const examData: Exam = {
       id: initialExam?.id || 'exam_' + Date.now(),
-      name: (meta.name || name).trim() || 'Imported Exam',
-      subject: (meta.subject || subject).trim() || 'General',
-      difficulty: meta.difficulty || difficulty,
-      timeLimit: meta.timeLimit || Number(timeLimit) || 25,
-      passingScore: meta.passingScore || Number(passingScore) || 70,
-      subjectType: meta.subjectType || subjectType,
+      name: resolvedName,
+      subject: resolvedSubject,
+      topic: resolvedTopic || undefined,
+      timeLimit: meta.timeLimit || Number(timeLimit) || 20,
       grade: meta.grade || grade || initialExam?.grade,
       description: (meta.description || description).trim(),
       questions: toSave,
@@ -819,22 +801,22 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
       setCurrentStep(2);
     } else if (currentStep === 2 && validateStep2()) {
       setCurrentStep(3);
-    } else if (currentStep === 3) {
-      setCurrentStep(4);
     }
   };
 
   const handleSave = () => {
     if (!validateStep1() || !validateStep2()) return;
 
+    const resolvedSubject = subject.trim() || 'General';
+    const resolvedTopic = topic.trim();
+    const resolvedName = name.trim() || (resolvedTopic ? `${resolvedSubject}: ${resolvedTopic}` : 'Custom Exam');
+
     const examData: Exam = {
       id: initialExam?.id || 'exam_' + Date.now(),
-      name: name.trim(),
-      subject: subject.trim() || 'General',
-      difficulty,
+      name: resolvedName,
+      subject: resolvedSubject,
+      topic: resolvedTopic || undefined,
       timeLimit: Number(timeLimit) || 20,
-      passingScore: Number(passingScore) || 70,
-      subjectType,
       grade: grade || initialExam?.grade,
       description: description.trim(),
       questions,
@@ -1526,7 +1508,7 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
           </div>
 
           {/* Extracted Exam Details Indicator Card */}
-          {(extractedMeta.name || extractedMeta.subject || extractedMeta.grade || extractedMeta.difficulty || extractedMeta.timeLimit || extractedMeta.passingScore) && (
+          {(extractedMeta.name || extractedMeta.subject || extractedMeta.topic || extractedMeta.grade || extractedMeta.timeLimit) && (
             <div className="p-4 rounded-[22px] bg-zinc-50/70 dark:bg-white/[0.02] border border-white/80 dark:border-white/10 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
@@ -1538,9 +1520,9 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
                 </span>
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
-                {extractedMeta.name && (
-                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
-                    <strong className="text-zinc-900 dark:text-white">Exam:</strong> {extractedMeta.name}
+                {extractedMeta.grade && (
+                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-900 dark:text-white font-bold shadow-2xs">
+                    <strong className="text-zinc-900 dark:text-white">Grade:</strong> {extractedMeta.grade}
                   </span>
                 )}
                 {extractedMeta.subject && (
@@ -1548,14 +1530,9 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
                     <strong className="text-zinc-900 dark:text-white">Subject:</strong> {extractedMeta.subject}
                   </span>
                 )}
-                {extractedMeta.grade && (
-                  <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-900 dark:text-white font-bold shadow-2xs">
-                    <strong className="text-zinc-900 dark:text-white">Level:</strong> {extractedMeta.grade}
-                  </span>
-                )}
-                {extractedMeta.difficulty && (
+                {extractedMeta.topic && (
                   <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
-                    <strong className="text-zinc-900 dark:text-white">Difficulty:</strong> {extractedMeta.difficulty}
+                    <strong className="text-zinc-900 dark:text-white">Topic:</strong> {extractedMeta.topic}
                   </span>
                 )}
                 {extractedMeta.timeLimit && (
@@ -1563,9 +1540,9 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
                     <strong className="text-zinc-900 dark:text-white">Time Limit:</strong> {extractedMeta.timeLimit} min
                   </span>
                 )}
-                {extractedMeta.passingScore && (
+                {extractedMeta.name && (
                   <span className="px-3 py-1 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-medium shadow-2xs">
-                    <strong className="text-zinc-900 dark:text-white">Passing Score:</strong> {extractedMeta.passingScore}%
+                    <strong className="text-zinc-900 dark:text-white">Exam:</strong> {extractedMeta.name}
                   </span>
                 )}
               </div>
@@ -1580,29 +1557,24 @@ Description: Ethiopian University Freshman Applied Mathematics I test questions 
               value={pasteRawText}
               onChange={(e) => setPasteRawText(e.target.value)}
               placeholder={`================================================================
-EXAM: English Grammar Test
-Subject: English
-Difficulty: Medium
-Subject Type: Theory & Concepts
-Time Limit: 25 minutes
-Passing Score: 70%
+FORMAT SPECIFICATION:
+Grade: 10
+Subject: Physics
+Topic: Classical Mechanics
+Time Limit: 20 minutes
 ================================================================
 
-1. By the time we arrived at the station, the train ______.
-   A) already leaves
-   B) has already left
-   C) had already left
-   D) was already leaving
-   Answer: C
-   Explanation: The past perfect is used for an action that happened before another past action.
-
-2. She ______ in London for five years before she moved to Paris.
-   A) lives
-   B) lived
-   C) has lived
-   D) is living
-   Answer: B
-   Explanation: The simple past is used for a completed period of time.`}
+1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
+   A) \\( 240,000 \\text{ J} \\)
+   B) \\( 120,000 \\text{ J} \\)
+   C) \\( 480,000 \\text{ J} \\)
+   D) \\( 24,000 \\text{ J} \\)
+   Answer: A
+   Explanation: **Formula:**
+\\[ E_k = \\frac{1}{2} m v^2 \\]
+**Calculation:**
+\\[ E_k = \\frac{1}{2} (1200)(20^2) = 600 \\times 400 = 240,000 \\text{ J} = 240 \\text{ kJ} \\]
+**Answer:** \\( 240,000 \\text{ J} \\)`}
               className="w-full px-4 py-3.5 rounded-[22px] bg-white/70 dark:bg-[#08101d] border border-white/80 dark:border-white/10 text-zinc-900 dark:text-white placeholder-zinc-400 font-mono text-xs focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 leading-relaxed shadow-xs"
             />
           </div>
@@ -1850,10 +1822,9 @@ Passing Score: 70%
                           id: initialExam?.id || 'exam_' + Date.now(),
                           name: (meta.name || name).trim() || 'Imported Exam',
                           subject: (meta.subject || subject).trim() || 'General',
-                          difficulty: meta.difficulty || difficulty,
-                          timeLimit: meta.timeLimit || Number(timeLimit) || 25,
-                          passingScore: meta.passingScore || Number(passingScore) || 70,
-                          subjectType: meta.subjectType || subjectType,
+                          topic: (meta.topic || topic).trim() || undefined,
+                          grade: meta.grade || grade || initialExam?.grade,
+                          timeLimit: meta.timeLimit || Number(timeLimit) || 20,
                           description: (meta.description || description).trim(),
                           questions: previewQuestions,
                           createdAt: initialExam?.createdAt || new Date().toISOString(),
@@ -1962,12 +1933,11 @@ Passing Score: 70%
 
         {/* Stepper Navigation: Capsule pill bar */}
         <div className="p-1.5 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-3 gap-1">
             {[
               { step: 1, label: 'Details', icon: BookOpen },
               { step: 2, label: `Questions (${questions.length})`, icon: HelpCircle },
-              { step: 3, label: 'Settings', icon: Settings },
-              { step: 4, label: 'Review', icon: CheckCircle2 },
+              { step: 3, label: 'Review', icon: CheckCircle2 },
             ].map(({ step, label, icon: Icon }) => {
               const isActive = currentStep === step;
               const isDone = currentStep > step;
@@ -1979,7 +1949,6 @@ Passing Score: 70%
                     if (step === 1) setCurrentStep(1);
                     else if (step === 2 && validateStep1()) setCurrentStep(2);
                     else if (step === 3 && validateStep1() && validateStep2()) setCurrentStep(3);
-                    else if (step === 4 && validateStep1() && validateStep2()) setCurrentStep(4);
                   }}
                   className={`flex items-center justify-center gap-2 py-2 px-3 rounded-full transition cursor-pointer text-xs font-semibold ${
                     isActive
@@ -2032,11 +2001,27 @@ Passing Score: 70%
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Calculus: Limits & Derivatives"
+                placeholder="e.g. Physics: Classical Mechanics"
                 className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
 
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
+                Grade / Academic Level
+              </label>
+              <input
+                id="exam-grade"
+                type="text"
+                value={grade !== undefined ? String(grade) : ''}
+                onChange={(e) => setGrade(e.target.value)}
+                placeholder="e.g. 10 or Freshman"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
                 Subject
@@ -2046,29 +2031,27 @@ Passing Score: 70%
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g. Mathematics, Physics, Chemistry"
+                placeholder="e.g. Physics, Mathematics, Chemistry"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
+                Topic / Unit
+              </label>
+              <input
+                id="exam-topic"
+                type="text"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="e.g. Classical Mechanics"
                 className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-                Difficulty Level
-              </label>
-              <select
-                id="exam-difficulty"
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value as DifficultyLevel)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 cursor-pointer"
-              >
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-              </select>
-            </div>
-
             <div>
               <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
                 Time Limit (Minutes)
@@ -2083,20 +2066,20 @@ Passing Score: 70%
                 className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-              Description (Optional)
-            </label>
-            <textarea
-              id="exam-desc"
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Exam instructions or syllabus goals..."
-              className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
-            />
+            <div>
+              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
+                Description (Optional)
+              </label>
+              <input
+                id="exam-desc"
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Exam instructions or syllabus goals..."
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between pt-2">
@@ -2193,10 +2176,7 @@ Passing Score: 70%
                       id: initialExam?.id || 'exam_' + Date.now(),
                       name: name.trim(),
                       subject: subject.trim() || 'General',
-                      difficulty,
                       timeLimit: Number(timeLimit) || 20,
-                      passingScore: Number(passingScore) || 70,
-                      subjectType,
                       description: description.trim(),
                       questions,
                       createdAt: initialExam?.createdAt || new Date().toISOString(),
@@ -2404,74 +2384,6 @@ Passing Score: 70%
                 onClick={handleNext}
                 className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
               >
-                <span>Next: Settings</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Settings */}
-      {currentStep === 3 && (
-        <div className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-                Passing Score (%)
-              </label>
-              <input
-                id="exam-pass"
-                type="number"
-                min="0"
-                max="100"
-                value={passingScore}
-                onChange={(e) => setPassingScore(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
-                Subject Focus
-              </label>
-              <select
-                id="exam-subjecttype"
-                value={subjectType}
-                onChange={(e) => setSubjectType(e.target.value as SubjectType)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 cursor-pointer"
-              >
-                <option value="theory">Theory & Concepts</option>
-                <option value="calculation">Mathematical Calculations</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <button
-              type="button"
-              onClick={() => setCurrentStep(2)}
-              className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Back</span>
-            </button>
-            <div className="flex items-center gap-2">
-              {initialExam && (
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="px-4 py-2 rounded-full bg-white/80 dark:bg-zinc-800 border border-white/60 dark:border-white/10 hover:bg-white text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Save Changes</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setCurrentStep(4)}
-                className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
-              >
                 <span>Next: Review</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -2480,8 +2392,8 @@ Passing Score: 70%
         </div>
       )}
 
-      {/* Step 4: Review & Save */}
-      {currentStep === 4 && (
+      {/* Step 3: Review & Save */}
+      {currentStep === 3 && (
         <div className="p-6 rounded-[26px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4">
           {/* Exam Summary Header */}
           <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2">
@@ -2489,13 +2401,17 @@ Passing Score: 70%
               {name}
             </h3>
             <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-              <span>Subject: <strong className="text-zinc-800 dark:text-zinc-200">{subject || 'General'}</strong></span>
+              <span>Grade: <strong className="text-zinc-800 dark:text-zinc-200">{grade || 'N/A'}</strong></span>
               <span>•</span>
-              <span>Difficulty: <strong className="text-zinc-800 dark:text-zinc-200">{difficulty}</strong></span>
+              <span>Subject: <strong className="text-zinc-800 dark:text-zinc-200">{subject || 'General'}</strong></span>
+              {topic && (
+                <>
+                  <span>•</span>
+                  <span>Topic: <strong className="text-zinc-800 dark:text-zinc-200">{topic}</strong></span>
+                </>
+              )}
               <span>•</span>
               <span>Duration: <strong className="text-zinc-800 dark:text-zinc-200">{timeLimit}m</strong></span>
-              <span>•</span>
-              <span>Passing: <strong className="text-zinc-800 dark:text-zinc-200">{passingScore}%</strong></span>
               <span>•</span>
               <span>Questions: <strong className="text-zinc-800 dark:text-zinc-200">{questions.length}</strong></span>
             </div>
@@ -2528,7 +2444,7 @@ Passing Score: 70%
           <div className="flex items-center justify-between pt-3 border-t border-zinc-200 dark:border-zinc-800">
             <button
               type="button"
-              onClick={() => setCurrentStep(3)}
+              onClick={() => setCurrentStep(2)}
               className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -2553,10 +2469,9 @@ Passing Score: 70%
                       id: initialExam?.id || 'exam_' + Date.now(),
                       name: name.trim(),
                       subject: subject.trim() || 'General',
-                      difficulty,
+                      topic: topic.trim() || undefined,
+                      grade: grade || initialExam?.grade,
                       timeLimit: Number(timeLimit) || 20,
-                      passingScore: Number(passingScore) || 70,
-                      subjectType,
                       description: description.trim(),
                       questions,
                       createdAt: initialExam?.createdAt || new Date().toISOString(),

@@ -254,8 +254,8 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
     const percentage = Math.round((correctCount / totalQuestions) * 100);
     const timeSpent = exam.timeLimit * 60 - timeLeft;
 
-    // Trigger celebration confetti if passed
-    if (percentage >= (exam.passingScore || 70)) {
+    // Trigger celebration confetti if passed (>= 70%)
+    if (percentage >= 70) {
       try {
         confetti({
           particleCount: 100,
@@ -277,9 +277,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
       score: correctCount,
       total: totalQuestions,
       percentage,
-      passingScore: exam.passingScore || 70,
       timeSpent: Math.max(timeSpent, 0),
-      subjectType: exam.subjectType,
       answers: answerRecords,
     };
 
