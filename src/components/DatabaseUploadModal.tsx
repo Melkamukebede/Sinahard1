@@ -27,15 +27,18 @@ import {
   SlidersHorizontal,
   Copy,
   FileSpreadsheet,
+  School,
+  UserCheck,
+  Building2,
 } from 'lucide-react';
-import { Exam, AppUser } from '../types';
+import { Exam, AppUser, ExamCategory, CreatedExamType } from '../types';
 import {
   uploadExamToFirestore,
   canUserUploadToFirestore,
   inferGrade,
   inferStream,
 } from '../services/databaseUpload';
-import { ADMIN_EMAIL } from '../services/db';
+import { ADMIN_EMAIL, isUserAdmin, isUserTeacher } from '../services/db';
 import { useAuth } from '../context/AuthContext';
 
 interface DatabaseUploadModalProps {
@@ -81,6 +84,11 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   // Active view tab: 'configure' or 'schema_preview'
   const [activeTab, setActiveTab] = useState<'configure' | 'schema_preview'>('configure');
   const [copiedPayload, setCopiedPayload] = useState(false);
+
+  // Two-tier Exam category: 'official' (admin-curated) vs 'created' (teacher-created)
+  const [uploadCategory, setUploadCategory] = useState<ExamCategory>('official');
+  const [schoolName, setSchoolName] = useState<string>('Bole Secondary School');
+  const [teacherName, setTeacherName] = useState<string>('Instructor');
 
   // Form states initialized dynamically based on exam prop
   const [selectedGrade, setSelectedGrade] = useState<string>('12');
@@ -153,12 +161,24 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
         : `Grade ${detectedGrade} National Curriculum Exam`)
     );
 
+    // Category initialization
+    if (isUserTeacher(user) && !isUserAdmin(user)) {
+      setUploadCategory('created');
+    } else if (exam.category) {
+      setUploadCategory(exam.category);
+    } else {
+      setUploadCategory('official');
+    }
+
+    setSchoolName(user?.school || (exam as any).school || 'Bole Secondary School');
+    setTeacherName(user?.teacherName || user?.displayName || (exam as any).teacherName || 'Instructor');
+
     // Reset status indicators & tab
     setStatusMessage(null);
     setErrorMessage(null);
     setUploadProgress(0);
     setActiveTab('configure');
-  }, [exam, isOpen]);
+  }, [exam, isOpen, user]);
 
   // Adjust suggested stream and curator when grade changes
   const handleGradeChange = (newGrade: string) => {
@@ -235,6 +255,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     if (!exam) return null;
     const examId = exam.id || 'exam_' + Date.now();
     const title = (exam.title || exam.name || 'Official Curriculum Exam').trim();
+    const isTeacherExam = uploadCategory === 'created';
 
     const sanitizedQuestions = (exam.questions || []).map((q, idx) => ({
       id: q.id || `q_${examId}_${idx + 1}`,
@@ -258,13 +279,29 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
       id: examId,
       catalogId: exam.catalogId || examId,
       title,
+      category: uploadCategory,
+      createdType: isTeacherExam ? 'teacher' : undefined,
+      school: isTeacherExam ? schoolName.trim() : undefined,
+      teacherName: isTeacherExam ? teacherName.trim() : undefined,
+      examYear: !isTeacherExam ? targetExamYear.trim() : undefined,
       metadata,
       questionsCount: sanitizedQuestions.length,
       sampleQuestion: sanitizedQuestions[0] || null,
       isPublic,
-      sourceType: asOfficialExam ? 'curated_catalog' : (exam.sourceType || 'curated_catalog'),
+      sourceType: !isTeacherExam ? 'curated_catalog' : (exam.sourceType || 'user_created'),
     };
-  }, [exam, effectiveGrade, selectedStream, topic, timeLimit, targetExamYear, isPublic, asOfficialExam]);
+  }, [
+    exam,
+    uploadCategory,
+    schoolName,
+    teacherName,
+    effectiveGrade,
+    selectedStream,
+    topic,
+    timeLimit,
+    targetExamYear,
+    isPublic,
+  ]);
 
   // Estimated JSON document payload size
   const estimatedPayloadSizeKB = useMemo(() => {
@@ -279,7 +316,9 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
   if (!isOpen || !exam) return null;
 
-  const isAdmin = canUserUploadToFirestore(user);
+  const userIsAdmin = isUserAdmin(user);
+  const userIsTeacher = isUserTeacher(user);
+  const canUpload = canUserUploadToFirestore(user);
   const userEmail = user?.email || 'Not logged in';
 
   const handleCopyPayload = () => {
@@ -290,8 +329,22 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   };
 
   const handleUploadToFirestore = async () => {
-    if (!isAdmin) {
-      setErrorMessage(`Access Denied: You must be logged in as ${ADMIN_EMAIL} to upload to Firestore.`);
+    if (!canUpload) {
+      setErrorMessage(
+        `Access Denied: Only Verified Teachers and Administrators (${ADMIN_EMAIL}) can publish to Cloud Firestore. Student study drafts remain local.`
+      );
+      return;
+    }
+
+    if (uploadCategory === 'official' && !userIsAdmin) {
+      setErrorMessage(
+        `Access Denied: Only the Administrator (${ADMIN_EMAIL}) can publish to the Official Exam Catalog. As a teacher, please select 'School Teacher Exam'.`
+      );
+      return;
+    }
+
+    if (uploadCategory === 'created' && !schoolName.trim()) {
+      setErrorMessage('School name is required for school teacher exams.');
       return;
     }
 
@@ -302,14 +355,24 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     setProgressStatusText('Initializing connection to Cloud Firestore...');
 
     try {
+      const isOfficial = uploadCategory === 'official';
       const result = await uploadExamToFirestore(exam, user, {
+        category: uploadCategory,
+        createdType: isOfficial ? undefined : 'teacher',
+        school: isOfficial ? undefined : schoolName.trim(),
+        teacherName: isOfficial ? undefined : teacherName.trim(),
+        examYear: isOfficial ? targetExamYear.trim() : undefined,
         uploadIndividualQuestions,
         isPublic,
-        asOfficialExam,
+        asOfficialExam: isOfficial,
         grade: effectiveGrade,
         topic: topic.trim() || undefined,
         stream: selectedStream,
-        adminTag: adminTag.trim() || (effectiveGrade === 'Freshman' ? 'University Freshman Curriculum' : `Grade ${effectiveGrade} Exam`),
+        adminTag:
+          adminTag.trim() ||
+          (effectiveGrade === 'Freshman'
+            ? 'University Freshman Curriculum'
+            : `Grade ${effectiveGrade} Exam`),
         curator: curatorName.trim(),
         timeLimit,
         targetExamYear,
@@ -324,6 +387,11 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
         onUploadComplete(
           {
             ...exam,
+            category: uploadCategory,
+            createdType: isOfficial ? undefined : 'teacher',
+            school: isOfficial ? undefined : schoolName.trim(),
+            teacherName: isOfficial ? undefined : teacherName.trim(),
+            examYear: isOfficial ? targetExamYear.trim() : undefined,
             isUploadedToCloud: true,
             cloudStorageEngine: 'firestore',
             cloudUploadedAt: new Date().toISOString(),
@@ -332,7 +400,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
             stream: selectedStream,
             curator: curatorName.trim(),
             timeLimit,
-            sourceType: asOfficialExam ? 'curated_catalog' : exam.sourceType,
+            sourceType: isOfficial ? 'curated_catalog' : exam.sourceType,
           } as Exam,
           'firestore'
         );
@@ -375,15 +443,20 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                     Firestore (default)
                   </span>
 
-                  {isAdmin ? (
+                  {userIsAdmin ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-950 shrink-0">
-                      <ShieldCheck className="w-3 h-3" />
+                      <ShieldCheck className="w-3 h-3 text-amber-400 dark:text-amber-500" />
                       Admin Verified
                     </span>
+                  ) : userIsTeacher ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
+                      <UserCheck className="w-3 h-3 text-emerald-500" />
+                      Verified Teacher
+                    </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 shrink-0">
-                      <Lock className="w-3 h-3 text-rose-500" />
-                      Admin Protected
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 shrink-0">
+                      <Lock className="w-3 h-3 text-amber-500" />
+                      Teacher / Admin Access
                     </span>
                   )}
                 </div>
@@ -447,17 +520,17 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
           {/* Main Content Area */}
           <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
-            {/* Non-Admin Alert & One-Click Sign-In */}
-            {!isAdmin && (
-              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-800 dark:text-rose-300 space-y-2.5">
+            {/* Role-based Authorization Banner */}
+            {!canUpload ? (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 space-y-2.5">
                 <div className="flex items-center gap-2 text-sm font-bold">
-                  <Lock className="w-4 h-4 text-rose-500 shrink-0" />
-                  <span>Administrator Authentication Required</span>
+                  <Lock className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>Teacher or Administrator Authentication Required</span>
                 </div>
-                <p className="text-xs text-rose-700 dark:text-rose-400 leading-relaxed">
-                  Only the verified administrator (<span className="font-mono font-bold">{ADMIN_EMAIL}</span>) is authorized to publish into Cloud Firestore root collections (<span className="font-mono">/exams</span> and <span className="font-mono">/questions</span>).
+                <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                  <strong>Student Study Drafts</strong> are preserved strictly offline on your local device for privacy, instant practice, and free .txt export. To publish exams to Cloud Firestore for your school students or curriculum catalog, please sign in with a <strong>Verified Teacher</strong> or <strong>Administrator</strong> account.
                 </p>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-rose-500/20">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-amber-500/20">
                   <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
                     Current user: <span className="font-semibold text-slate-800 dark:text-slate-200">{userEmail}</span>
                   </div>
@@ -468,7 +541,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                     className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-bold text-xs shadow-xs cursor-pointer disabled:opacity-50 transition active:scale-98 shrink-0"
                   >
                     <LogIn className="w-3.5 h-3.5" />
-                    <span>{isSigningIn ? 'Signing In...' : 'Sign In as Admin'}</span>
+                    <span>{isSigningIn ? 'Signing In...' : 'Sign In as Teacher/Admin'}</span>
                   </button>
                 </div>
                 {popupBlocked && (
@@ -477,7 +550,17 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                   </p>
                 )}
               </div>
-            )}
+            ) : userIsTeacher && !userIsAdmin ? (
+              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-900 dark:text-emerald-200 flex items-start gap-2.5 text-xs">
+                <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-bold block">Verified Teacher Publishing Mode</span>
+                  <span className="text-slate-600 dark:text-slate-300 block">
+                    Your exam will sync to Cloud Firestore under <strong>School: {schoolName || 'Your School'}</strong>. Registered students at your school will access this exam directly.
+                  </span>
+                </div>
+              </div>
+            ) : null}
 
             {/* Exam Diagnostic & Optimization Summary Card */}
             <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-3 shadow-xs">
@@ -551,7 +634,143 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
             {/* TAB 1: CURRICULUM CONFIGURATION */}
             {activeTab === 'configure' && (
               <div className="space-y-4">
-                {/* Firestore Optimization & Decoupling Notice */}
+                {/* Repository Category Selection (Official vs School Teacher) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Database className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Exam Repository Category</span>
+                    </label>
+                    <span className="text-[11px] text-slate-400">
+                      Select catalog destination
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* 1. Official Curriculum Exam */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (userIsAdmin) {
+                          setUploadCategory('official');
+                          setAsOfficialExam(true);
+                        }
+                      }}
+                      disabled={!userIsAdmin}
+                      className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between gap-2.5 cursor-pointer ${
+                        uploadCategory === 'official'
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 border-slate-900 dark:border-white shadow-sm ring-2 ring-amber-500/30'
+                          : 'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-slate-300'
+                      } ${!userIsAdmin ? 'opacity-55 cursor-not-allowed' : ''}`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="font-bold text-xs flex items-center gap-1.5">
+                            <ShieldCheck className="w-4 h-4 text-amber-400 dark:text-amber-500 shrink-0" />
+                            Official Curriculum Exam
+                          </span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 dark:text-amber-600 border border-amber-500/30">
+                            Admin Curated
+                          </span>
+                        </div>
+                        <p
+                          className={`text-[11px] leading-relaxed ${
+                            uploadCategory === 'official'
+                              ? 'text-slate-300 dark:text-slate-600'
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          National Exam (NEAEA / MoE). Cloud-synced for all students nationwide.
+                        </p>
+                      </div>
+                      <div className="text-[10px] font-mono opacity-80 pt-1.5 border-t border-white/10 dark:border-slate-200 flex items-center justify-between">
+                        <span>Main Keys:</span>
+                        <span className="font-semibold">examYear, subject, grade, stream</span>
+                      </div>
+                    </button>
+
+                    {/* 2. School Teacher Exam */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUploadCategory('created');
+                        setAsOfficialExam(false);
+                      }}
+                      className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between gap-2.5 cursor-pointer ${
+                        uploadCategory === 'created'
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 border-slate-900 dark:border-white shadow-sm ring-2 ring-emerald-500/30'
+                          : 'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="font-bold text-xs flex items-center gap-1.5">
+                            <School className="w-4 h-4 text-emerald-400 dark:text-emerald-500 shrink-0" />
+                            School Teacher Exam
+                          </span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 dark:text-emerald-600 border border-emerald-500/30">
+                            Teacher Created
+                          </span>
+                        </div>
+                        <p
+                          className={`text-[11px] leading-relaxed ${
+                            uploadCategory === 'created'
+                              ? 'text-slate-300 dark:text-slate-600'
+                              : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          Cloud-synced specifically for registered students at your school with paid access.
+                        </p>
+                      </div>
+                      <div className="text-[10px] font-mono opacity-80 pt-1.5 border-t border-white/10 dark:border-slate-200 flex items-center justify-between">
+                        <span>Main Keys:</span>
+                        <span className="font-semibold">school, teacherName, grade, subject, topic</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Conditional Fields: Teacher & School Metadata (When School Teacher Exam is selected) */}
+                {uploadCategory === 'created' && (
+                  <div className="p-4 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 space-y-3">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                      <School className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>School & Teacher Affiliation (Access Keys)</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                          <Building2 className="w-3.5 h-3.5 text-emerald-500" />
+                          School Name <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={schoolName}
+                          onChange={(e) => setSchoolName(e.target.value)}
+                          placeholder="e.g. Bole Secondary School, St. Joseph School"
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                          <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
+                          Teacher / Instructor Name <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={teacherName}
+                          onChange={(e) => setTeacherName(e.target.value)}
+                          placeholder="e.g. Teacher Melkamu, Mr. Bekele"
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Firestore Optimization Mapping Notice */}
                 <div className="p-3.5 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
                     <span className="flex items-center gap-1.5">
@@ -559,11 +778,11 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                       Firebase Cloud Storage Mapping
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-900 dark:text-amber-200 font-bold">
-                      Batch: 400 docs/commit
+                      Collection: /exams
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Writes optimized metadata to <span className="font-mono font-bold text-slate-900 dark:text-white">/exams/{exam.id}</span> with nested metadata object. Student attempts remain isolated in <span className="font-mono font-bold text-slate-900 dark:text-white">/user_attempts</span> to keep document footprints minimal.
+                    Writes optimized metadata to <span className="font-mono font-bold text-slate-900 dark:text-white">/exams/{exam.id}</span> with structured metadata. Student exam attempts remain isolated in <span className="font-mono font-bold text-slate-900 dark:text-white">/user_attempts</span>.
                   </p>
                 </div>
 
@@ -867,7 +1086,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
               {statusMessage ? 'Done' : 'Cancel'}
             </button>
 
-            {isAdmin ? (
+            {canUpload ? (
               <button
                 type="button"
                 disabled={isLoading}
@@ -882,7 +1101,11 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 ) : (
                   <>
                     <CloudUpload className="w-3.5 h-3.5" />
-                    <span>Upload to Cloud Firestore</span>
+                    <span>
+                      {uploadCategory === 'created'
+                        ? 'Publish School Teacher Exam'
+                        : 'Upload to Cloud Firestore'}
+                    </span>
                   </>
                 )}
               </button>
@@ -894,7 +1117,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 className="px-5 py-2.5 rounded-full bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 transition active:scale-98 hover:opacity-95"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span>{isSigningIn ? 'Signing In...' : 'Sign In as Admin to Upload'}</span>
+                <span>{isSigningIn ? 'Signing In...' : 'Sign In as Teacher/Admin'}</span>
               </button>
             )}
           </div>

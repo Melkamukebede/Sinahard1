@@ -15,6 +15,8 @@ import {
   Square,
   LayoutList,
   Check,
+  Minimize2,
+  Maximize2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Exam, ExamAnswerRecord, ExamResult, Question } from '../types';
@@ -41,6 +43,9 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
   // Mode: '1-to-1' (single focus) vs '6-to-1' (6 questions vertically per page)
   const [viewMode, setViewMode] = useState<PracticeViewMode>('1-to-1');
+
+  // Density: 'full' (all headers & ribbons) vs 'minimalist' (hides non-essential headers for LaTeX math space)
+  const [densityMode, setDensityMode] = useState<'full' | 'minimalist'>('full');
 
   // Navigation indices
   const [currentIndex, setCurrentIndex] = useState(0); // for 1-to-1 mode
@@ -496,40 +501,73 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               </h2>
             </div>
 
-            {/* Center Controls: Mode Toggle (1 to 1 vs 6 to 1) */}
-            <div className="flex items-center p-1 rounded-full bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-white/10 text-xs">
+            {/* Center Controls: Mode Toggle (1 to 1 vs 6 to 1) & Compact Mode Toggle */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center p-1 rounded-full bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-white/10 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewMode('1-to-1');
+                    if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
+                  }}
+                  className={`px-2.5 sm:px-3 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                    viewMode === '1-to-1'
+                      ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                  }`}
+                  title="Single question focus mode"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  <span>1 to 1<span className="hidden sm:inline"> Mode</span></span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewMode('6-to-1');
+                    setBatchPage(Math.floor(currentIndex / BATCH_SIZE));
+                    if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
+                  }}
+                  className={`px-2 sm:px-2.5 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                    viewMode === '6-to-1'
+                      ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                  }`}
+                  title="6 questions per page vertically"
+                >
+                  <LayoutList className="w-3.5 h-3.5" />
+                  <span>6 to 1<span className="hidden sm:inline"> Mode</span></span>
+                </button>
+              </div>
+
+              {/* Compact Mode Toggle (Full View vs Minimalist View) */}
               <button
                 type="button"
-                onClick={() => {
-                  setViewMode('1-to-1');
-                  if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
-                }}
-                className={`px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                  viewMode === '1-to-1'
-                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                onClick={() => setDensityMode((prev) => (prev === 'full' ? 'minimalist' : 'full'))}
+                className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 border shadow-2xs active:scale-95 ${
+                  densityMode === 'minimalist'
+                    ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
+                    : 'bg-white dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-zinc-700'
                 }`}
-                title="Single question focus mode"
+                title={
+                  densityMode === 'minimalist'
+                    ? 'Switch to Full View (show tracking headers and jump ribbon)'
+                    : 'Switch to Minimalist View (hide non-essential headers for maximum LaTeX math workspace)'
+                }
               >
-                <Square className="w-3.5 h-3.5" />
-                <span>1 to 1<span className="hidden sm:inline"> Mode</span></span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode('6-to-1');
-                  setBatchPage(Math.floor(currentIndex / BATCH_SIZE));
-                  if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
-                }}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                  viewMode === '6-to-1'
-                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-                }`}
-                title="6 questions per page vertically"
-              >
-                <LayoutList className="w-3.5 h-3.5" />
-                <span>6 to 1<span className="hidden sm:inline"> Mode</span></span>
+                {densityMode === 'minimalist' ? (
+                  <>
+                    <Maximize2 className="w-3 h-3 text-zinc-300 dark:text-zinc-700" />
+                    <span className="font-bold">Minimalist</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20 dark:bg-zinc-900/20 font-mono">
+                      Q{currentIndex + 1}/{exam.questions.length}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Minimize2 className="w-3 h-3 text-zinc-400" />
+                    <span>Full View</span>
+                  </>
+                )}
               </button>
             </div>
 
@@ -582,68 +620,72 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             />
           </div>
 
-          {/* Subheader Tracker & Question Navigation Ribbon */}
-          <div className="px-5 sm:px-6 py-2 bg-zinc-50/70 dark:bg-white/[0.02] border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between gap-3 text-xs text-zinc-500">
-            <div className="flex items-center gap-2 truncate">
-              {viewMode === '1-to-1' ? (
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                  Question {currentIndex + 1} of {exam.questions.length}
+          {/* Subheader Tracker & Question Navigation Ribbon (Hidden in Minimalist View to maximize workspace) */}
+          {densityMode === 'full' && (
+            <>
+              <div className="px-5 sm:px-6 py-2 bg-zinc-50/70 dark:bg-white/[0.02] border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between gap-3 text-xs text-zinc-500">
+                <div className="flex items-center gap-2 truncate">
+                  {viewMode === '1-to-1' ? (
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                      Question {currentIndex + 1} of {exam.questions.length}
+                    </span>
+                  ) : (
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                      Batch {batchPage + 1} of {totalBatchPages} (Questions {batchStartIdx + 1}–{batchEndIdx})
+                    </span>
+                  )}
+                </div>
+
+                {/* Answered Counter */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-xs">
+                    Answered: <strong className="text-zinc-900 dark:text-white">{answeredCount}</strong> / {exam.questions.length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Quick Question Jump Ribbon (Scrollable pills) */}
+              <div className="px-5 sm:px-6 py-1.5 bg-white/40 dark:bg-white/[0.01] border-b border-zinc-100 dark:border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mr-1 shrink-0">
+                  Jump:
                 </span>
-              ) : (
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                  Batch {batchPage + 1} of {totalBatchPages} (Questions {batchStartIdx + 1}–{batchEndIdx})
-                </span>
-              )}
-            </div>
+                {exam.questions.map((_, idx) => {
+                  const isAns = userAnswers[idx] !== null && userAnswers[idx] !== undefined;
+                  const isExpl = !!revealedQuestions[idx];
+                  const isCurrent = viewMode === '1-to-1' ? currentIndex === idx : idx >= batchStartIdx && idx < batchEndIdx;
 
-            {/* Answered Counter */}
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="text-xs">
-                Answered: <strong className="text-zinc-900 dark:text-white">{answeredCount}</strong> / {exam.questions.length}
-              </span>
-            </div>
-          </div>
+                  let pillClass = '';
+                  if (isCurrent) {
+                    pillClass = 'ring-2 ring-zinc-950 dark:ring-white font-bold bg-zinc-950 text-white dark:bg-white dark:text-zinc-950';
+                  } else if (isAns) {
+                    pillClass = 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700 font-semibold';
+                  } else if (isExpl) {
+                    pillClass = 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30';
+                  } else {
+                    pillClass = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700';
+                  }
 
-          {/* Quick Question Jump Ribbon (Scrollable pills) */}
-          <div className="px-5 sm:px-6 py-1.5 bg-white/40 dark:bg-white/[0.01] border-b border-zinc-100 dark:border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mr-1 shrink-0">
-              Jump:
-            </span>
-            {exam.questions.map((_, idx) => {
-              const isAns = userAnswers[idx] !== null && userAnswers[idx] !== undefined;
-              const isExpl = !!revealedQuestions[idx];
-              const isCurrent = viewMode === '1-to-1' ? currentIndex === idx : idx >= batchStartIdx && idx < batchEndIdx;
-
-              let pillClass = '';
-              if (isCurrent) {
-                pillClass = 'ring-2 ring-zinc-950 dark:ring-white font-bold bg-zinc-950 text-white dark:bg-white dark:text-zinc-950';
-              } else if (isAns) {
-                pillClass = 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700 font-semibold';
-              } else if (isExpl) {
-                pillClass = 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30';
-              } else {
-                pillClass = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700';
-              }
-
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleJumpToQuestion(idx)}
-                  className={`w-6 h-6 rounded-full text-[10px] flex items-center justify-center shrink-0 cursor-pointer transition ${pillClass}`}
-                >
-                  {idx + 1}
-                </button>
-              );
-            })}
-          </div>
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleJumpToQuestion(idx)}
+                      className={`w-6 h-6 rounded-full text-[10px] flex items-center justify-center shrink-0 cursor-pointer transition ${pillClass}`}
+                    >
+                      {idx + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           {/* Main Questions View Area (Supports Blur when Time is Paused) */}
           <div className="flex-1 relative overflow-hidden flex flex-col">
             {/* Scrollable Questions Container */}
             <div
               ref={scrollContainerRef}
-              className={`flex-1 overflow-y-auto p-4 sm:p-6 transition-all duration-300 ${
+              className={`flex-1 overflow-y-auto ${densityMode === 'minimalist' ? 'p-3 sm:p-4' : 'p-4 sm:p-6'} transition-all duration-300 ${
                 isPaused ? 'filter blur-md md:blur-lg select-none pointer-events-none opacity-40' : ''
               }`}
             >

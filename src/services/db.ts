@@ -548,6 +548,89 @@ export function isUserAdmin(user: AppUser | null): boolean {
   return user.email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase();
 }
 
+export function isUserTeacher(user: AppUser | null): boolean {
+  if (!user) return false;
+  return user.role === 'teacher' || Boolean(user.isVerifiedTeacher);
+}
+
+export function canUserUploadExam(user: AppUser | null): boolean {
+  return isUserAdmin(user) || isUserTeacher(user);
+}
+
+/**
+ * Real-time listener for school-specific teacher exams from Firestore.
+ * If student has a school, queries exams for that school.
+ * If user is admin, retrieves all teacher exams across schools.
+ */
+export function subscribeToSchoolTeacherExams(
+  schoolName: string | undefined,
+  grade: string | number | undefined,
+  onUpdate: (exams: Exam[]) => void
+): () => void {
+  try {
+    const examsRef = collection(db, 'exams');
+    let q;
+    const cleanSchool = schoolName?.trim();
+    if (cleanSchool && cleanSchool !== 'General') {
+      q = query(
+        examsRef,
+        where('category', '==', 'created'),
+        where('createdType', '==', 'teacher'),
+        where('school', '==', cleanSchool),
+        limit(50)
+      );
+    } else {
+      q = query(
+        examsRef,
+        where('category', '==', 'created'),
+        where('createdType', '==', 'teacher'),
+        limit(50)
+      );
+    }
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const exams: Exam[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as any;
+          exams.push({
+            id: docSnap.id,
+            name: data.title || data.name || 'School Teacher Exam',
+            title: data.title || data.name || 'School Teacher Exam',
+            subject: data.subject || data.metadata?.subject || 'General',
+            grade: data.grade || data.metadata?.grade || '12',
+            topic: data.topic || data.metadata?.topic || '',
+            school: data.school || data.metadata?.school || cleanSchool || '',
+            teacherName: data.teacherName || data.metadata?.teacherName || 'School Teacher',
+            category: 'created',
+            createdType: 'teacher',
+            timeLimit: data.timeLimit || data.metadata?.timeLimit || 20,
+            questions: Array.isArray(data.questions) ? data.questions : [],
+            questionCount: data.questionCount || (data.questions ? data.questions.length : 0),
+            sourceType: 'user_created',
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+            userId: data.userId,
+            authorEmail: data.authorEmail,
+            isUploadedToCloud: true,
+          } as Exam);
+        });
+        onUpdate(exams);
+      },
+      (error) => {
+        console.warn('School teacher exams listener error:', error);
+        onUpdate([]);
+      }
+    );
+
+    return () => unsubscribe();
+  } catch (err) {
+    console.warn('Error subscribing to school teacher exams:', err);
+    return () => {};
+  }
+}
+
 /**
  * Validates if the user currently has an active verified premium subscription.
  */

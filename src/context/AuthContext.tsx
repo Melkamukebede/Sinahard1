@@ -38,6 +38,8 @@ const LOCAL_STUDENT_REGION_KEY = 'student_region';
 const LOCAL_STUDENT_TARGET_YEAR_KEY = 'student_target_year';
 const LOCAL_STUDENT_PHONE_KEY = 'student_phone';
 const LOCAL_STUDENT_IS_REGISTERED_KEY = 'student_is_registered';
+const LOCAL_USER_ROLE_KEY = 'user_account_role';
+const LOCAL_TEACHER_NAME_KEY = 'teacher_display_name';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -50,6 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const savedTargetYear = localStorage.getItem(LOCAL_STUDENT_TARGET_YEAR_KEY) || '';
     const savedPhone = localStorage.getItem(LOCAL_STUDENT_PHONE_KEY) || '';
     const isRegistered = localStorage.getItem(LOCAL_STUDENT_IS_REGISTERED_KEY) === 'true';
+    const savedRole = (localStorage.getItem(LOCAL_USER_ROLE_KEY) as any) || 'student';
+    const savedTeacherName = localStorage.getItem(LOCAL_TEACHER_NAME_KEY) || '';
 
     if (savedGuestName) {
       return {
@@ -58,9 +62,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: null,
         photoURL: null,
         isAnonymous: true,
+        role: savedRole,
         grade: savedGrade,
         stream: savedStream,
         schoolName: savedSchool,
+        school: savedSchool,
+        teacherName: savedTeacherName,
         region: savedRegion,
         targetExamYear: savedTargetYear,
         phoneNumber: savedPhone,
@@ -88,16 +95,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedTargetYear = localStorage.getItem(LOCAL_STUDENT_TARGET_YEAR_KEY) || '2026 (2018 E.C.)';
         const savedPhone = localStorage.getItem(LOCAL_STUDENT_PHONE_KEY) || '';
         const localRegistered = localStorage.getItem(LOCAL_STUDENT_IS_REGISTERED_KEY) === 'true';
+        const savedRole = (localStorage.getItem(LOCAL_USER_ROLE_KEY) as any) || (currentUser.email === 'melkamukebede11@gmail.com' ? 'admin' : 'student');
+        const savedTeacherName = localStorage.getItem(LOCAL_TEACHER_NAME_KEY) || '';
 
         let appUser: AppUser = {
           uid: currentUser.uid,
           email: currentUser.email,
-          displayName: currentUser.displayName || 'Student',
+          displayName: currentUser.displayName || (savedRole === 'teacher' ? 'Teacher' : 'Student'),
           photoURL: currentUser.photoURL,
           isAnonymous: currentUser.isAnonymous,
+          role: currentUser.email === 'melkamukebede11@gmail.com' ? 'admin' : savedRole,
           grade: savedGrade,
           stream: savedStream,
           schoolName: savedSchool,
+          school: savedSchool,
+          teacherName: savedTeacherName,
           region: savedRegion,
           targetExamYear: savedTargetYear,
           phoneNumber: savedPhone,
@@ -114,14 +126,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userRef = doc(db, 'users', currentUser.uid);
           const userSnap = await getDoc(userRef);
           if (!userSnap.exists()) {
+            const initialRole = currentUser.email === 'melkamukebede11@gmail.com' ? 'admin' : savedRole;
             await setDoc(userRef, {
               id: currentUser.uid,
               email: currentUser.email || '',
-              displayName: currentUser.displayName || 'Student',
+              displayName: currentUser.displayName || (initialRole === 'teacher' ? 'Teacher' : 'Student'),
               photoURL: currentUser.photoURL || '',
+              role: initialRole,
               grade: savedGrade,
               stream: savedStream,
               schoolName: savedSchool,
+              school: savedSchool,
+              teacherName: savedTeacherName,
               region: savedRegion,
               targetExamYear: savedTargetYear,
               phoneNumber: savedPhone,
@@ -134,17 +150,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           } else {
             const data = userSnap.data();
+            const resolvedRole = currentUser.email === 'melkamukebede11@gmail.com' 
+              ? 'admin' 
+              : (data?.role || savedRole || 'student');
             const resolvedGrade = data?.grade || savedGrade;
             const resolvedStream = data?.stream || savedStream;
-            const resolvedSchool = data?.schoolName || savedSchool;
+            const resolvedSchool = data?.school || data?.schoolName || savedSchool;
+            const resolvedTeacherName = data?.teacherName || savedTeacherName;
             const resolvedRegion = data?.region || savedRegion;
             const resolvedTargetYear = data?.targetExamYear || savedTargetYear;
             const resolvedPhone = data?.phoneNumber || savedPhone;
             const resolvedIsRegistered = Boolean(data?.isRegistered || localRegistered);
 
+            localStorage.setItem(LOCAL_USER_ROLE_KEY, resolvedRole);
             localStorage.setItem(LOCAL_STUDENT_GRADE_KEY, String(resolvedGrade));
             localStorage.setItem(LOCAL_STUDENT_STREAM_KEY, resolvedStream);
-            if (resolvedSchool) localStorage.setItem(LOCAL_STUDENT_SCHOOL_KEY, resolvedSchool);
+            if (resolvedSchool) {
+              localStorage.setItem(LOCAL_STUDENT_SCHOOL_KEY, resolvedSchool);
+            }
+            if (resolvedTeacherName) {
+              localStorage.setItem(LOCAL_TEACHER_NAME_KEY, resolvedTeacherName);
+            }
             if (resolvedRegion) localStorage.setItem(LOCAL_STUDENT_REGION_KEY, resolvedRegion);
             if (resolvedTargetYear) localStorage.setItem(LOCAL_STUDENT_TARGET_YEAR_KEY, String(resolvedTargetYear));
             if (resolvedPhone) localStorage.setItem(LOCAL_STUDENT_PHONE_KEY, resolvedPhone);
@@ -152,10 +178,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             appUser = {
               ...appUser,
-              displayName: data?.displayName || currentUser.displayName || 'Student',
+              displayName: data?.displayName || currentUser.displayName || (resolvedRole === 'teacher' ? 'Teacher' : 'Student'),
+              role: resolvedRole,
               grade: resolvedGrade,
               stream: resolvedStream,
               schoolName: resolvedSchool,
+              school: resolvedSchool,
+              teacherName: resolvedTeacherName,
+              isVerifiedTeacher: Boolean(data?.isVerifiedTeacher ?? (resolvedRole === 'teacher')),
+              isPaid: Boolean(data?.isPaid),
               region: resolvedRegion,
               targetExamYear: resolvedTargetYear,
               phoneNumber: resolvedPhone,
@@ -272,10 +303,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateStudentProfile = async (profileData: Partial<AppUser>) => {
     // 1. Local Storage persistence
+    if (profileData.role) localStorage.setItem(LOCAL_USER_ROLE_KEY, profileData.role);
     if (profileData.displayName) localStorage.setItem(LOCAL_GUEST_NAME_KEY, profileData.displayName);
     if (profileData.grade) localStorage.setItem(LOCAL_STUDENT_GRADE_KEY, String(profileData.grade));
     if (profileData.stream) localStorage.setItem(LOCAL_STUDENT_STREAM_KEY, profileData.stream);
-    if (profileData.schoolName) localStorage.setItem(LOCAL_STUDENT_SCHOOL_KEY, profileData.schoolName);
+    const resolvedSchool = profileData.school || profileData.schoolName;
+    if (resolvedSchool) localStorage.setItem(LOCAL_STUDENT_SCHOOL_KEY, resolvedSchool);
+    if (profileData.teacherName) localStorage.setItem(LOCAL_TEACHER_NAME_KEY, profileData.teacherName);
     if (profileData.region) localStorage.setItem(LOCAL_STUDENT_REGION_KEY, profileData.region);
     if (profileData.targetExamYear) localStorage.setItem(LOCAL_STUDENT_TARGET_YEAR_KEY, String(profileData.targetExamYear));
     if (profileData.phoneNumber) localStorage.setItem(LOCAL_STUDENT_PHONE_KEY, profileData.phoneNumber);
@@ -283,15 +317,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // 2. State update
     setUser((prev) => {
+      const isUserAdmin = (prev?.email === 'melkamukebede11@gmail.com') || (profileData.email === 'melkamukebede11@gmail.com');
+      const finalRole = isUserAdmin ? 'admin' : (profileData.role ?? prev?.role ?? 'student');
       const updated: AppUser = {
         uid: prev?.uid || 'guest',
         email: prev?.email || null,
-        displayName: profileData.displayName ?? prev?.displayName ?? 'Student',
+        displayName: profileData.displayName ?? prev?.displayName ?? (finalRole === 'teacher' ? 'Teacher' : 'Student'),
         photoURL: prev?.photoURL || null,
         isAnonymous: prev?.isAnonymous ?? true,
+        role: finalRole,
         grade: profileData.grade ?? prev?.grade ?? '12',
         stream: profileData.stream ?? prev?.stream ?? 'Natural Science',
-        schoolName: profileData.schoolName ?? prev?.schoolName,
+        schoolName: resolvedSchool ?? prev?.schoolName ?? prev?.school,
+        school: resolvedSchool ?? prev?.school ?? prev?.schoolName,
+        teacherName: profileData.teacherName ?? prev?.teacherName,
+        isVerifiedTeacher: profileData.isVerifiedTeacher ?? (finalRole === 'teacher'),
+        isPaid: profileData.isPaid ?? prev?.isPaid,
         region: profileData.region ?? prev?.region,
         targetExamYear: profileData.targetExamYear ?? prev?.targetExamYear,
         phoneNumber: profileData.phoneNumber ?? prev?.phoneNumber,
@@ -309,6 +350,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           userRef,
           {
             ...profileData,
+            ...(resolvedSchool ? { school: resolvedSchool, schoolName: resolvedSchool } : {}),
             isRegistered: true,
             updatedAt: new Date().toISOString(),
           },

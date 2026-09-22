@@ -1,10 +1,15 @@
 import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Exam, Question, AppUser } from '../types';
+import { Exam, Question, AppUser, ExamCategory, CreatedExamType } from '../types';
 import { getLocalExams, saveLocalExams, ADMIN_EMAIL, isUserAdmin } from './db';
 import { publishOfficialExamLocally } from './officialExams';
 
 export interface FirestoreUploadOptions {
+  category?: ExamCategory;
+  createdType?: CreatedExamType;
+  school?: string;
+  teacherName?: string;
+  examYear?: string;
   uploadIndividualQuestions?: boolean;
   isPublic?: boolean;
   adminTag?: string;
@@ -58,21 +63,26 @@ export function inferStream(
 }
 
 /**
- * Validates whether current user has verified administrator privileges.
+ * Validates whether current user has privileges to upload to Cloud Firestore:
+ * - Administrator: Can upload official curated exams and school exams
+ * - Verified Teacher: Can upload school-specific teacher exams
+ * - Student: Not permitted to upload to Cloud (student exams remain local/offline)
  */
 export function canUserUploadToFirestore(user: AppUser | null): boolean {
   if (!user) return false;
   if (user.isAnonymous || user.uid === 'guest') return false;
-  return isUserAdmin(user);
+  return isUserAdmin(user) || user.role === 'teacher' || Boolean(user.isVerifiedTeacher);
 }
 
 /**
  * Highly optimized upload of an Exam and its questions into Firebase Cloud Firestore:
  *  - Main document: `/exams/{examId}`
  *  - Modular questions: `/questions/{questionId}` (parallel batch commits)
- *  - Instantly synchronizes with the Official Exams catalog (Curated Catalog)
  *
- * Strictly restricted to verified administrator (melkamukebede11@gmail.com).
+ * Scopes:
+ *  - Official Exams: Admin-created, accessible to all, organized by examYear and subject.
+ *  - Teacher Exams: Teacher-created, synced to cloud for their school students, organized by school, teacherName, grade, subject, topic.
+ *  - Student drafts: Kept locally for offline privacy and client exports.
  */
 export async function uploadExamToFirestore(
   exam: Exam,
@@ -80,6 +90,11 @@ export async function uploadExamToFirestore(
   options: FirestoreUploadOptions = {}
 ): Promise<FirestoreUploadResult> {
   const {
+    category: requestedCategory,
+    createdType: requestedCreatedType,
+    school: inputSchool,
+    teacherName: inputTeacherName,
+    examYear: inputExamYear,
     uploadIndividualQuestions = true,
     isPublic = true,
     adminTag,
@@ -95,53 +110,79 @@ export async function uploadExamToFirestore(
 
   if (!canUserUploadToFirestore(user)) {
     throw new Error(
-      'Access Denied: You must be logged in as administrator (melkamukebede11@gmail.com) to upload questions to Cloud Firestore.'
+      'Access Denied: You must be logged in as an Administrator or a Verified Teacher to upload exams to Cloud Firestore. Student study drafts are stored locally.'
     );
   }
 
+  const isAdmin = isUserAdmin(user);
+  const isTeacher = user?.role === 'teacher' || Boolean(user?.isVerifiedTeacher);
+
+  // Determine category & sub-type
+  let finalCategory: ExamCategory = 'official';
+  let finalCreatedType: CreatedExamType | undefined = undefined;
+
+  if (isTeacher && !isAdmin) {
+    // Teachers upload to 'created' category with 'teacher' type
+    finalCategory = 'created';
+    finalCreatedType = 'teacher';
+  } else if (isAdmin) {
+    if (requestedCategory === 'created' || asOfficialExam === false) {
+      finalCategory = 'created';
+      finalCreatedType = requestedCreatedType || 'teacher';
+    } else {
+      finalCategory = 'official';
+    }
+  }
+
   const examId = exam.id || 'exam_' + Date.now();
-  const authorEmail = user?.email || ADMIN_EMAIL;
-  const authorId = user?.uid || 'admin_user';
+  const authorEmail = user?.email || (isAdmin ? ADMIN_EMAIL : 'teacher@school.edu.et');
+  const authorId = user?.uid || (isAdmin ? 'admin_user' : 'teacher_user');
 
-  onProgress?.(15, 'Sanitizing and preparing question bank payload...');
+  // Teacher & Official metadata
+  const resolvedSchool = (inputSchool || user?.school || user?.schoolName || (exam as any).school || '').trim();
+  const resolvedTeacherName = (inputTeacherName || user?.teacherName || user?.displayName || (exam as any).teacherName || 'Teacher').trim();
+  const resolvedExamYear = (inputExamYear || targetExamYear || (exam as any).examYear || (exam as any).targetExamYear || '2026 (2018 E.C.)').trim();
 
-  // 1. Sanitize all questions: strip undefined fields to prevent Firestore serialization crashes
-  const sanitizedQuestions: Question[] = (exam.questions || []).map((q, idx) => ({
+  // Validate teacher fields
+  if (finalCategory === 'created' && finalCreatedType === 'teacher') {
+    if (!resolvedSchool) {
+      throw new Error('School name is required for Teacher-created exams so your students can access them.');
+    }
+  }
+
+  // 1. Sanitize questions
+  const sanitizedQuestions = (exam.questions || []).map((q, idx) => ({
     id: q.id || `q_${examId}_${idx + 1}`,
-    text: String(q.text || ''),
-    options: Array.isArray(q.options) && q.options.length > 0
-      ? q.options.map((opt) => String(opt ?? ''))
-      : ['', '', '', ''],
-    correct: typeof q.correct === 'number' && !isNaN(q.correct) ? Math.max(0, Math.min(3, q.correct)) : 0,
-    explanation: q.explanation ? String(q.explanation) : '',
+    text: q.text?.trim() || `Question ${idx + 1}`,
+    options: (q.options && q.options.length > 0)
+      ? q.options.map((opt) => String(opt ?? '').trim())
+      : ['A', 'B', 'C', 'D'],
+    correct: typeof q.correct === 'number' ? q.correct : 0,
+    ...(q.explanation ? { explanation: q.explanation.trim() } : {}),
+    isPublic,
   }));
 
-  const finalGrade = String(grade || exam.grade || inferGrade(`${exam.name} ${exam.title || ''}`));
-  const finalTopic = (topic || exam.topic || (exam.name.includes(':') ? exam.name.split(':')[1].trim() : '')).trim();
-  const finalStream = stream || (exam as any).stream || inferStream(exam.subject, `${exam.name} ${exam.title || ''}`, finalGrade);
-  const finalCurator = (
-    curator ||
-    exam.curator ||
-    (finalGrade === 'Freshman' ? 'University Higher Education Mathematics Board' : 'Official Ministry Curriculum Specialist')
-  ).trim();
-  const finalAdminTag = (
-    adminTag ||
-    exam.adminTag ||
-    (finalGrade === 'Freshman' ? 'University Freshman Curriculum' : `Grade ${finalGrade} National Curriculum Exam`)
-  ).trim();
+  const finalGrade = String(grade || exam.grade || inferGrade(`${exam.title || ''} ${exam.name || ''} ${exam.description || ''}`));
+  const finalStream = stream || exam.stream || inferStream(exam.subject, `${exam.title || ''} ${exam.description || ''}`, finalGrade);
+  const finalTopic = (topic || exam.topic || '').trim();
   const finalTimeLimit = Number(timeLimit ?? exam.timeLimit) || 20;
-  const finalTargetExamYear = targetExamYear || (exam as any).targetExamYear || '2026 (2018 E.C.)';
   const nowIso = new Date().toISOString();
 
-  // 2. Prepare clean, non-redundant exam payload for Firestore with nested metadata
-  const title = (exam.title || exam.name || 'Official Curriculum Exam').trim();
+  // 2. Prepare clean, non-redundant exam payload for Firestore
+  const title = (exam.title || exam.name || (finalCategory === 'official' ? 'Official Curriculum Exam' : `${resolvedSchool} Exam`)).trim();
   const examMetadata: Record<string, unknown> = {
     subject: (exam.subject || 'General').trim(),
     grade: finalGrade,
     stream: finalStream,
     timeLimit: finalTimeLimit,
+    category: finalCategory,
+    ...(finalCategory === 'official' ? { examYear: resolvedExamYear } : {}),
+    ...(finalCategory === 'created' ? { 
+      createdType: finalCreatedType, 
+      school: resolvedSchool, 
+      teacherName: resolvedTeacherName 
+    } : {}),
     ...(finalTopic ? { topic: finalTopic } : {}),
-    ...(finalTargetExamYear ? { targetExamYear: finalTargetExamYear } : {}),
     ...(exam.description?.trim() ? { description: exam.description.trim() } : {}),
   };
 
@@ -149,12 +190,20 @@ export async function uploadExamToFirestore(
     id: examId,
     catalogId: exam.catalogId || examId,
     title,
+    category: finalCategory,
+    ...(finalCreatedType ? { createdType: finalCreatedType } : {}),
+    ...(resolvedSchool ? { school: resolvedSchool } : {}),
+    ...(resolvedTeacherName ? { teacherName: resolvedTeacherName } : {}),
+    ...(resolvedExamYear ? { examYear: resolvedExamYear } : {}),
+    subject: (exam.subject || 'General').trim(),
+    grade: finalGrade,
+    topic: finalTopic,
     metadata: examMetadata,
     questions: sanitizedQuestions,
     questionCount: sanitizedQuestions.length,
     isPublic,
     userId: authorId,
-    sourceType: asOfficialExam ? 'curated_catalog' : (exam.sourceType || 'curated_catalog'),
+    sourceType: finalCategory === 'official' ? 'curated_catalog' : 'user_created',
     createdAt: exam.createdAt || nowIso,
     updatedAt: nowIso,
     ...(authorEmail ? { authorEmail } : {}),
@@ -162,11 +211,11 @@ export async function uploadExamToFirestore(
 
   try {
     // 3. Upload main exam document to Firestore /exams
-    onProgress?.(30, 'Saving exam document to Cloud Firestore /exams...');
+    onProgress?.(30, `Saving ${finalCategory === 'official' ? 'Official' : 'Teacher'} exam to Cloud Firestore /exams...`);
     const examDocRef = doc(db, 'exams', examId);
     await setDoc(examDocRef, firestoreExamPayload);
 
-    // 4. Optimized parallel batch commit for individual questions in /questions
+    // 4. Parallel batch commit for individual questions in /questions
     let uploadedCount = sanitizedQuestions.length;
     if (uploadIndividualQuestions && sanitizedQuestions.length > 0) {
       onProgress?.(50, `Syncing ${sanitizedQuestions.length} questions to /questions bank...`);
@@ -189,6 +238,7 @@ export async function uploadExamToFirestore(
           batch.set(qRef, {
             id: qId,
             examId,
+            category: finalCategory,
             subject: (exam.subject || 'General').trim(),
             text: q.text,
             options: q.options,
@@ -196,9 +246,12 @@ export async function uploadExamToFirestore(
             isPublic,
             grade: finalGrade,
             stream: finalStream,
+            ...(resolvedSchool ? { school: resolvedSchool } : {}),
+            ...(resolvedTeacherName ? { teacherName: resolvedTeacherName } : {}),
+            ...(resolvedExamYear ? { examYear: resolvedExamYear } : {}),
             userId: authorId,
             uploadedAt: nowIso,
-            ...(q.explanation ? { explanation: q.explanation } : {}),
+            ...(q.explanation ? { explanation: q.explanation.trim() } : {}),
             ...(finalTopic ? { topic: finalTopic } : {}),
             ...(authorEmail ? { authorEmail } : {}),
           });
@@ -207,36 +260,44 @@ export async function uploadExamToFirestore(
         return batch.commit();
       });
 
-      // Execute batches in parallel for maximum speed
+      // Execute batches in parallel for speed
       await Promise.all(batchPromises);
       uploadedCount = sanitizedQuestions.length;
     }
 
-    onProgress?.(90, 'Instantly synchronizing to Official Exams catalog...');
+    onProgress?.(90, 'Updating local state and synchronization cache...');
 
     const fullyUpdatedExam: Exam = {
       ...exam,
       id: examId,
       catalogId: exam.catalogId || examId,
       title,
+      category: finalCategory,
+      createdType: finalCreatedType,
+      school: resolvedSchool,
+      teacherName: resolvedTeacherName,
+      examYear: resolvedExamYear,
       subject: (exam.subject || 'General').trim(),
       grade: finalGrade,
       stream: finalStream,
       topic: finalTopic,
       timeLimit: finalTimeLimit,
-      targetExamYear: finalTargetExamYear,
+      targetExamYear: resolvedExamYear,
       metadata: examMetadata as any,
       questions: sanitizedQuestions,
       questionCount: sanitizedQuestions.length,
       isPublic,
       userId: authorId,
-      sourceType: asOfficialExam ? 'curated_catalog' : (exam.sourceType || 'curated_catalog'),
+      isUploadedToCloud: true,
+      sourceType: finalCategory === 'official' ? 'curated_catalog' : 'user_created',
       createdAt: exam.createdAt || nowIso,
       updatedAt: nowIso,
     } as Exam;
 
-    // 5. Instantly broadcast to the Official Exams live catalog (0ms latency)
-    publishOfficialExamLocally(fullyUpdatedExam);
+    // 5. If official exam, synchronize with the Official Exams catalog
+    if (finalCategory === 'official') {
+      publishOfficialExamLocally(fullyUpdatedExam);
+    }
 
     // 6. Update local repository state with uploaded metadata
     const local = getLocalExams();
@@ -247,15 +308,22 @@ export async function uploadExamToFirestore(
         ...fullyUpdatedExam,
       };
       saveLocalExams(local);
+    } else {
+      local.unshift(fullyUpdatedExam);
+      saveLocalExams(local);
     }
 
-    onProgress?.(100, 'Upload and instant synchronization complete!');
+    onProgress?.(100, 'Upload and synchronization complete!');
+
+    const successDetail = finalCategory === 'official'
+      ? `Official Exam (${resolvedExamYear} • ${exam.subject || 'General'})`
+      : `Teacher Exam for ${resolvedSchool} (${resolvedTeacherName} • ${finalTopic || exam.subject})`;
 
     return {
       success: true,
       examId,
       questionsCount: uploadedCount,
-      message: `Successfully uploaded "${exam.name}" (${finalGrade === 'Freshman' ? 'University Freshman' : `Grade ${finalGrade}`}) with ${uploadedCount} question(s) to Cloud Firestore and synchronized to Official Exams!`,
+      message: `Successfully uploaded "${title}" as ${successDetail} with ${uploadedCount} questions to Cloud Firestore!`,
     };
   } catch (err: unknown) {
     handleFirestoreError(err, OperationType.WRITE, `exams/${examId}`);

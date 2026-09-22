@@ -9,6 +9,10 @@ export interface Question {
 export type SubjectType = 'theory' | 'calculation';
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
 
+export type ExamCategory = 'official' | 'created';
+export type CreatedExamType = 'teacher' | 'student_draft';
+export type UserRole = 'student' | 'teacher' | 'admin';
+
 export interface ExamMetadata {
   subject: string;
   grade?: number | string;
@@ -17,6 +21,12 @@ export interface ExamMetadata {
   timeLimit: number;
   targetExamYear?: string;
   description?: string;
+  category?: ExamCategory;
+  createdType?: CreatedExamType;
+  school?: string;
+  teacherName?: string;
+  examYear?: string;
+  curator?: string;
 }
 
 export interface Exam {
@@ -35,6 +45,16 @@ export interface Exam {
   isPublic?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  // Two-tier Exam Repository Categorization:
+  // - 'official': Synced from cloud, created by admins (examYear, subject, grade, stream)
+  // - 'created':
+  //    * 'student_draft': Local offline only, editable, exportable
+  //    * 'teacher': Synced to cloud, created by verified teachers (school, teacherName, grade, subject, topic)
+  category?: ExamCategory;
+  createdType?: CreatedExamType;
+  school?: string;
+  teacherName?: string;
+  examYear?: string;
   // Dual-type exam categorization & curated catalog fields
   sourceType?: 'user_created' | 'curated_catalog';
   isDownloaded?: boolean;
@@ -103,9 +123,14 @@ export interface AppUser {
   displayName: string | null;
   photoURL: string | null;
   isAnonymous?: boolean;
+  role?: UserRole; // 'student' | 'teacher' | 'admin'
   grade?: number | string;
   stream?: 'Natural Science' | 'Social Science' | 'General';
   schoolName?: string;
+  school?: string;
+  teacherName?: string;
+  isVerifiedTeacher?: boolean;
+  isPaid?: boolean;
   region?: string;
   targetExamYear?: string | number;
   phoneNumber?: string;

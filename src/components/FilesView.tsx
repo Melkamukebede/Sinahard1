@@ -25,9 +25,12 @@ import {
   Filter,
   SlidersHorizontal,
   X,
+  School,
+  UserCheck,
 } from 'lucide-react';
 import { Exam, AppUser } from '../types';
 import { ShareExamModal } from './ShareExamModal';
+import { isUserTeacher } from '../services/db';
 
 interface FilesViewProps {
   exams: Exam[];
@@ -42,7 +45,7 @@ interface FilesViewProps {
 }
 
 type SortOption = 'newest' | 'questions' | 'duration' | 'name';
-type SourceFilter = 'all' | 'user_created' | 'downloaded';
+type SourceFilter = 'all' | 'user_created' | 'downloaded' | 'teacher';
 
 export const FilesView: React.FC<FilesViewProps> = ({
   exams,
@@ -95,13 +98,22 @@ export const FilesView: React.FC<FilesViewProps> = ({
     return 'Core Curriculum';
   };
 
+  const canUpload = Boolean(isAdmin || (user && isUserTeacher(user)));
+
+  const isExamOfficial = (e: Exam) => Boolean(e.category === 'official' || e.isDownloaded || e.sourceType === 'curated_catalog');
+  const isExamTeacher = (e: Exam) => Boolean((e.category === 'created' && e.createdType === 'teacher') || e.school);
+
   // Counts by source
-  const userCreatedCount = useMemo(
-    () => exams.filter((e) => !(e.isDownloaded || e.sourceType === 'curated_catalog')).length,
+  const officialCount = useMemo(
+    () => exams.filter(isExamOfficial).length,
     [exams]
   );
-  const downloadedCount = useMemo(
-    () => exams.filter((e) => e.isDownloaded || e.sourceType === 'curated_catalog').length,
+  const teacherCount = useMemo(
+    () => exams.filter(isExamTeacher).length,
+    [exams]
+  );
+  const userCreatedCount = useMemo(
+    () => exams.filter((e) => !isExamOfficial(e)).length,
     [exams]
   );
 
@@ -251,11 +263,13 @@ export const FilesView: React.FC<FilesViewProps> = ({
         examTopic.toLowerCase().includes(selectedTopic.toLowerCase()) ||
         (exam.unit && exam.unit.toLowerCase().includes(selectedTopic.toLowerCase()));
 
-      const isCurated = Boolean(exam.isDownloaded || exam.sourceType === 'curated_catalog');
+      const isOfficial = isExamOfficial(exam);
+      const isTeacher = isExamTeacher(exam);
       const matchSource =
         sourceFilter === 'all' ||
-        (sourceFilter === 'downloaded' && isCurated) ||
-        (sourceFilter === 'user_created' && !isCurated);
+        (sourceFilter === 'downloaded' && isOfficial) ||
+        (sourceFilter === 'teacher' && isTeacher) ||
+        (sourceFilter === 'user_created' && !isOfficial);
 
       return matchSearch && matchGrade && matchSubject && matchTopic && matchSource;
     });
@@ -393,7 +407,23 @@ export const FilesView: React.FC<FilesViewProps> = ({
             <CloudDownload className="w-3.5 h-3.5 text-zinc-500" />
             <span>Official Curriculum</span>
             <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
-              {downloadedCount}
+              {officialCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSourceFilter('teacher')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+              sourceFilter === 'teacher'
+                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+            }`}
+          >
+            <School className="w-3.5 h-3.5 text-emerald-500" />
+            <span>School Teacher</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+              {teacherCount}
             </span>
           </button>
 
@@ -407,7 +437,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
             }`}
           >
             <Layers className="w-3.5 h-3.5 text-zinc-500" />
-            <span>User Created</span>
+            <span>Student Drafts</span>
             <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
               {userCreatedCount}
             </span>
@@ -781,18 +811,34 @@ export const FilesView: React.FC<FilesViewProps> = ({
                             {exam.subject || 'General'}
                           </span>
 
-                          {isCurated && (
+                          {exam.category === 'official' || isCurated ? (
                             <span
                               className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 shrink-0"
                               title="Official Curriculum Exam"
                             >
-                              <CloudDownload className="w-2 h-2" />
+                              <CloudDownload className="w-2 h-2 text-amber-500" />
                               <span>Official</span>
+                              {exam.examYear && <span className="text-[8px] font-mono opacity-80">{exam.examYear}</span>}
+                            </span>
+                          ) : (exam.category === 'created' && exam.createdType === 'teacher') || exam.school ? (
+                            <span
+                              className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0 max-w-[140px] truncate"
+                              title={`School: ${exam.school || 'School'} | Teacher: ${exam.teacherName || 'Teacher'}`}
+                            >
+                              <School className="w-2 h-2 text-emerald-500 shrink-0" />
+                              <span className="truncate">{exam.school || exam.teacherName || 'Teacher'}</span>
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 shrink-0"
+                              title="Student Study Draft (Local & Offline)"
+                            >
+                              <span>Draft</span>
                             </span>
                           )}
                         </div>
 
-                        {/* Collapsed Actions: Practice, Push (Admin), Share, and Expand */}
+                        {/* Collapsed Actions: Practice, Push (Teacher/Admin), Share, and Expand */}
                         <div className="flex items-center gap-1 shrink-0 ml-auto">
                           {/* Practice Button */}
                           <button
@@ -808,8 +854,8 @@ export const FilesView: React.FC<FilesViewProps> = ({
                             <span>Practice</span>
                           </button>
 
-                          {/* Admin Push Button */}
-                          {isAdmin && onOpenDatabaseUpload && (
+                          {/* Push Button (Teacher/Admin) */}
+                          {canUpload && onOpenDatabaseUpload && (
                             <button
                               type="button"
                               onClick={(e) => {
@@ -885,18 +931,30 @@ export const FilesView: React.FC<FilesViewProps> = ({
                               {exam.subject || 'General'}
                             </span>
 
-                            {isCurated ? (
+                            {exam.category === 'official' || isCurated ? (
                               <span
                                 className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 shrink-0"
                                 title="Official Curriculum Exam"
                               >
-                                <CloudDownload className="w-2 h-2" />
+                                <CloudDownload className="w-2 h-2 text-amber-500" />
                                 <span>Official</span>
+                                {exam.examYear && <span className="text-[8px] font-mono opacity-80">{exam.examYear}</span>}
+                              </span>
+                            ) : (exam.category === 'created' && exam.createdType === 'teacher') || exam.school ? (
+                              <span
+                                className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0"
+                                title={`School Teacher Exam: ${exam.school || 'School'}`}
+                              >
+                                <School className="w-2 h-2 text-emerald-500" />
+                                <span>Teacher: {exam.teacherName || 'Instructor'} ({exam.school || 'School'})</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 shrink-0">
+                              <span
+                                className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 shrink-0"
+                                title="Student Study Draft (Local & Offline)"
+                              >
                                 <Layers className="w-2 h-2 text-zinc-500" />
-                                <span>User Created</span>
+                                <span>Draft (Local)</span>
                               </span>
                             )}
                           </div>
