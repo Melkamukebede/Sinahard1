@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { PageTab } from './Navbar';
 import { useNotifications } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
+import { isUserTeacher } from '../services/db';
 
 interface MobileNavProps {
   activeTab: PageTab;
@@ -23,6 +25,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   examsCount = 0,
 }) => {
   const { unreadAlertsCount } = useNotifications();
+  const { user } = useAuth();
+  const isTeacher = Boolean(user && isUserTeacher(user));
 
   return (
     <nav
@@ -77,30 +81,32 @@ export const MobileNav: React.FC<MobileNavProps> = ({
               </span>
             )}
           </div>
-          <span className="text-[10px] tracking-tight">Exams</span>
+          <span className="text-[10px] tracking-tight">{isTeacher ? 'School' : 'Exams'}</span>
         </button>
 
-        {/* Results */}
-        <button
-          type="button"
-          onClick={() => onTabChange('results')}
-          className={`flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-2 rounded-2xl transition-all cursor-pointer active:scale-95 touch-manipulation ${
-            activeTab === 'results'
-              ? 'text-zinc-950 dark:text-white font-bold'
-              : 'text-zinc-500 dark:text-zinc-400 font-medium hover:text-zinc-900 dark:hover:text-white'
-          }`}
-        >
-          <div
-            className={`p-1.5 rounded-xl transition-colors ${
+        {/* Results (Hidden for teachers) */}
+        {!isTeacher && (
+          <button
+            type="button"
+            onClick={() => onTabChange('results')}
+            className={`flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-2 rounded-2xl transition-all cursor-pointer active:scale-95 touch-manipulation ${
               activeTab === 'results'
-                ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-xs'
-                : 'bg-transparent'
+                ? 'text-zinc-950 dark:text-white font-bold'
+                : 'text-zinc-500 dark:text-zinc-400 font-medium hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
-            <BarChart3 className="w-4 h-4" />
-          </div>
-          <span className="text-[10px] tracking-tight">Results</span>
-        </button>
+            <div
+              className={`p-1.5 rounded-xl transition-colors ${
+                activeTab === 'results'
+                  ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-xs'
+                  : 'bg-transparent'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] tracking-tight">Results</span>
+          </button>
+        )}
 
         {/* Create */}
         <button

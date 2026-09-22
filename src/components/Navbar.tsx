@@ -24,7 +24,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { AuthNoticeModal } from './AuthNoticeModal';
-import { isUserAdmin, isUserSubscriptionActive } from '../services/db';
+import { isUserAdmin, isUserSubscriptionActive, isUserTeacher } from '../services/db';
 import { UserSubscription } from '../types';
 import { SinahardLogo } from './SinahardLogo';
 
@@ -64,6 +64,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const isCloudSynced = Boolean(user && user.uid !== 'guest' && !user.isAnonymous);
   const isAdmin = isUserAdmin(user);
+  const isTeacher = Boolean(user && isUserTeacher(user));
   const isPremiumActive = isUserSubscriptionActive(activeSubscription);
 
   const handleSignInClick = async () => {
@@ -116,21 +117,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
-            Exams
+            {isTeacher ? 'My School Exams' : 'Exams'}
           </button>
-          <button
-            id="nav-tab-results"
-            type="button"
-            onClick={() => onTabChange('results')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold transition cursor-pointer active:scale-98 ${
-              activeTab === 'results'
-                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            Results
-          </button>
+          {!isTeacher && (
+            <button
+              id="nav-tab-results"
+              type="button"
+              onClick={() => onTabChange('results')}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold transition cursor-pointer active:scale-98 ${
+                activeTab === 'results'
+                  ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              Results
+            </button>
+          )}
           <button
             id="nav-tab-create"
             type="button"
@@ -142,7 +145,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            Create
+            {isTeacher ? 'Create Class Exam' : 'Create'}
           </button>
 
           {/* Admin Verification Panel Link (Melkamu / Admin) */}
@@ -417,18 +420,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          <span>Exams</span>
+          <span>{isTeacher ? 'School' : 'Exams'}</span>
         </button>
-        <button
-          type="button"
-          onClick={() => onTabChange('results')}
-          className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition ${
-            activeTab === 'results' ? 'text-zinc-950 dark:text-white font-bold' : 'text-zinc-500'
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" />
-          <span>Results</span>
-        </button>
+        {!isTeacher && (
+          <button
+            type="button"
+            onClick={() => onTabChange('results')}
+            className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition ${
+              activeTab === 'results' ? 'text-zinc-950 dark:text-white font-bold' : 'text-zinc-500'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>Results</span>
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onTabChange('create')}

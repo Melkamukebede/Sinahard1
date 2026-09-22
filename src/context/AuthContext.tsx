@@ -5,7 +5,7 @@ import {
   signOut as fbSignOut,
   User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../firebase';
 import { AppUser } from '../types';
 
@@ -26,6 +26,7 @@ interface AuthContextType {
   setGuestDisplayName: (name: string) => void;
   updateStudentGrade: (grade: number | string, stream?: 'Natural Science' | 'Social Science' | 'General') => Promise<void>;
   updateStudentProfile: (profile: Partial<AppUser>) => Promise<void>;
+  refreshUserProfile: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -180,6 +181,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (resolvedPhone) localStorage.setItem(LOCAL_STUDENT_PHONE_KEY, resolvedPhone);
             if (resolvedIsRegistered) localStorage.setItem(LOCAL_STUDENT_IS_REGISTERED_KEY, 'true');
 
+            const isVerifiedTeacher = currentUser.email === 'melkamukebede11@gmail.com'
+              ? true
+              : Boolean(data?.isVerifiedTeacher === true);
+
             appUser = {
               ...appUser,
               displayName: data?.displayName || currentUser.displayName || (resolvedRole === 'teacher' ? 'Teacher' : 'Student'),
@@ -189,7 +194,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               schoolName: resolvedSchool,
               school: resolvedSchool,
               teacherName: resolvedTeacherName,
-              isVerifiedTeacher: Boolean(data?.isVerifiedTeacher ?? (resolvedRole === 'teacher')),
+              teachingSubject: data?.teachingSubject || undefined,
+              isVerifiedTeacher,
               isPaid: Boolean(data?.isPaid),
               region: resolvedRegion,
               targetExamYear: resolvedTargetYear,
@@ -206,6 +212,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (err) {
           console.warn('Could not sync user profile to Firestore:', err);
         }
+
+        // Setup real-time listener for current user's profile updates (e.g. admin verification)
+        const userRef = doc(db, 'users', currentUser.uid);
+        const unsubUser = onSnapshot(
+          userRef,
+          (docSnap) => {
+            if (docSnap.exists()) {
+              const liveData = docSnap.data();
+              const isAdminEmail = currentUser.email === 'melkamukebede11@gmail.com';
+              const liveRole = isAdminEmail ? 'admin' : (liveData.role || 'student');
+              const liveVerified = isAdminEmail ? true : Boolean(liveData.isVerifiedTeacher === true);
+
+              setUser((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  displayName: liveData.displayName || prev.displayName,
+                  role: liveRole,
+                  grade: liveData.grade || prev.grade,
+                  stream: liveData.stream || prev.stream,
+                  schoolName: liveData.school || liveData.schoolName || prev.schoolName,
+                  school: liveData.school || liveData.schoolName || prev.school,
+                  teacherName: liveData.teacherName || prev.teacherName,
+                  teachingSubject: liveData.teachingSubject || prev.teachingSubject,
+                  isVerifiedTeacher: liveVerified,
+                  isPaid: Boolean(liveData.isPaid ?? prev.isPaid),
+                  isRegistered: Boolean(liveData.isRegistered ?? prev.isRegistered),
+                };
+              });
+            }
+          },
+          (err) => {
+            console.warn('Real-time user profile sync error:', err);
+          }
+        );
+
+        return () => {
+          unsubUser();
+        };
       } else {
         // Fallback to local guest if saved
         const savedGuestName = localStorage.getItem(LOCAL_GUEST_NAME_KEY);
@@ -335,7 +380,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         schoolName: resolvedSchool ?? prev?.schoolName ?? prev?.school,
         school: resolvedSchool ?? prev?.school ?? prev?.schoolName,
         teacherName: profileData.teacherName ?? prev?.teacherName,
-        isVerifiedTeacher: profileData.isVerifiedTeacher ?? (finalRole === 'teacher'),
+        teachingSubject: profileData.teachingSubject ?? prev?.teachingSubject,
+        isVerifiedTeacher: isUserAdmin ? true : Boolean(profileData.isVerifiedTeacher ?? prev?.isVerifiedTeacher ?? false),
         isPaid: profileData.isPaid ?? prev?.isPaid,
         region: profileData.region ?? prev?.region,
         targetExamYear: profileData.targetExamYear ?? prev?.targetExamYear,
@@ -355,6 +401,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           {
             ...profileData,
             ...(resolvedSchool ? { school: resolvedSchool, schoolName: resolvedSchool } : {}),
+            isVerifiedTeacher: (firebaseUser.email === 'melkamukebede11@gmail.com') ? true : Boolean(profileData.isVerifiedTeacher ?? user?.isVerifiedTeacher ?? false),
             isRegistered: true,
             updatedAt: new Date().toISOString(),
           },
@@ -364,6 +411,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Failed to update student profile in Firestore:', err);
       }
     }
+  };
+
+  const refreshUserProfile = async (): Promise<boolean> => {
+    if (!firebaseUser) return false;
+    try {
+      const userRef = doc(db, 'users', firebaseUser.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        const isAdminEmail = firebaseUser.email === 'melkamukebede11@gmail.com';
+        const liveRole = isAdminEmail ? 'admin' : (data.role || 'student');
+        const liveVerified = isAdminEmail ? true : Boolean(data.isVerifiedTeacher === true);
+
+        setUser((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            displayName: data.displayName || prev.displayName,
+            role: liveRole,
+            grade: data.grade || prev.grade,
+            stream: data.stream || prev.stream,
+            schoolName: data.school || data.schoolName || prev.schoolName,
+            school: data.school || data.schoolName || prev.school,
+            teacherName: data.teacherName || prev.teacherName,
+            teachingSubject: data.teachingSubject || prev.teachingSubject,
+            isVerifiedTeacher: liveVerified,
+            isPaid: Boolean(data.isPaid ?? prev.isPaid),
+            isRegistered: Boolean(data.isRegistered ?? prev.isRegistered),
+          };
+        });
+        return liveVerified;
+      }
+    } catch (err) {
+      console.warn('Failed to refresh user profile from Firestore:', err);
+    }
+    return false;
   };
 
   const updateStudentGrade = async (grade: number | string, stream?: 'Natural Science' | 'Social Science' | 'General') => {
@@ -404,6 +487,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setGuestDisplayName,
         updateStudentGrade,
         updateStudentProfile,
+        refreshUserProfile,
       }}
     >
       {children}

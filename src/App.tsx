@@ -41,10 +41,12 @@ import {
   subscribeToAllSubscriptions,
   isUserAdmin,
   isUserTeacher,
+  isTeacherVerified,
   verifySubscriptionByTxRef,
   INITIAL_SAMPLE_EXAMS,
   saveLocalExams,
 } from './services/db';
+import { TeacherPendingVerificationView } from './components/TeacherPendingVerificationView';
 import { verifyChapaTransaction } from './services/chapa';
 import { verifyTelebirrPayment } from './services/telebirr';
 import { getUserTierStatus } from './services/subscriptionLimits';
@@ -57,9 +59,11 @@ function MainApp() {
   const {
     user,
     signInWithGoogle,
+    signOut,
     isRegistrationModalOpen,
     openRegistrationModal,
     closeRegistrationModal,
+    refreshUserProfile,
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState<PageTab>('home');
@@ -73,6 +77,16 @@ function MainApp() {
   const userCreatedAt = user?.metadata?.creationTime;
   const userTier = getUserTierStatus(user, activeSubscription, userCreatedAt);
   const isAdmin = Boolean(user && !user.isAnonymous && user.uid !== 'guest' && isUserAdmin(user));
+  const isTeacher = Boolean(user && isUserTeacher(user));
+  const isVerifiedTeacher = Boolean(user && isTeacherVerified(user));
+  const isUnverifiedTeacher = Boolean(user && user.role === 'teacher' && !isVerifiedTeacher);
+
+  // If teacher, disallow results tab or payment modals
+  useEffect(() => {
+    if (isTeacher && activeTab === 'results') {
+      setActiveTab('home');
+    }
+  }, [isTeacher, activeTab]);
 
   // Active exam for practice / editing
   const [activePracticeExam, setActivePracticeExam] = useState<Exam | null>(null);
@@ -471,6 +485,32 @@ function MainApp() {
     .filter((e) => e.isDownloaded || e.sourceType === 'curated_catalog')
     .map((e) => e.catalogId || e.id);
 
+  // If registered as teacher and waiting for admin verification, display the dedicated pending screen
+  if (isUnverifiedTeacher && user) {
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-[#070e1a] text-zinc-950 dark:text-white font-['Plus_Jakarta_Sans',sans-serif]">
+        <TeacherPendingVerificationView
+          user={user}
+          onSignOut={signOut}
+          onOpenRegistrationModal={openRegistrationModal}
+          onRefreshStatus={refreshUserProfile}
+        />
+        <StudentRegistrationModal
+          isOpen={isRegistrationModalOpen}
+          onClose={closeRegistrationModal}
+          onSuccess={() => {
+            showToast('Profile updated successfully!');
+          }}
+        />
+        {toastMessage && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold font-['Syne',sans-serif] shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200">
+            {toastMessage}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-transparent text-zinc-900 dark:text-zinc-100 transition-colors font-['Plus_Jakarta_Sans',sans-serif] selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-950 relative">
       {/* Navigation Bar */}
@@ -485,7 +525,7 @@ function MainApp() {
         }}
         onOpenNotifications={() => setIsNotificationsModalOpen(true)}
         onOpenDrawer={() => setIsDrawerOpen(true)}
-        onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+        onOpenSubscriptionModal={isTeacher ? undefined : () => setIsSubscriptionModalOpen(true)}
         activeSubscription={activeSubscription}
       />
 
@@ -505,13 +545,16 @@ function MainApp() {
             onStartPractice={handleStartPractice}
             onOpenPasteModal={handleOpenQuestionTextEditor}
             onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
-            onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+            onOpenSubscriptionModal={isTeacher ? undefined : () => setIsSubscriptionModalOpen(true)}
             onOpenCuratedModal={() => setIsCuratedModalOpen(true)}
             onOpenRegistrationModal={openRegistrationModal}
             activeSubscription={activeSubscription}
             userTier={userTier}
             user={user}
             isAdmin={isAdmin}
+            onOpenDatabaseUpload={(isAdmin || isTeacher) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
+            onEditExam={handleEditExam}
+            onDeleteExam={(id) => setExamToDelete(id)}
           />
         )}
 
@@ -527,13 +570,13 @@ function MainApp() {
               setActiveTab('create');
             }}
             onOpenCuratedCatalogModal={() => setIsCuratedModalOpen(true)}
-            onOpenDatabaseUpload={(isAdmin || Boolean(user && isUserTeacher(user))) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
+            onOpenDatabaseUpload={(isAdmin || isTeacher) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
             isAdmin={isAdmin}
             user={user}
           />
         )}
 
-        {activeTab === 'results' && (
+        {activeTab === 'results' && !isTeacher && (
           <ResultsView
             results={results}
             onDeleteResult={handleDeleteResult}

@@ -1,5 +1,5 @@
 import { AppUser, UserSubscription } from '../types';
-import { isUserSubscriptionActive } from './db';
+import { isUserSubscriptionActive, isUserTeacher, isUserAdmin } from './db';
 
 const FIRST_VISIT_STORAGE_KEY = 'exam_master_first_seen_timestamp';
 export const TRIAL_DURATION_DAYS = 3;
@@ -83,6 +83,26 @@ export function getUserTierStatus(
   activeSubscription: UserSubscription | null,
   accountCreationTime?: string | null
 ): UserTierStatus {
+  // 0. Teachers & Administrators have full authoring privileges with zero paywalls
+  if (user && (isUserTeacher(user) || isUserAdmin(user))) {
+    const isAdm = isUserAdmin(user);
+    return {
+      tier: 'premium',
+      isPremium: true,
+      isTrial: false,
+      isFree: false,
+      isGuest: false,
+      trialDaysRemaining: 0,
+      maxQuestionsPerExam: Infinity,
+      maxImportQuestions: Infinity,
+      tierBadge: isAdm ? 'Administrator' : 'Verified Teacher',
+      tierDescription: isAdm
+        ? 'Full administrator access to national curriculum, Firestore database, and subscriptions.'
+        : 'Full teacher access to exam creation, Cloud Firestore publishing, and school management.',
+      accountAgeDays: 0,
+    };
+  }
+
   // 1. Check verified active premium
   const isPremium = isUserSubscriptionActive(activeSubscription);
   if (isPremium) {

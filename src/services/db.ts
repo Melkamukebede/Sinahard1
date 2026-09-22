@@ -550,11 +550,17 @@ export function isUserAdmin(user: AppUser | null): boolean {
 
 export function isUserTeacher(user: AppUser | null): boolean {
   if (!user) return false;
-  return user.role === 'teacher' || Boolean(user.isVerifiedTeacher);
+  return user.role === 'teacher';
+}
+
+export function isTeacherVerified(user: AppUser | null): boolean {
+  if (!user) return false;
+  if (isUserAdmin(user)) return true;
+  return user.role === 'teacher' && Boolean(user.isVerifiedTeacher === true);
 }
 
 export function canUserUploadExam(user: AppUser | null): boolean {
-  return isUserAdmin(user) || isUserTeacher(user);
+  return isUserAdmin(user) || isTeacherVerified(user);
 }
 
 export interface RegisteredTeacherRecord {

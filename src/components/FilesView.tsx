@@ -45,7 +45,7 @@ interface FilesViewProps {
 }
 
 type SortOption = 'newest' | 'questions' | 'duration' | 'name';
-type SourceFilter = 'all' | 'user_created' | 'downloaded' | 'teacher';
+type SourceFilter = 'all' | 'user_created' | 'downloaded' | 'teacher' | 'my_created' | 'pushed_cloud' | 'local_storage';
 
 export const FilesView: React.FC<FilesViewProps> = ({
   exams,
@@ -99,9 +99,18 @@ export const FilesView: React.FC<FilesViewProps> = ({
   };
 
   const canUpload = Boolean(isAdmin || (user && isUserTeacher(user)));
+  const isTeacherUser = Boolean(user && isUserTeacher(user));
 
   const isExamOfficial = (e: Exam) => Boolean(e.category === 'official' || e.isDownloaded || e.sourceType === 'curated_catalog');
   const isExamTeacher = (e: Exam) => Boolean((e.category === 'created' && e.createdType === 'teacher') || e.school);
+  const isPushedToCloud = (e: Exam) => Boolean(
+    e.isUploadedToCloud ||
+    e.cloudId ||
+    e.isPushedToCloud ||
+    e.metadata?.pushedToCloud ||
+    e.cloudStorageEngine === 'firestore' ||
+    e.sourceType === 'firestore'
+  );
 
   // Counts by source
   const officialCount = useMemo(
@@ -114,6 +123,14 @@ export const FilesView: React.FC<FilesViewProps> = ({
   );
   const userCreatedCount = useMemo(
     () => exams.filter((e) => !isExamOfficial(e)).length,
+    [exams]
+  );
+  const pushedCloudCount = useMemo(
+    () => exams.filter((e) => !isExamOfficial(e) && isPushedToCloud(e)).length,
+    [exams]
+  );
+  const localStorageCount = useMemo(
+    () => exams.filter((e) => !isExamOfficial(e) && !isPushedToCloud(e)).length,
     [exams]
   );
 
@@ -265,11 +282,17 @@ export const FilesView: React.FC<FilesViewProps> = ({
 
       const isOfficial = isExamOfficial(exam);
       const isTeacher = isExamTeacher(exam);
+      const isPushed = isPushedToCloud(exam);
+      const isCreated = !isOfficial;
+
       const matchSource =
         sourceFilter === 'all' ||
         (sourceFilter === 'downloaded' && isOfficial) ||
         (sourceFilter === 'teacher' && isTeacher) ||
-        (sourceFilter === 'user_created' && !isOfficial);
+        (sourceFilter === 'user_created' && isCreated) ||
+        (sourceFilter === 'my_created' && isCreated) ||
+        (sourceFilter === 'pushed_cloud' && isCreated && isPushed) ||
+        (sourceFilter === 'local_storage' && isCreated && !isPushed);
 
       return matchSearch && matchGrade && matchSubject && matchTopic && matchSource;
     });
@@ -380,68 +403,153 @@ export const FilesView: React.FC<FilesViewProps> = ({
 
         {/* Source Tabs */}
         <div className="relative z-10 flex items-center gap-2 p-1 rounded-full bg-white/70 dark:bg-zinc-900/60 border border-white/80 dark:border-white/10 w-full sm:w-fit overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setSourceFilter('all')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
-              sourceFilter === 'all'
-                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            <span>All Exams</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
-              {exams.length}
-            </span>
-          </button>
+          {isTeacherUser ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setSourceFilter('all')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+                  sourceFilter === 'all'
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <span>All Exams</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+                  {exams.length}
+                </span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setSourceFilter('downloaded')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
-              sourceFilter === 'downloaded'
-                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            <CloudDownload className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Official Curriculum</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
-              {officialCount}
-            </span>
-          </button>
+              <button
+                type="button"
+                onClick={() => setSourceFilter('my_created')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+                  sourceFilter === 'my_created'
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5 text-zinc-500" />
+                <span>My Created</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+                  {userCreatedCount}
+                </span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setSourceFilter('teacher')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
-              sourceFilter === 'teacher'
-                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            <School className="w-3.5 h-3.5 text-emerald-500" />
-            <span>School Teacher</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
-              {teacherCount}
-            </span>
-          </button>
+              <button
+                type="button"
+                onClick={() => setSourceFilter('pushed_cloud')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+                  sourceFilter === 'pushed_cloud'
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <CloudUpload className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
+                <span>Pushed to Cloud</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+                  {pushedCloudCount}
+                </span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setSourceFilter('user_created')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
-              sourceFilter === 'user_created'
-                ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Student Drafts</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
-              {userCreatedCount}
-            </span>
-          </button>
+              <button
+                type="button"
+                onClick={() => setSourceFilter('local_storage')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+                  sourceFilter === 'local_storage'
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Local Storage Drafts</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+                  {localStorageCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSourceFilter('downloaded')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+                  sourceFilter === 'downloaded'
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <CloudDownload className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Official Curriculum</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+                  {officialCount}
+                </span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setSourceFilter('all')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+                  sourceFilter === 'all'
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <span>All Exams</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+                  {exams.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSourceFilter('downloaded')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+                  sourceFilter === 'downloaded'
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <CloudDownload className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Official Curriculum</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+                  {officialCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSourceFilter('teacher')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+                  sourceFilter === 'teacher'
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <School className="w-3.5 h-3.5 text-emerald-500" />
+                <span>School Teacher</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+                  {teacherCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSourceFilter('user_created')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-98 ${
+                  sourceFilter === 'user_created'
+                    ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-zinc-500" />
+                <span>Student Drafts</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-800 font-semibold">
+                  {userCreatedCount}
+                </span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* ─────────────────────────────────────────────────────────
@@ -830,10 +938,21 @@ export const FilesView: React.FC<FilesViewProps> = ({
                             </span>
                           ) : (
                             <span
-                              className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 shrink-0"
-                              title="Student Study Draft (Local & Offline)"
+                              className={`inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                                isPushedToCloud(exam)
+                                  ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-2xs'
+                                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'
+                              }`}
+                              title={isPushedToCloud(exam) ? 'Exam is synced to Cloud Firestore' : 'Exam stored in Local Storage'}
                             >
-                              <span>Draft</span>
+                              {isPushedToCloud(exam) ? (
+                                <>
+                                  <CloudUpload className="w-2.5 h-2.5" />
+                                  <span>Pushed</span>
+                                </>
+                              ) : (
+                                <span>Local Draft</span>
+                              )}
                             </span>
                           )}
                         </div>
@@ -862,11 +981,15 @@ export const FilesView: React.FC<FilesViewProps> = ({
                                 e.stopPropagation();
                                 onOpenDatabaseUpload(exam);
                               }}
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 transition cursor-pointer active:scale-95 shrink-0"
-                              title={`Push ${exam.subject || 'exam'} to Cloud Firestore`}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold transition cursor-pointer active:scale-95 shrink-0 ${
+                                isPushedToCloud(exam)
+                                  ? 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700'
+                                  : 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:opacity-90 shadow-2xs'
+                              }`}
+                              title={isPushedToCloud(exam) ? 'Update exam in Cloud Firestore' : `Push ${exam.subject || 'exam'} to Cloud Firestore`}
                             >
                               <CloudUpload className="w-2.5 h-2.5" />
-                              <span>Push</span>
+                              <span>{isPushedToCloud(exam) ? 'Update Cloud' : 'Push to Cloud'}</span>
                             </button>
                           )}
 
