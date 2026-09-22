@@ -40,6 +40,7 @@ import {
   subscribeToUserSubscription,
   subscribeToAllSubscriptions,
   isUserAdmin,
+  isUserTeacher,
   verifySubscriptionByTxRef,
   INITIAL_SAMPLE_EXAMS,
   saveLocalExams,
@@ -506,8 +507,11 @@ function MainApp() {
             onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
             onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
             onOpenCuratedModal={() => setIsCuratedModalOpen(true)}
+            onOpenRegistrationModal={openRegistrationModal}
             activeSubscription={activeSubscription}
             userTier={userTier}
+            user={user}
+            isAdmin={isAdmin}
           />
         )}
 
@@ -523,7 +527,7 @@ function MainApp() {
               setActiveTab('create');
             }}
             onOpenCuratedCatalogModal={() => setIsCuratedModalOpen(true)}
-            onOpenDatabaseUpload={isAdmin ? (exam) => setExamForDatabaseUpload(exam) : undefined}
+            onOpenDatabaseUpload={(isAdmin || Boolean(user && isUserTeacher(user))) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
             isAdmin={isAdmin}
             user={user}
           />
@@ -553,7 +557,7 @@ function MainApp() {
             onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
             userTier={userTier}
             onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
-            onOpenDatabaseUpload={isAdmin ? (exam) => setExamForDatabaseUpload(exam) : undefined}
+            onOpenDatabaseUpload={(isAdmin || Boolean(user && isUserTeacher(user))) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
             isAdmin={isAdmin}
           />
         )}
@@ -706,17 +710,18 @@ function MainApp() {
         }}
       />
 
-      {/* Database Storage Upload Modal (Cloud Firestore - Admin privileged) */}
+      {/* Database Storage Upload Modal (Cloud Firestore - Admin & Teacher privileged) */}
       <DatabaseUploadModal
         isOpen={examForDatabaseUpload !== null}
         exam={examForDatabaseUpload}
         user={user}
         onClose={() => setExamForDatabaseUpload(null)}
+        onOpenRegistrationModal={openRegistrationModal}
         onUploadComplete={(updatedExam) => {
           setExams((prev) =>
             prev.map((e) => (e.id === updatedExam.id ? { ...e, ...updatedExam } : e))
           );
-          showToast(`Questions successfully synced to Cloud Firestore and Official Exams!`);
+          showToast(`Questions successfully synced to Cloud Firestore repository!`);
         }}
       />
 
@@ -725,7 +730,11 @@ function MainApp() {
         isOpen={isRegistrationModalOpen}
         onClose={closeRegistrationModal}
         onSuccess={(registeredProfile) => {
-          showToast(`Registered successfully as Grade ${registeredProfile.grade || '12'} student! Official exams tailored.`);
+          if (registeredProfile.role === 'teacher') {
+            showToast(`Registered successfully as Teacher for ${registeredProfile.school || 'your school'}!`);
+          } else {
+            showToast(`Registered successfully as Grade ${registeredProfile.grade || '12'} student!`);
+          }
         }}
       />
 

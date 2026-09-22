@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Cloud,
   CloudUpload,
   CheckCircle2,
   AlertCircle,
@@ -20,18 +19,16 @@ import {
   Compass,
   FileText,
   Database,
-  Flame,
   Code2,
   Check,
   Zap,
   SlidersHorizontal,
   Copy,
-  FileSpreadsheet,
   School,
   UserCheck,
-  Building2,
+  UserPlus,
 } from 'lucide-react';
-import { Exam, AppUser, ExamCategory, CreatedExamType } from '../types';
+import { Exam, AppUser, ExamCategory } from '../types';
 import {
   uploadExamToFirestore,
   canUserUploadToFirestore,
@@ -41,12 +38,13 @@ import {
 import { ADMIN_EMAIL, isUserAdmin, isUserTeacher } from '../services/db';
 import { useAuth } from '../context/AuthContext';
 
-interface DatabaseUploadModalProps {
+export interface DatabaseUploadModalProps {
   exam: Exam | null;
   user: AppUser | null;
   isOpen: boolean;
   onClose: () => void;
   onUploadComplete?: (exam: Exam, engine: 'firestore') => void;
+  onOpenRegistrationModal?: () => void;
 }
 
 const ACADEMIC_GRADE_OPTIONS = [
@@ -78,6 +76,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   isOpen,
   onClose,
   onUploadComplete,
+  onOpenRegistrationModal,
 }) => {
   const { signInWithGoogle, isSigningIn, popupBlocked } = useAuth();
 
@@ -103,7 +102,6 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   // Upload toggles
   const [uploadIndividualQuestions, setUploadIndividualQuestions] = useState<boolean>(true);
   const [isPublic, setIsPublic] = useState<boolean>(true);
-  const [asOfficialExam, setAsOfficialExam] = useState<boolean>(true);
 
   // Status & loading states
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -132,8 +130,8 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     const inferred = inferStream(exam.subject, `${exam.name} ${exam.title || ''}`, detectedGrade);
     setSelectedStream((exam as any).stream || inferred);
 
-    // Topic extraction (prioritize clean topic, fallback to name parsing)
-    const existingTopic = exam.topic || (exam.metadata?.topic) || '';
+    // Topic extraction
+    const existingTopic = exam.topic || exam.metadata?.topic || '';
     if (existingTopic) {
       setTopic(existingTopic);
     } else if (exam.name.includes(':')) {
@@ -150,7 +148,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     setCuratorName(
       exam.curator ||
       (detectedGrade === 'Freshman'
-        ? 'University Higher Education Mathematics Board'
+        ? 'University Higher Education Board'
         : 'Ministry of Education (MoE)')
     );
 
@@ -161,7 +159,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
         : `Grade ${detectedGrade} National Curriculum Exam`)
     );
 
-    // Category initialization
+    // Category initialization based on role
     if (isUserTeacher(user) && !isUserAdmin(user)) {
       setUploadCategory('created');
     } else if (exam.category) {
@@ -170,10 +168,10 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
       setUploadCategory('official');
     }
 
-    setSchoolName(user?.school || (exam as any).school || 'Bole Secondary School');
+    setSchoolName(user?.school || user?.schoolName || (exam as any).school || 'Bole Secondary School');
     setTeacherName(user?.teacherName || user?.displayName || (exam as any).teacherName || 'Instructor');
 
-    // Reset status indicators & tab
+    // Reset status indicators
     setStatusMessage(null);
     setErrorMessage(null);
     setUploadProgress(0);
@@ -189,7 +187,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
         setAdminTag('University Freshman Curriculum');
       }
       if (!curatorName || curatorName.includes('Ministry')) {
-        setCuratorName('University Higher Education Mathematics Board');
+        setCuratorName('University Higher Education Board');
       }
     } else if (newGrade === '9' || newGrade === '10') {
       setSelectedStream('General');
@@ -218,23 +216,15 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     const issues: string[] = [];
 
     exam.questions.forEach((q, idx) => {
-      if (!q.text?.trim()) {
-        issues.push(`Question #${idx + 1} has empty text`);
+      const text = `${q.question} ${q.options?.join(' ') || ''}`;
+      if (text.includes('$') || text.includes('\\') || text.includes('^') || text.includes('_')) {
+        mathCount++;
       }
-      if (!Array.isArray(q.options) || q.options.length < 2) {
-        issues.push(`Question #${idx + 1} has insufficient options (at least 2 required)`);
-      }
-      if (typeof q.correct !== 'number' || q.correct < 0 || q.correct > 3) {
-        issues.push(`Question #${idx + 1} correct answer index is invalid`);
-      }
-      if (q.explanation && q.explanation.trim().length > 0) {
+      if (q.explanation && q.explanation.trim().length > 5) {
         withExplanation++;
       }
-      // Check for LaTeX / math expressions
-      const mathRegex = /\$|\\frac|\\lim|\\int|\\sum|\\sqrt|\^|_|\\cdot|\\alpha|\\beta|\\theta|\\pi|\\times|\\pm|\\le|\\ge|\\ne|\\subset|\\in/;
-      const combinedText = `${q.text} ${q.options?.join(' ') || ''}`;
-      if (mathRegex.test(combinedText)) {
-        mathCount++;
+      if (!q.options || q.options.length < 2) {
+        issues.push(`Question #${idx + 1} has insufficient options.`);
       }
     });
 
@@ -248,47 +238,43 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     };
   }, [exam]);
 
-  const effectiveGrade = selectedGrade === 'custom' ? (customGradeText.trim() || 'General') : selectedGrade;
+  const effectiveGrade = selectedGrade === 'custom' ? customGradeText.trim() || '12' : selectedGrade;
 
-  // Optimized Firestore Payload Preview Generator
+  // Real-time Preview Document Payload for Cloud Firestore
   const previewPayload = useMemo(() => {
     if (!exam) return null;
-    const examId = exam.id || 'exam_' + Date.now();
-    const title = (exam.title || exam.name || 'Official Curriculum Exam').trim();
     const isTeacherExam = uploadCategory === 'created';
 
-    const sanitizedQuestions = (exam.questions || []).map((q, idx) => ({
-      id: q.id || `q_${examId}_${idx + 1}`,
-      text: q.text,
-      options: q.options,
-      correct: q.correct,
-      explanation: q.explanation || undefined,
-    }));
-
-    const metadata = {
-      subject: (exam.subject || 'General').trim(),
+    return {
+      id: exam.id,
+      name: exam.name,
+      title: exam.name,
+      subject: exam.subject,
       grade: effectiveGrade,
       stream: selectedStream,
       topic: topic.trim() || undefined,
-      timeLimit: Number(timeLimit) || 20,
-      targetExamYear: targetExamYear.trim() || '2026 (2018 E.C.)',
-      description: exam.description?.trim() || undefined,
-    };
-
-    return {
-      id: examId,
-      catalogId: exam.catalogId || examId,
-      title,
       category: uploadCategory,
       createdType: isTeacherExam ? 'teacher' : undefined,
       school: isTeacherExam ? schoolName.trim() : undefined,
       teacherName: isTeacherExam ? teacherName.trim() : undefined,
       examYear: !isTeacherExam ? targetExamYear.trim() : undefined,
-      metadata,
-      questionsCount: sanitizedQuestions.length,
-      sampleQuestion: sanitizedQuestions[0] || null,
+      timeLimit,
+      totalQuestions: exam.questions?.length || 0,
+      curator: curatorName.trim(),
+      adminTag: adminTag.trim(),
+      metadata: {
+        academicStage: effectiveGrade === 'Freshman' ? 'Higher Education' : `Grade ${effectiveGrade}`,
+        examCategory: uploadCategory,
+        schoolAffiliation: isTeacherExam ? schoolName.trim() : 'National Public Access',
+        subject: exam.subject,
+        stream: selectedStream,
+        hasFormulas: diagnostics.hasMath,
+        explanationsCount: diagnostics.withExplanation,
+        version: '2.0.0',
+        platform: 'Sinahard Ethiopian Exam System',
+      },
       isPublic,
-      sourceType: !isTeacherExam ? 'curated_catalog' : (exam.sourceType || 'user_created'),
+      sourceType: !isTeacherExam ? 'curated_catalog' : exam.sourceType || 'user_created',
     };
   }, [
     exam,
@@ -301,9 +287,11 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     timeLimit,
     targetExamYear,
     isPublic,
+    diagnostics,
+    curatorName,
+    adminTag,
   ]);
 
-  // Estimated JSON document payload size
   const estimatedPayloadSizeKB = useMemo(() => {
     if (!previewPayload) return '0.0';
     try {
@@ -319,7 +307,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   const userIsAdmin = isUserAdmin(user);
   const userIsTeacher = isUserTeacher(user);
   const canUpload = canUserUploadToFirestore(user);
-  const userEmail = user?.email || 'Not logged in';
+  const userEmail = user?.email || 'Guest / Local Student';
 
   const handleCopyPayload = () => {
     if (!previewPayload) return;
@@ -331,14 +319,14 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
   const handleUploadToFirestore = async () => {
     if (!canUpload) {
       setErrorMessage(
-        `Access Denied: Only Verified Teachers and Administrators (${ADMIN_EMAIL}) can publish to Cloud Firestore. Student study drafts remain local.`
+        `Access Notice: Only Verified Teachers and Administrators (${ADMIN_EMAIL}) publish to Cloud Firestore. Student practice quizzes remain safely local on your device.`
       );
       return;
     }
 
     if (uploadCategory === 'official' && !userIsAdmin) {
       setErrorMessage(
-        `Access Denied: Only the Administrator (${ADMIN_EMAIL}) can publish to the Official Exam Catalog. As a teacher, please select 'School Teacher Exam'.`
+        `Only the Administrator (${ADMIN_EMAIL}) can publish to the Official National Catalog. As a teacher, please select 'School Teacher Exam'.`
       );
       return;
     }
@@ -352,7 +340,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     setErrorMessage(null);
     setStatusMessage(null);
     setUploadProgress(10);
-    setProgressStatusText('Initializing connection to Cloud Firestore...');
+    setProgressStatusText('Connecting to Cloud Firestore database...');
 
     try {
       const isOfficial = uploadCategory === 'official';
@@ -398,16 +386,12 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
             grade: effectiveGrade,
             topic: topic.trim() || undefined,
             stream: selectedStream,
-            curator: curatorName.trim(),
-            timeLimit,
-            sourceType: isOfficial ? 'curated_catalog' : exam.sourceType,
-          } as Exam,
+          },
           'firestore'
         );
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setErrorMessage(msg);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to upload exam to Cloud Firestore.');
     } finally {
       setIsLoading(false);
     }
@@ -415,54 +399,52 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto bg-slate-950/60 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-black/60 backdrop-blur-md">
         <motion.div
-          initial={{ opacity: 0, scale: 0.97, y: 14 }}
+          initial={{ opacity: 0, scale: 0.98, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.97, y: 14 }}
-          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-2xl bg-[#f8fafc] dark:bg-[#0c182b] border border-slate-200/90 dark:border-white/10 rounded-[28px] sm:rounded-[32px] shadow-2xl overflow-hidden text-slate-900 dark:text-slate-100 backdrop-blur-2xl my-auto flex flex-col max-h-[90vh]"
+          exit={{ opacity: 0, scale: 0.98, y: 12 }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-3xl bg-white dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 rounded-[32px] sm:rounded-[36px] shadow-2xl overflow-hidden text-zinc-900 dark:text-white my-auto flex flex-col max-h-[92vh]"
         >
-          {/* Header */}
-          <div className="px-5 sm:px-6 py-4.5 border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between bg-white/70 dark:bg-white/[0.02]">
-            <div className="flex items-center gap-3 min-w-0">
-              {/* App Brand Icon Badge */}
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-amber-600/20 dark:from-amber-400/20 dark:to-orange-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs">
-                <Flame className="w-5 h-5 fill-amber-500/20" />
+          {/* Header - Generous Padding, Black Icons */}
+          <div className="p-6 sm:p-7 border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between bg-zinc-50/60 dark:bg-white/[0.02]">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-black dark:text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Database className="w-6 h-6 text-black dark:text-white" />
               </div>
 
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white font-['Outfit',sans-serif] truncate">
+                  <h3 className="text-lg sm:text-xl font-bold text-zinc-950 dark:text-white font-['Outfit',sans-serif] tracking-tight">
                     Upload to Cloud Firestore
                   </h3>
 
-                  {/* Firebase Live Status Pill */}
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/25 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Firestore (default)
+                    Firestore Live Database
                   </span>
 
                   {userIsAdmin ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-950 shrink-0">
-                      <ShieldCheck className="w-3 h-3 text-amber-400 dark:text-amber-500" />
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shrink-0">
+                      <ShieldCheck className="w-3.5 h-3.5 text-white dark:text-zinc-950" />
                       Admin Verified
                     </span>
                   ) : userIsTeacher ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
-                      <UserCheck className="w-3 h-3 text-emerald-500" />
-                      Verified Teacher
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
+                      <UserCheck className="w-3.5 h-3.5 text-black dark:text-white" />
+                      School Teacher
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 shrink-0">
-                      <Lock className="w-3 h-3 text-amber-500" />
-                      Teacher / Admin Access
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 shrink-0">
+                      <Lock className="w-3 h-3 text-black dark:text-white" />
+                      Teacher & Admin Space
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                  Optimized Document Storage • Nested Metadata • Batch /questions Bank
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-1">
+                  Structured Exam Catalog • Direct School Linking • /questions Subcollection
                 </p>
               </div>
             </div>
@@ -470,364 +452,325 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer shrink-0 ml-2"
+              className="p-2.5 rounded-full text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer shrink-0 ml-2"
               aria-label="Close modal"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5 text-black dark:text-white" />
             </button>
           </div>
 
-          {/* Sub-header Tabs: Configuration vs Schema Inspection */}
-          <div className="px-5 sm:px-6 pt-2 pb-1 flex items-center justify-between border-b border-slate-200/60 dark:border-white/5 bg-slate-100/60 dark:bg-slate-900/30 text-xs">
-            <div className="flex items-center gap-2">
+          {/* Sub-header Tabs with Ample Padding */}
+          <div className="px-6 sm:px-7 py-3 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80 bg-white dark:bg-[#0c182b] text-xs">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setActiveTab('configure')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition cursor-pointer ${
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition cursor-pointer ${
                   activeTab === 'configure'
-                    ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-2xs border border-slate-200/80 dark:border-white/10'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-xs'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
-                <span>Curriculum & Metadata</span>
+                <SlidersHorizontal className="w-4 h-4 text-inherit" />
+                <span>Curriculum & School Settings</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('schema_preview')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition cursor-pointer ${
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition cursor-pointer ${
                   activeTab === 'schema_preview'
-                    ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-2xs border border-slate-200/80 dark:border-white/10'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-xs'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <Code2 className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Inspect Firestore Schema</span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
-                  Optimized
-                </span>
+                <Code2 className="w-4 h-4 text-inherit" />
+                <span>Inspect Firestore Payload</span>
               </button>
             </div>
 
-            <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-400">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
               <span>Doc Est:</span>
-              <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+              <span className="font-mono font-bold text-zinc-900 dark:text-white">
                 ~{estimatedPayloadSizeKB} KB
               </span>
             </div>
           </div>
 
-          {/* Main Content Area */}
-          <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
-            {/* Role-based Authorization Banner */}
-            {!canUpload ? (
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 space-y-2.5">
-                <div className="flex items-center gap-2 text-sm font-bold">
-                  <Lock className="w-4 h-4 text-amber-500 shrink-0" />
-                  <span>Teacher or Administrator Authentication Required</span>
+          {/* Main Scrollable Content Area with Generous Spacing */}
+          <div className="p-6 sm:p-8 space-y-6 overflow-y-auto flex-1 font-['Plus_Jakarta_Sans',sans-serif]">
+            {/* Student Role Notice - Direct Role Switcher */}
+            {!canUpload && (
+              <div className="p-5 sm:p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-white">
+                  <Lock className="w-4 h-4 text-black dark:text-white shrink-0" />
+                  <span>Student Drafts are Local-First</span>
                 </div>
-                <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                  <strong>Student Study Drafts</strong> are preserved strictly offline on your local device for privacy, instant practice, and free .txt export. To publish exams to Cloud Firestore for your school students or curriculum catalog, please sign in with a <strong>Verified Teacher</strong> or <strong>Administrator</strong> account.
+                <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                  Student-authored practice tests remain securely stored on your local browser for instant offline practice and free plain-text exports. If you are an educator or administrator uploading exams for your school or students, please register or sign in as a <strong>Teacher</strong> or <strong>Admin</strong>.
                 </p>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-amber-500/20">
-                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                    Current user: <span className="font-semibold text-slate-800 dark:text-slate-200">{userEmail}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                    Logged in as: <span className="font-bold text-zinc-800 dark:text-zinc-200">{userEmail}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => signInWithGoogle()}
-                    disabled={isSigningIn}
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-bold text-xs shadow-xs cursor-pointer disabled:opacity-50 transition active:scale-98 shrink-0"
-                  >
-                    <LogIn className="w-3.5 h-3.5" />
-                    <span>{isSigningIn ? 'Signing In...' : 'Sign In as Teacher/Admin'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {onOpenRegistrationModal && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          onOpenRegistrationModal();
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white font-bold text-xs cursor-pointer transition"
+                      >
+                        <UserPlus className="w-4 h-4 text-black dark:text-white" />
+                        <span>Switch Role in App</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => signInWithGoogle()}
+                      disabled={isSigningIn}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs shadow-xs cursor-pointer disabled:opacity-50 transition active:scale-98"
+                    >
+                      <LogIn className="w-4 h-4 text-white dark:text-zinc-950" />
+                      <span>{isSigningIn ? 'Signing In...' : 'Sign In with Google'}</span>
+                    </button>
+                  </div>
                 </div>
                 {popupBlocked && (
-                  <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
-                    Google sign-in popup was blocked by your browser. Please allow popups for this site.
+                  <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold">
+                    Popup was blocked. Please allow browser popups for Google sign-in.
                   </p>
                 )}
               </div>
-            ) : userIsTeacher && !userIsAdmin ? (
-              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-900 dark:text-emerald-200 flex items-start gap-2.5 text-xs">
-                <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <span className="font-bold block">Verified Teacher Publishing Mode</span>
-                  <span className="text-slate-600 dark:text-slate-300 block">
-                    Your exam will sync to Cloud Firestore under <strong>School: {schoolName || 'Your School'}</strong>. Registered students at your school will access this exam directly.
+            )}
+
+            {userIsTeacher && !userIsAdmin && (
+              <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-950 dark:text-emerald-200 flex items-start gap-3 text-xs leading-relaxed">
+                <UserCheck className="w-5 h-5 text-black dark:text-white shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="font-bold text-sm block text-zinc-900 dark:text-white">
+                    School Teacher Publishing Mode Active
                   </span>
+                  <p className="text-zinc-600 dark:text-zinc-300">
+                    This exam will be uploaded to Cloud Firestore and tagged for <strong>{schoolName || 'Your School'}</strong>. Registered students at your school will automatically find it in their School Teacher Library.
+                  </p>
                 </div>
               </div>
-            ) : null}
+            )}
 
-            {/* Exam Diagnostic & Optimization Summary Card */}
-            <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-3 shadow-xs">
-              <div className="flex items-start justify-between gap-3">
+            {/* Diagnostic Card with Black Icons and Generous Inner Spacing */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 space-y-4 shadow-xs">
+              <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                      <Zap className="w-3 h-3" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-black dark:text-white" />
                       Target Exam
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
                       {effectiveGrade === 'Freshman' ? 'University Freshman' : `Grade ${effectiveGrade}`}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
                       {selectedStream}
                     </span>
                   </div>
-                  <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
+                  <h4 className="text-base sm:text-lg font-bold text-zinc-950 dark:text-white truncate">
                     {exam.name}
                   </h4>
                 </div>
-                <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shrink-0 border border-slate-200/60 dark:border-slate-700">
+                <span className="px-3 py-1 rounded-xl text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white shrink-0 border border-zinc-200 dark:border-zinc-700">
                   {exam.subject}
                 </span>
               </div>
 
-              {/* Metrics audit bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/70 text-xs">
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800">
-                  <span className="text-slate-400 text-[10px] block font-medium">Questions</span>
-                  <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1 mt-0.5">
-                    <Layers className="w-3.5 h-3.5 text-indigo-500" />
+              {/* Metrics audit bar - All Black Icons */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+                <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800">
+                  <span className="text-zinc-500 dark:text-zinc-400 text-[11px] block font-medium">Questions</span>
+                  <span className="font-bold text-zinc-950 dark:text-white flex items-center gap-1.5 mt-1 text-sm">
+                    <Layers className="w-4 h-4 text-black dark:text-white" />
                     {diagnostics.total} items
                   </span>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800">
-                  <span className="text-slate-400 text-[10px] block font-medium">Formula Engine</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 mt-0.5">
-                    <Binary className="w-3.5 h-3.5 text-blue-500" />
-                    {diagnostics.hasMath ? `${diagnostics.mathCount} with LaTeX` : 'Plain Text'}
+                <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800">
+                  <span className="text-zinc-500 dark:text-zinc-400 text-[11px] block font-medium">Math Engine</span>
+                  <span className="font-semibold text-zinc-900 dark:text-white flex items-center gap-1.5 mt-1 text-sm">
+                    <Binary className="w-4 h-4 text-black dark:text-white" />
+                    {diagnostics.hasMath ? `${diagnostics.mathCount} LaTeX` : 'Plain Text'}
                   </span>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800">
-                  <span className="text-slate-400 text-[10px] block font-medium">Pedagogy</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 mt-0.5">
-                    <FileCheck2 className="w-3.5 h-3.5 text-amber-500" />
-                    {diagnostics.withExplanation}/{diagnostics.total} Explained
+                <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800">
+                  <span className="text-zinc-500 dark:text-zinc-400 text-[11px] block font-medium">Step Explanations</span>
+                  <span className="font-semibold text-zinc-900 dark:text-white flex items-center gap-1.5 mt-1 text-sm">
+                    <FileCheck2 className="w-4 h-4 text-black dark:text-white" />
+                    {diagnostics.withExplanation}/{diagnostics.total}
                   </span>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200/60 dark:border-slate-800">
-                  <span className="text-slate-400 text-[10px] block font-medium">Schema Status</span>
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                    Optimized
+                <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800">
+                  <span className="text-zinc-500 dark:text-zinc-400 text-[11px] block font-medium">Database Target</span>
+                  <span className="font-bold text-zinc-950 dark:text-white flex items-center gap-1.5 mt-1 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-black dark:text-white" />
+                    Firestore
                   </span>
                 </div>
               </div>
-
-              {/* Validation alert if any */}
-              {!diagnostics.isValid && (
-                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-[11px] flex items-center gap-2">
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                  <span>Validation check: {diagnostics.issues[0]}</span>
-                </div>
-              )}
             </div>
 
             {/* TAB 1: CURRICULUM CONFIGURATION */}
             {activeTab === 'configure' && (
-              <div className="space-y-4">
-                {/* Repository Category Selection (Official vs School Teacher) */}
-                <div className="space-y-2">
+              <div className="space-y-6">
+                {/* Repository Category Selection */}
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                      <Database className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Exam Repository Category</span>
+                    <label className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                      <Database className="w-4 h-4 text-black dark:text-white" />
+                      <span>Exam Target Category</span>
                     </label>
-                    <span className="text-[11px] text-slate-400">
-                      Select catalog destination
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Two-tier repository routing
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* 1. Official Curriculum Exam */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Official Curriculum Exam */}
                     <button
                       type="button"
                       onClick={() => {
                         if (userIsAdmin) {
                           setUploadCategory('official');
-                          setAsOfficialExam(true);
                         }
                       }}
                       disabled={!userIsAdmin}
-                      className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between gap-2.5 cursor-pointer ${
+                      className={`p-4 sm:p-5 rounded-2xl border text-left transition flex flex-col justify-between gap-3 cursor-pointer ${
                         uploadCategory === 'official'
-                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 border-slate-900 dark:border-white shadow-sm ring-2 ring-amber-500/30'
-                          : 'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-slate-300'
-                      } ${!userIsAdmin ? 'opacity-55 cursor-not-allowed' : ''}`}
+                          ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-md'
+                          : 'bg-white dark:bg-zinc-900/80 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:border-zinc-400'
+                      } ${!userIsAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <div>
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="font-bold text-xs flex items-center gap-1.5">
-                            <ShieldCheck className="w-4 h-4 text-amber-400 dark:text-amber-500 shrink-0" />
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="font-bold text-sm flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-inherit" />
                             Official Curriculum Exam
                           </span>
-                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 dark:text-amber-600 border border-amber-500/30">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-200/50 dark:bg-zinc-800/80 text-inherit border border-current">
                             Admin Curated
                           </span>
                         </div>
-                        <p
-                          className={`text-[11px] leading-relaxed ${
-                            uploadCategory === 'official'
-                              ? 'text-slate-300 dark:text-slate-600'
-                              : 'text-slate-500 dark:text-slate-400'
-                          }`}
-                        >
-                          National Exam (NEAEA / MoE). Cloud-synced for all students nationwide.
+                        <p className={`text-xs leading-relaxed ${uploadCategory === 'official' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                          Public national exam (MoE / NEAEA) visible to all students across Ethiopia.
                         </p>
                       </div>
-                      <div className="text-[10px] font-mono opacity-80 pt-1.5 border-t border-white/10 dark:border-slate-200 flex items-center justify-between">
-                        <span>Main Keys:</span>
-                        <span className="font-semibold">examYear, subject, grade, stream</span>
-                      </div>
+                      {!userIsAdmin && (
+                        <div className="text-[10px] font-semibold text-zinc-400">
+                          Requires Admin Authentication
+                        </div>
+                      )}
                     </button>
 
-                    {/* 2. School Teacher Exam */}
+                    {/* School Teacher Exam */}
                     <button
                       type="button"
-                      onClick={() => {
-                        setUploadCategory('created');
-                        setAsOfficialExam(false);
-                      }}
-                      className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between gap-2.5 cursor-pointer ${
+                      onClick={() => setUploadCategory('created')}
+                      className={`p-4 sm:p-5 rounded-2xl border text-left transition flex flex-col justify-between gap-3 cursor-pointer ${
                         uploadCategory === 'created'
-                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 border-slate-900 dark:border-white shadow-sm ring-2 ring-emerald-500/30'
-                          : 'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-slate-300'
+                          ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-md'
+                          : 'bg-white dark:bg-zinc-900/80 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:border-zinc-400'
                       }`}
                     >
                       <div>
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="font-bold text-xs flex items-center gap-1.5">
-                            <School className="w-4 h-4 text-emerald-400 dark:text-emerald-500 shrink-0" />
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="font-bold text-sm flex items-center gap-2">
+                            <School className="w-4 h-4 text-inherit" />
                             School Teacher Exam
                           </span>
-                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 dark:text-emerald-600 border border-emerald-500/30">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-200/50 dark:bg-zinc-800/80 text-inherit border border-current">
                             Teacher Created
                           </span>
                         </div>
-                        <p
-                          className={`text-[11px] leading-relaxed ${
-                            uploadCategory === 'created'
-                              ? 'text-slate-300 dark:text-slate-600'
-                              : 'text-slate-500 dark:text-slate-400'
-                          }`}
-                        >
-                          Cloud-synced specifically for registered students at your school with paid access.
+                        <p className={`text-xs leading-relaxed ${uploadCategory === 'created' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                          Scoped to your school and grade. Students registered under your school can access and practice it.
                         </p>
                       </div>
-                      <div className="text-[10px] font-mono opacity-80 pt-1.5 border-t border-white/10 dark:border-slate-200 flex items-center justify-between">
-                        <span>Main Keys:</span>
-                        <span className="font-semibold">school, teacherName, grade, subject, topic</span>
+                      <div className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        {userIsTeacher ? 'Authorized for School Teachers' : 'Requires Teacher Profile'}
                       </div>
                     </button>
                   </div>
                 </div>
 
-                {/* Conditional Fields: Teacher & School Metadata (When School Teacher Exam is selected) */}
+                {/* School Details (for School Teacher Exams) */}
                 {uploadCategory === 'created' && (
-                  <div className="p-4 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 space-y-3">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                      <School className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      <span>School & Teacher Affiliation (Access Keys)</span>
-                    </div>
+                  <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 space-y-4">
+                    <h4 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                      <School className="w-4 h-4 text-black dark:text-white" />
+                      <span>School & Teacher Attribution</span>
+                    </h4>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                          <Building2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
                           School Name <span className="text-rose-500">*</span>
                         </label>
                         <input
                           type="text"
                           value={schoolName}
                           onChange={(e) => setSchoolName(e.target.value)}
-                          placeholder="e.g. Bole Secondary School, St. Joseph School"
-                          className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+                          placeholder="e.g., Bole Secondary School, Hawassa High School"
+                          className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs font-semibold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                          <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
-                          Teacher / Instructor Name <span className="text-rose-500">*</span>
+                        <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                          Teacher / Department Name
                         </label>
                         <input
                           type="text"
                           value={teacherName}
                           onChange={(e) => setTeacherName(e.target.value)}
-                          placeholder="e.g. Teacher Melkamu, Mr. Bekele"
-                          className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+                          placeholder="e.g., Mr. Kebede / Physics Dept"
+                          className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs font-semibold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
                         />
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Firestore Optimization Mapping Notice */}
-                <div className="p-3.5 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
-                    <span className="flex items-center gap-1.5">
-                      <Database className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                      Firebase Cloud Storage Mapping
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-900 dark:text-amber-200 font-bold">
-                      Collection: /exams
-                    </span>
+                {/* Academic Grade and Stream Selectors */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4 text-black dark:text-white" />
+                      <span>Academic Grade Level</span>
+                    </label>
+                    <select
+                      value={selectedGrade}
+                      onChange={(e) => handleGradeChange(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs font-semibold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+                    >
+                      {ACADEMIC_GRADE_OPTIONS.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Writes optimized metadata to <span className="font-mono font-bold text-slate-900 dark:text-white">/exams/{exam.id}</span> with structured metadata. Student exam attempts remain isolated in <span className="font-mono font-bold text-slate-900 dark:text-white">/user_attempts</span>.
-                  </p>
-                </div>
 
-                {/* 1. Academic Grade Selection */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <GraduationCap className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Academic Grade / Educational Stage</span>
-                  </label>
-                  <select
-                    value={selectedGrade}
-                    onChange={(e) => handleGradeChange(e.target.value)}
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white font-medium cursor-pointer"
-                  >
-                    {ACADEMIC_GRADE_OPTIONS.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.label} — {g.subtitle}
-                      </option>
-                    ))}
-                  </select>
-
-                  {selectedGrade === 'custom' && (
-                    <div className="mt-2">
-                      <input
-                        type="text"
-                        value={customGradeText}
-                        onChange={(e) => setCustomGradeText(e.target.value)}
-                        placeholder="Enter custom academic level (e.g. TVET Level 4, Engineering Remedial)"
-                        className="w-full text-xs px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. Stream & Topic Selection */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                      <Compass className="w-3.5 h-3.5 text-blue-500" />
-                      Academic Stream / Track
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                      <Compass className="w-4 h-4 text-black dark:text-white" />
+                      <span>Academic Stream</span>
                     </label>
                     <select
                       value={selectedStream}
                       onChange={(e) => setSelectedStream(e.target.value)}
-                      className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white cursor-pointer"
+                      className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs font-semibold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
                     >
                       {STREAM_OPTIONS.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -836,252 +779,147 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                       ))}
                     </select>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                      <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                      Topic / Core Subject Area
-                    </label>
-                    <input
-                      type="text"
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      placeholder="e.g. Calculus & Integrals, Electromagnetism"
-                      className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white"
-                    />
-                  </div>
                 </div>
 
-                {/* 3. Duration Presets & Input */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      Time Limit (Minutes)
-                    </label>
-                    <span className="text-[11px] text-slate-400">
-                      {timeLimit} min session
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {TIME_PRESETS.map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setTimeLimit(preset)}
-                        className={`px-3 py-1 rounded-xl text-xs font-semibold transition cursor-pointer border ${
-                          timeLimit === preset
-                            ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 border-slate-900 dark:border-white shadow-2xs'
-                            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300'
-                        }`}
-                      >
-                        {preset} min
-                      </button>
-                    ))}
-                    <input
-                      type="number"
-                      min={5}
-                      max={300}
-                      value={timeLimit}
-                      onChange={(e) => setTimeLimit(Math.max(1, Number(e.target.value) || 20))}
-                      className="w-20 text-xs px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-center font-bold"
-                    />
-                  </div>
-                </div>
-
-                {/* 4. Session Year & Curator */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                      Target Exam Session
+                {/* Exam Session Year and Topic */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-black dark:text-white" />
+                      <span>Exam Session Year</span>
                     </label>
                     <input
                       type="text"
                       value={targetExamYear}
                       onChange={(e) => setTargetExamYear(e.target.value)}
-                      placeholder="2026 (2018 E.C.)"
-                      className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white"
+                      placeholder="e.g. 2026 (2018 E.C.)"
+                      className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs font-semibold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5 text-purple-500" />
-                      Curator / Authority
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-black dark:text-white" />
+                      <span>Standard Time Limit (Minutes)</span>
                     </label>
-                    <input
-                      type="text"
-                      value={curatorName}
-                      onChange={(e) => setCuratorName(e.target.value)}
-                      placeholder="e.g. Ministry of Education (MoE)"
-                      className="w-full text-xs px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white"
-                    />
+                    <div className="flex items-center gap-2">
+                      {TIME_PRESETS.map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setTimeLimit(t)}
+                          className={`flex-1 py-2 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                            timeLimit === t
+                              ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white'
+                              : 'bg-zinc-50 dark:bg-zinc-800/80 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-zinc-400'
+                          }`}
+                        >
+                          {t}m
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                {/* Toggles */}
-                <div className="space-y-2.5 pt-1">
-                  {/* Instant Official Exams Catalog Sync */}
-                  <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition shadow-2xs">
-                    <input
-                      type="checkbox"
-                      checked={asOfficialExam}
-                      onChange={(e) => setAsOfficialExam(e.target.checked)}
-                      className="mt-0.5 rounded text-slate-900 focus:ring-slate-500"
-                    />
-                    <div className="text-xs">
-                      <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                        Publish to Official Exams Catalog
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-slate-950 text-white dark:bg-white dark:text-slate-950 font-black">
-                          LIVE
-                        </span>
-                      </span>
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px] block mt-0.5">
-                        Synchronizes instantly to the student Official Exams directory tailored by grade ({effectiveGrade === 'Freshman' ? 'University Freshman' : `Grade ${effectiveGrade}`}).
-                      </span>
-                    </div>
-                  </label>
-
-                  {/* Individual question storage in /questions */}
-                  <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 cursor-pointer hover:border-amber-500/40 transition">
-                    <input
-                      type="checkbox"
-                      checked={uploadIndividualQuestions}
-                      onChange={(e) => setUploadIndividualQuestions(e.target.checked)}
-                      className="mt-0.5 rounded text-amber-500 focus:ring-amber-500"
-                    />
-                    <div className="text-xs">
-                      <span className="font-bold text-slate-900 dark:text-white block">
-                        Sync to Global Modular Question Bank (/questions)
-                      </span>
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
-                        Parallel batch-commits {exam.questions.length} normalized question documents for granular queries.
-                      </span>
-                    </div>
-                  </label>
-
-                  {/* Public Availability */}
-                  <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 cursor-pointer hover:border-amber-500/40 transition">
-                    <input
-                      type="checkbox"
-                      checked={isPublic}
-                      onChange={(e) => setIsPublic(e.target.checked)}
-                      className="mt-0.5 rounded text-amber-500 focus:ring-amber-500"
-                    />
-                    <div className="text-xs">
-                      <span className="font-bold text-slate-900 dark:text-white block">
-                        Make Publicly Accessible to Registered Students
-                      </span>
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
-                        Students in this academic stage can immediately access, practice, and review this curriculum.
-                      </span>
-                    </div>
-                  </label>
                 </div>
               </div>
             )}
 
-            {/* TAB 2: SCHEMA & PAYLOAD INSPECTION */}
-            {activeTab === 'schema_preview' && previewPayload && (
-              <div className="space-y-3">
+            {/* TAB 2: SCHEMA PREVIEW */}
+            {activeTab === 'schema_preview' && (
+              <div className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h5 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <Code2 className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>Optimized Cloud Firestore Document Payload</span>
-                    </h5>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Destination: <span className="font-mono font-bold text-slate-700 dark:text-slate-200">/exams/{previewPayload.id}</span>
+                  <div className="space-y-0.5">
+                    <h4 className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                      <Code2 className="w-4 h-4 text-black dark:text-white" />
+                      <span>Firestore Collection: /exams/{exam.id}</span>
+                    </h4>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Standard JSON document stored with nested metadata and clean schema keys.
                     </p>
                   </div>
 
                   <button
                     type="button"
                     onClick={handleCopyPayload}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition cursor-pointer shadow-2xs"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer"
                   >
                     {copiedPayload ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        <Check className="w-4 h-4 text-emerald-500" />
                         <span>Copied JSON</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-4 h-4 text-black dark:text-white" />
                         <span>Copy JSON</span>
                       </>
                     )}
                   </button>
                 </div>
 
-                {/* JSON Code Viewer */}
-                <div className="p-3.5 rounded-2xl bg-slate-950 text-emerald-400 font-mono text-[11px] overflow-x-auto max-h-72 border border-slate-800 leading-relaxed shadow-inner">
+                <div className="p-4 rounded-2xl bg-zinc-950 text-emerald-400 font-mono text-xs overflow-x-auto max-h-80 border border-zinc-800 leading-relaxed shadow-inner">
                   <pre>{JSON.stringify(previewPayload, null, 2)}</pre>
                 </div>
 
-                {/* Optimization Highlights */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>Nested <strong>metadata</strong> object prevents redundant top-level clutter.</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex items-center gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-black dark:text-white shrink-0" />
+                    <span>Metadata object separates administrative and classification tags cleanly.</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>Eliminated deprecated <strong>unit</strong> keys across all schemas.</span>
+                  <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex items-center gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-black dark:text-white shrink-0" />
+                    <span>Eliminated deprecated keys and normalized LaTeX formula strings.</span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Upload Progress Bar */}
+            {/* Progress indicator */}
             {isLoading && (
-              <div className="space-y-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30">
-                <div className="flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 animate-spin text-amber-500" />
+              <div className="space-y-3 p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center justify-between text-xs font-bold text-zinc-900 dark:text-white">
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 animate-spin text-black dark:text-white" />
                     {progressStatusText || 'Uploading to Cloud Firestore...'}
                   </span>
                   <span>{uploadProgress}%</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300"
+                    className="h-full bg-zinc-950 dark:bg-white rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
             )}
 
-            {/* Error Message */}
+            {/* Errors */}
             {errorMessage && (
-              <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                 <span className="leading-relaxed">{errorMessage}</span>
               </div>
             )}
 
-            {/* Success Message */}
+            {/* Success */}
             {statusMessage && (
-              <div className="p-4 rounded-2xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 text-xs flex items-start gap-2.5 shadow-sm">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 dark:text-emerald-600 shrink-0 mt-0.5" />
+              <div className="p-5 rounded-2xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs flex items-start gap-3 shadow-md">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 dark:text-emerald-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <p className="font-bold">{statusMessage}</p>
-                  <p className="text-[11px] text-slate-300 dark:text-slate-600">
-                    Exam ID: <span className="font-mono font-bold">{exam.id}</span> • Grade Level: <span className="font-bold">{effectiveGrade === 'Freshman' ? 'University Freshman' : `Grade ${effectiveGrade}`}</span> • Stream: <span className="font-bold">{selectedStream}</span>
+                  <p className="font-bold text-sm">{statusMessage}</p>
+                  <p className="text-zinc-300 dark:text-zinc-600">
+                    Exam ID: <span className="font-mono font-bold">{exam.id}</span> • Category: <span className="font-bold">{uploadCategory === 'official' ? 'Official Curriculum' : `School Teacher (${schoolName})`}</span>
                   </p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Footer Actions */}
-          <div className="px-5 sm:px-6 py-4 border-t border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] flex items-center justify-between gap-3">
+          {/* Footer Actions - 2:1 horizontal:vertical padding */}
+          <div className="p-6 sm:p-7 border-t border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-white/[0.02] flex items-center justify-between gap-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer shadow-2xs"
+              className="px-6 py-3 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition cursor-pointer"
             >
               {statusMessage ? 'Done' : 'Cancel'}
             </button>
@@ -1091,16 +929,16 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 type="button"
                 disabled={isLoading}
                 onClick={handleUploadToFirestore}
-                className="px-5 py-2.5 rounded-full bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 transition active:scale-98 hover:opacity-95"
+                className="px-7 py-3 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 transition active:scale-98 hover:opacity-90"
               >
                 {isLoading ? (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                    <Sparkles className="w-4 h-4 animate-spin text-white dark:text-zinc-950" />
                     <span>Uploading...</span>
                   </>
                 ) : (
                   <>
-                    <CloudUpload className="w-3.5 h-3.5" />
+                    <CloudUpload className="w-4 h-4 text-white dark:text-zinc-950" />
                     <span>
                       {uploadCategory === 'created'
                         ? 'Publish School Teacher Exam'
@@ -1114,9 +952,9 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
                 type="button"
                 onClick={() => signInWithGoogle()}
                 disabled={isSigningIn}
-                className="px-5 py-2.5 rounded-full bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 transition active:scale-98 hover:opacity-95"
+                className="px-7 py-3 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 transition active:scale-98"
               >
-                <LogIn className="w-3.5 h-3.5" />
+                <LogIn className="w-4 h-4 text-white dark:text-zinc-950" />
                 <span>{isSigningIn ? 'Signing In...' : 'Sign In as Teacher/Admin'}</span>
               </button>
             )}
@@ -1126,3 +964,5 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
     </AnimatePresence>
   );
 };
+
+export default DatabaseUploadModal;

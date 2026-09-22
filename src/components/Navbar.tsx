@@ -211,7 +211,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
+                className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
               >
                 {user.photoURL ? (
                   <img
@@ -224,37 +224,59 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {user.displayName?.charAt(0) || 'U'}
                   </div>
                 )}
-                <span className="text-xs font-semibold max-w-[90px] truncate text-zinc-800 dark:text-zinc-200">
-                  {user.displayName || 'Student'}
+                <span className="text-xs font-bold max-w-[100px] truncate text-zinc-900 dark:text-white">
+                  {user.displayName || (user.role === 'teacher' ? 'Teacher' : 'Student')}
                 </span>
-                {user.grade && (
-                  <span className="hidden sm:inline-block text-[10px] font-extrabold px-1.5 py-0.2 rounded-md bg-zinc-950 dark:bg-white text-white dark:text-zinc-950">
+                {isAdmin ? (
+                  <span className="hidden sm:inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+                    Admin
+                  </span>
+                ) : user.role === 'teacher' ? (
+                  <span className="hidden sm:inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                    Teacher
+                  </span>
+                ) : user.grade ? (
+                  <span className="hidden sm:inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
                     G-{user.grade}
                   </span>
-                )}
-                <Cloud className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
+                ) : null}
+                <Cloud className="w-4 h-4 text-black dark:text-white" />
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-64 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xl py-2 z-50 text-sm animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-4 py-2 border-b border-zinc-100 dark:border-zinc-800/80 space-y-1">
-                    <p className="font-bold text-zinc-900 dark:text-white truncate">
-                      {user.displayName || 'Student'}
-                    </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user.email}</p>
-                    <div className="pt-1 flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                        Grade {user.grade || '12'}
+                <div className="absolute right-0 mt-2 w-72 rounded-[28px] bg-white dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 shadow-2xl p-4 z-50 text-sm animate-in fade-in zoom-in-95 duration-150 space-y-3">
+                  <div className="pb-3 border-b border-zinc-100 dark:border-zinc-800/80 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-zinc-950 dark:text-white truncate text-sm">
+                        {user.displayName || 'User'}
+                      </p>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+                        {isAdmin ? 'Admin' : user.role || 'Student'}
                       </span>
-                      {user.stream && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
-                          {user.stream}
+                    </div>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user.email}</p>
+                    
+                    <div className="pt-1 flex flex-wrap items-center gap-1.5">
+                      {user.role === 'teacher' ? (
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                          {user.school || user.schoolName || 'School Affiliated'}
                         </span>
+                      ) : (
+                        <>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
+                            Grade {user.grade || '12'}
+                          </span>
+                          {user.stream && (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                              {user.stream}
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
-                    {user.schoolName && (
+                    {(user.school || user.schoolName) && user.role !== 'teacher' && (
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 pt-0.5 line-clamp-1">
-                        {user.schoolName} {user.region ? `(${user.region})` : ''}
+                        School: {user.school || user.schoolName} {user.region ? `(${user.region})` : ''}
                       </p>
                     )}
                   </div>
@@ -265,10 +287,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setShowUserMenu(false);
                       openRegistrationModal();
                     }}
-                    className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/[0.04] flex items-center gap-2 cursor-pointer transition text-xs font-semibold"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-left text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/[0.06] flex items-center gap-2.5 cursor-pointer transition text-xs font-bold"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-zinc-500" />
-                    <span>Edit Student Profile / Grade</span>
+                    <Edit3 className="w-4 h-4 text-black dark:text-white" />
+                    <span>Change Role & School Profile</span>
                   </button>
 
                   <button
@@ -277,30 +299,30 @@ export const Navbar: React.FC<NavbarProps> = ({
                       signOut();
                       setShowUserMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer transition text-xs font-semibold"
+                    className="w-full px-3.5 py-2 rounded-xl text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2.5 cursor-pointer transition text-xs font-semibold"
                   >
-                    <LogOut className="w-3.5 h-3.5" />
-                    Sign Out
+                    <LogOut className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                    <span>Sign Out</span>
                   </button>
                 </div>
               )}
             </div>
           ) : user && !isCloudSynced ? (
-            <div className="relative flex items-center gap-1.5">
+            <div className="relative flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 pl-2.5 pr-3 py-1 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
+                className="flex items-center gap-2 pl-2.5 pr-3 py-1.5 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
                 title="Guest Mode active (Local Storage)"
               >
-                <div className="w-5 h-5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold text-[10px] flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-[10px] flex items-center justify-center">
                   {user.displayName?.charAt(0) || 'G'}
                 </div>
-                <span className="text-xs font-semibold max-w-[80px] truncate text-zinc-800 dark:text-zinc-200">
+                <span className="text-xs font-bold max-w-[80px] truncate text-zinc-900 dark:text-white">
                   {user.displayName}
                 </span>
                 <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
-                  G-{user.grade || '12'}
+                  {user.role === 'teacher' ? 'Teacher' : `G-${user.grade || '12'}`}
                 </span>
               </button>
 
@@ -308,22 +330,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id="register-btn-guest"
                 type="button"
                 onClick={openRegistrationModal}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 transition cursor-pointer shadow-xs active:scale-98"
-                title="Register with Google Account"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 transition cursor-pointer shadow-xs active:scale-98"
+                title="Register Role (Student or Teacher)"
               >
-                <UserPlus className="w-3.5 h-3.5" />
+                <UserPlus className="w-4 h-4 text-white dark:text-zinc-950" />
                 <span>Register</span>
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 top-10 mt-1 w-64 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xl py-2 z-50 text-sm">
-                  <div className="px-4 py-2 border-b border-zinc-100 dark:border-zinc-800/80 space-y-1">
-                    <p className="font-semibold text-zinc-900 dark:text-white truncate">
+                <div className="absolute right-0 top-11 mt-1 w-72 rounded-[28px] bg-white dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 shadow-2xl p-4 z-50 text-sm space-y-3">
+                  <div className="pb-3 border-b border-zinc-100 dark:border-zinc-800/80 space-y-1">
+                    <p className="font-bold text-zinc-950 dark:text-white truncate">
                       {user.displayName}
                     </p>
-                    <div className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
-                      <CloudOff className="w-3 h-3 text-zinc-400" />
-                      Local Storage Mode • Grade {user.grade || '12'}
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                      <CloudOff className="w-3.5 h-3.5 text-black dark:text-white" />
+                      <span>Local Mode • {user.role === 'teacher' ? 'Teacher' : `Grade ${user.grade || '12'}`}</span>
                     </div>
                   </div>
                   <button
@@ -332,10 +354,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setShowUserMenu(false);
                       openRegistrationModal();
                     }}
-                    className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/[0.04] flex items-center gap-2 cursor-pointer transition text-xs font-semibold"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-left text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/[0.06] flex items-center gap-2.5 cursor-pointer transition text-xs font-bold"
                   >
-                    <UserPlus className="w-3.5 h-3.5 text-zinc-500" />
-                    Register / Connect Google Account
+                    <UserPlus className="w-4 h-4 text-black dark:text-white" />
+                    <span>Setup Student / Teacher Profile</span>
                   </button>
                   <button
                     type="button"
@@ -343,10 +365,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setShowUserMenu(false);
                       setManualNoticeOpen(true);
                     }}
-                    className="w-full px-4 py-2 text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/[0.04] flex items-center gap-2 cursor-pointer transition text-xs"
+                    className="w-full px-3.5 py-2 rounded-xl text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/[0.04] flex items-center gap-2.5 cursor-pointer transition text-xs"
                   >
-                    <UserIcon className="w-3.5 h-3.5 text-zinc-500" />
-                    Quick Guest Name Entry
+                    <UserIcon className="w-4 h-4 text-black dark:text-white" />
+                    <span>Quick Guest Name Entry</span>
                   </button>
                 </div>
               )}

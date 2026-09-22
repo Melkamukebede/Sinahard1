@@ -79,7 +79,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
   const [popupBlocked, setPopupBlocked] = useState<boolean>(false);
-  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState<boolean>(false);
+  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState<boolean>(() => {
+    const hasRegistered = localStorage.getItem(LOCAL_STUDENT_IS_REGISTERED_KEY) === 'true';
+    const hasOnboarded = localStorage.getItem('has_completed_role_onboarding') === 'true';
+    return !hasRegistered && !hasOnboarded;
+  });
   const [error, setError] = useState<string | null>(null);
 
   const isSigningInRef = useRef<boolean>(false);
