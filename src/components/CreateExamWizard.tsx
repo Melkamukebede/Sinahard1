@@ -31,7 +31,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Exam, Question } from '../types';
+import { Exam, Question, AppUser } from '../types';
 import { MathRenderer } from './MathRenderer';
 import { UserTierStatus } from '../services/subscriptionLimits';
 import { SinahardLogo } from './SinahardLogo';
@@ -47,6 +47,7 @@ interface CreateExamWizardProps {
   onOpenSubscriptionModal?: () => void;
   onOpenDatabaseUpload?: (exam: Exam) => void;
   isAdmin?: boolean;
+  user?: AppUser | null;
 }
 
 interface ExtractedExamMetadata {
@@ -350,6 +351,7 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
   onOpenSubscriptionModal,
   onOpenDatabaseUpload,
   isAdmin,
+  user,
 }) => {
   // Step 1: Info & Smart Paste | Step 2: Verification & Save
   const [currentStep, setCurrentStep] = useState<1 | 2>(initialExam ? 2 : 1);
@@ -402,8 +404,9 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
   const txtFileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const maxQuestions = userTier?.maxQuestionsPerExam ?? 20;
-  const isPremium = userTier?.isPremium ?? false;
+  const isTeacherUser = user?.role === 'teacher' || Boolean(user?.isVerifiedTeacher);
+  const isPremium = Boolean(userTier?.isPremium || isAdmin || isTeacherUser);
+  const maxQuestions = isPremium ? 200 : (userTier?.maxQuestionsPerExam ?? 20);
 
   // Real-time Parser for Smart Paste
   useEffect(() => {
@@ -828,6 +831,8 @@ Time Limit: 25 minutes
     const resolvedSubject = subject.trim() || 'General';
     const resolvedTopic = topic.trim();
 
+    const isTeacher = user?.role === 'teacher' || Boolean(user?.isVerifiedTeacher);
+
     const examData: Exam = {
       id: initialExam?.id || 'exam_' + Date.now(),
       name: name.trim(),
@@ -840,6 +845,10 @@ Time Limit: 25 minutes
       createdAt: initialExam?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isUploadedToCloud: initialExam?.isUploadedToCloud ?? false,
+      category: isTeacher ? 'created' : (initialExam?.category || 'created'),
+      createdType: isTeacher ? 'teacher' : (initialExam?.createdType || 'student_draft'),
+      school: user?.school || user?.schoolName || initialExam?.school,
+      teacherName: user?.teacherName || user?.displayName || initialExam?.teacherName,
     };
 
     onSaveExam(examData);
@@ -1830,19 +1839,24 @@ Time Limit: 25 minutes
                       handleFinalSave();
                       onOpenDatabaseUpload({
                         id: initialExam?.id || 'exam_' + Date.now(),
-                        name,
-                        subject: subject || 'General',
-                        topic: topic || undefined,
+                        name: name.trim() || 'Exam',
+                        subject: subject.trim() || 'General',
+                        topic: topic.trim() || undefined,
                         grade: grade || '12',
                         timeLimit: Number(timeLimit) || 20,
+                        description: description.trim() || undefined,
                         questions,
-                        createdAt: new Date().toISOString(),
+                        createdAt: initialExam?.createdAt || new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
+                        category: isTeacherUser ? 'created' : (initialExam?.category || 'created'),
+                        createdType: isTeacherUser ? 'teacher' : (initialExam?.createdType || 'student_draft'),
+                        school: user?.school || user?.schoolName || initialExam?.school,
+                        teacherName: user?.teacherName || user?.displayName || initialExam?.teacherName,
                       });
                     }}
                     className="px-4 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer active:scale-98 transition shadow-xs hover:bg-zinc-200 dark:hover:bg-zinc-700"
                   >
-                    <CloudUpload className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
+                    <CloudUpload className="w-3.5 h-3.5 text-black dark:text-white" />
                     <span>Publish to Firestore</span>
                   </button>
                 )}

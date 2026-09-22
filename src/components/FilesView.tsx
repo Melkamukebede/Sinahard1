@@ -349,14 +349,14 @@ export const FilesView: React.FC<FilesViewProps> = ({
               </button>
             )}
 
-            {isAdmin && onOpenDatabaseUpload && exams.length > 0 && (
+            {canUpload && onOpenDatabaseUpload && exams.length > 0 && (
               <button
                 type="button"
                 onClick={() => onOpenDatabaseUpload(exams[0])}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 border border-white/80 dark:border-white/10 font-semibold text-xs cursor-pointer transition shadow-xs active:scale-98"
                 title="Upload questions to Cloud Firestore"
               >
-                <CloudUpload className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
+                <CloudUpload className="w-3.5 h-3.5 text-black dark:text-white" />
                 <span>Upload</span>
               </button>
             )}
@@ -1011,15 +1011,15 @@ export const FilesView: React.FC<FilesViewProps> = ({
                             <span>Practice</span>
                           </button>
 
-                          {/* Button Admin: Push to Cloud */}
-                          {isAdmin && onOpenDatabaseUpload && (
+                          {/* Button Teacher/Admin: Push to Cloud */}
+                          {canUpload && onOpenDatabaseUpload && (
                             <button
                               type="button"
                               onClick={() => onOpenDatabaseUpload(exam)}
-                              className="py-1 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold text-[10px] inline-flex items-center justify-center gap-1 transition active:scale-95 cursor-pointer shadow-2xs border border-amber-500/30"
+                              className="py-1 px-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-bold text-[10px] inline-flex items-center justify-center gap-1 transition active:scale-95 cursor-pointer shadow-2xs border border-zinc-200 dark:border-zinc-700"
                               title={`Upload ${exam.subject || 'exam'} to Cloud Firestore`}
                             >
-                              <Flame className="w-2.5 h-2.5 fill-amber-500/20" />
+                              <Flame className="w-2.5 h-2.5 text-black dark:text-white" />
                               <span>Push</span>
                             </button>
                           )}

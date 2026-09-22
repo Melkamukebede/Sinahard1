@@ -559,6 +559,7 @@ function MainApp() {
             onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
             onOpenDatabaseUpload={(isAdmin || Boolean(user && isUserTeacher(user))) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
             isAdmin={isAdmin}
+            user={user}
           />
         )}
 
@@ -625,7 +626,7 @@ function MainApp() {
           setActiveTab('admin-subs');
         }}
         onOpenDatabaseUpload={
-          isAdmin
+          (isAdmin || Boolean(user && isUserTeacher(user)))
             ? () => {
                 if (exams.length > 0) {
                   setExamForDatabaseUpload(exams[0]);

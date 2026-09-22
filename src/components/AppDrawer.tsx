@@ -16,11 +16,14 @@ import {
   Copy,
   Check,
   ExternalLink,
+  School,
+  CheckCircle2,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { UserSubscription } from '../types';
-import { isUserAdmin } from '../services/db';
+import { isUserAdmin, isUserTeacher } from '../services/db';
 import { SinahardLogo } from './SinahardLogo';
 
 interface AppDrawerProps {
@@ -178,36 +181,71 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 Tools & Utilities
               </div>
 
-              {/* Premium Ethiopian Birr Subscription Card */}
-              <button
-                id="drawer-premium-btn"
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenSubscriptionModal();
-                }}
-                className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
-                    <Crown className="w-4 h-4 stroke-[2]" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                      <span>Premium Subscription</span>
-                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                        ETB
+              {/* For Teachers: Dedicated Teacher Verification & School Status Card */}
+              {isUserTeacher(user) && (
+                <div className="p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
+                        <School className="w-4 h-4 text-black dark:text-white" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-zinc-900 dark:text-white">
+                          {user?.school || user?.schoolName || 'Ethiopian School'}
+                        </div>
+                        <div className="text-[11px] text-zinc-500">
+                          {user?.teachingSubject ? `${user.teachingSubject} Teacher` : 'Teacher Account'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {user?.isVerifiedTeacher ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700">
+                        <CheckCircle2 className="w-3 h-3 text-black dark:text-white" />
+                        <span>Verified</span>
                       </span>
-                    </div>
-                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                      Telebirr, CBE & Chapa day/month plans
-                    </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                        <Clock className="w-3 h-3" />
+                        <span>Pending Check</span>
+                      </span>
+                    )}
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-transform" />
-              </button>
+              )}
 
-              {/* Admin Payment Verification (Melkamu / Admin) */}
+              {/* Premium Ethiopian Birr Subscription Card (For Students/General Only) */}
+              {!isUserTeacher(user) && !isUserAdmin(user) && (
+                <button
+                  id="drawer-premium-btn"
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenSubscriptionModal();
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
+                      <Crown className="w-4 h-4 stroke-[2]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                        <span>Premium Subscription</span>
+                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                          ETB
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                        Telebirr, CBE & Chapa day/month plans
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              )}
+
+              {/* Admin Check Panel (Melkamu / Admin - Teachers & Payments) */}
               {isUserAdmin(user) && onNavigateToAdminSubs && (
                 <button
                   id="drawer-admin-subs-btn"
@@ -220,17 +258,17 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
-                      <ShieldCheck className="w-4 h-4" />
+                      <ShieldCheck className="w-4 h-4 text-black dark:text-white" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                        <span>Payment Verification</span>
+                        <span>Admin Check Panel</span>
                         <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
                           Admin
                         </span>
                       </div>
                       <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        Verify Telebirr, CBE & BoA references
+                        Verify teachers &amp; student payments
                       </div>
                     </div>
                   </div>
@@ -238,8 +276,8 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 </button>
               )}
 
-              {/* Database Storage Uploader (Cloud Firestore - Admin only) */}
-              {isUserAdmin(user) && onOpenDatabaseUpload && (
+              {/* Database Storage Uploader (Cloud Firestore - Teacher or Admin) */}
+              {(isUserAdmin(user) || isUserTeacher(user)) && onOpenDatabaseUpload && (
                 <button
                   id="drawer-db-upload-btn"
                   type="button"
@@ -251,17 +289,17 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
-                      <CloudUpload className="w-4 h-4" />
+                      <CloudUpload className="w-4 h-4 text-black dark:text-white" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                        <span>Cloud Firestore Upload</span>
+                        <span>Push to Cloud Firestore</span>
                         <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                          Admin
+                          {isUserAdmin(user) ? 'Admin' : 'Teacher'}
                         </span>
                       </div>
                       <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        Sync questions directly to Firebase Firestore
+                        Push exams and questions directly to Cloud Firestore
                       </div>
                     </div>
                   </div>

@@ -129,7 +129,11 @@ export interface AppUser {
   schoolName?: string;
   school?: string;
   teacherName?: string;
+  teachingSubject?: string;
   isVerifiedTeacher?: boolean;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  registeredAt?: string;
   isPaid?: boolean;
   region?: string;
   targetExamYear?: string | number;

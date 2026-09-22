@@ -8,7 +8,6 @@ import {
   Calendar,
   Phone,
   CheckCircle2,
-  Check,
   X,
   Sparkles,
   LogIn,
@@ -149,9 +148,33 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
         setTeacherName(firebaseUser.displayName);
       }
     }
+    return success;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const isGoogleLinked = Boolean(firebaseUser && user?.uid !== 'guest' && !user?.isAnonymous);
+
+  const executeSave = async (profileData: Partial<AppUser>) => {
+    setIsSubmitting(true);
+    try {
+      await updateStudentProfile(profileData);
+      localStorage.setItem('has_completed_role_onboarding', 'true');
+
+      setSavedSuccess(true);
+      if (onSuccess) {
+        onSuccess(profileData);
+      }
+      setTimeout(() => {
+        setSavedSuccess(false);
+        onClose();
+      }, 700);
+    } catch (err) {
+      console.error('Registration failed:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent, forceLocal = false) => {
     e.preventDefault();
 
     if (selectedRole === 'student') {
@@ -174,45 +197,38 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
       }
     }
 
-    setIsSubmitting(true);
-    try {
-      const finalRole: UserRole = isUserEmailAdmin ? 'admin' : selectedRole;
-      const profileData: Partial<AppUser> = {
-        role: finalRole,
-        displayName: selectedRole === 'teacher' ? teacherName.trim() : displayName.trim(),
-        grade,
-        stream,
-        school: schoolName.trim(),
-        schoolName: schoolName.trim(),
-        teacherName: selectedRole === 'teacher' ? teacherName.trim() : undefined,
-        isVerifiedTeacher: finalRole === 'teacher' || finalRole === 'admin',
-        region,
-        targetExamYear,
-        phoneNumber: phoneNumber.trim(),
-        isRegistered: true,
-      };
+    const finalRole: UserRole = isUserEmailAdmin ? 'admin' : selectedRole;
+    const profileData: Partial<AppUser> = {
+      role: finalRole,
+      displayName: selectedRole === 'teacher' ? teacherName.trim() : displayName.trim(),
+      grade,
+      stream,
+      school: schoolName.trim(),
+      schoolName: schoolName.trim(),
+      teacherName: selectedRole === 'teacher' ? teacherName.trim() : undefined,
+      teachingSubject: selectedRole === 'teacher' ? teachingSubject : undefined,
+      isVerifiedTeacher: isUserEmailAdmin ? true : Boolean(user?.isVerifiedTeacher),
+      region,
+      targetExamYear,
+      phoneNumber: phoneNumber.trim(),
+      isRegistered: true,
+      registeredAt: user?.registeredAt || new Date().toISOString(),
+    };
 
-      await updateStudentProfile(profileData);
-      localStorage.setItem('has_completed_role_onboarding', 'true');
-
-      setSavedSuccess(true);
-      if (onSuccess) {
-        onSuccess(profileData);
+    // If not signed in and not forcing local guest save, sign in first before saving
+    if (!isGoogleLinked && !forceLocal) {
+      setIsSubmitting(true);
+      const signedIn = await handleGoogleConnect();
+      if (!signedIn) {
+        setIsSubmitting(false);
+        return;
       }
-      setTimeout(() => {
-        setSavedSuccess(false);
-        onClose();
-      }, 700);
-    } catch (err) {
-      console.error('Registration failed:', err);
-    } finally {
-      setIsSubmitting(false);
     }
+
+    await executeSave(profileData);
   };
 
   if (!isOpen) return null;
-
-  const isGoogleLinked = Boolean(firebaseUser && user?.uid !== 'guest' && !user?.isAnonymous);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md overflow-y-auto font-['Plus_Jakarta_Sans',sans-serif]">
@@ -268,8 +284,83 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body */}
+        {/* Modal Body */}
         <div className="overflow-y-auto p-6 space-y-5">
+          {/* ======================================================== */}
+          {/* 1. TOP SIGN-IN BUTTON & STATUS (PROMINENT AT TOP)         */}
+          {/* ======================================================== */}
+          {!isGoogleLinked ? (
+            <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-zinc-950 dark:text-white flex items-center gap-1.5">
+                  <LogIn className="w-3.5 h-3.5 text-black dark:text-white shrink-0" />
+                  <span>Sign In with Google</span>
+                </div>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Connect your account to save your profile and sync progress across devices
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={isSigningIn}
+                onClick={handleGoogleConnect}
+                className="px-4 py-2.5 rounded-full bg-zinc-950 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-xs shadow-xs transition cursor-pointer flex items-center justify-center gap-2 shrink-0 active:scale-98 disabled:opacity-50"
+              >
+                {isSigningIn ? (
+                  <span>Connecting...</span>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                      <path d="M12.24 10.285V13.4h6.887C18.2 16.14 15.645 18 12.24 18c-3.315 0-6-2.685-6-6s2.685-6 6-6c1.53 0 2.925.57 3.99 1.515l2.43-2.43C17.07 3.51 14.775 2.5 12.24 2.5 6.99 2.5 2.74 6.75 2.74 12s4.25 9.5 9.5 9.5c5.49 0 9.15-3.855 9.15-9.33 0-.63-.06-1.245-.18-1.885H12.24z" />
+                    </svg>
+                    <span>Sign In with Google</span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/90 dark:border-zinc-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                {user?.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={displayName || teacherName || 'User'}
+                    className="w-9 h-9 rounded-full object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold flex items-center justify-center text-xs shrink-0">
+                    {(displayName || teacherName || 'U').charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-zinc-950 dark:text-white truncate">
+                    {user?.email}
+                  </div>
+                  <div className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-1 mt-0.5">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    <span>Signed in with Google</span>
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/25 shrink-0">
+                Account Linked
+              </span>
+            </div>
+          )}
+
+          {popupBlocked && (
+            <div className="px-3.5 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 flex items-center justify-between gap-2">
+              <span>Google popup was blocked by browser.</span>
+              <button
+                type="button"
+                onClick={() => window.open(window.location.href, '_blank')}
+                className="font-bold underline flex items-center gap-1 text-black dark:text-white cursor-pointer"
+              >
+                Open in tab <ExternalLink className="w-3 h-3 text-black dark:text-white" />
+              </button>
+            </div>
+          )}
+
           {/* Role Switcher - Compact & Clear */}
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -331,6 +422,14 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
             </button>
           </div>
 
+          {/* Teacher Verification Notice */}
+          {selectedRole === 'teacher' && (
+            <div className="px-3.5 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+              <School className="w-3.5 h-3.5 text-black dark:text-white shrink-0" />
+              <span>Teacher accounts are reviewed by Admin in the Check Panel. You can create exams and push directly to Firebase for your school.</span>
+            </div>
+          )}
+
           {/* Admin Account Alert (compact) */}
           {isUserEmailAdmin && (
             <div className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 flex items-center justify-between text-xs">
@@ -352,80 +451,8 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
             </div>
           )}
 
-          {/* Google Sync Card - Sleek 1-liner */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              {isGoogleLinked ? (
-                <>
-                  {user?.photoURL ? (
-                    <img
-                      src={user.photoURL}
-                      alt={displayName || teacherName}
-                      className="w-8 h-8 rounded-full object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold flex items-center justify-center text-xs shrink-0">
-                      {(displayName || teacherName).charAt(0) || 'U'}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">
-                      {user?.email}
-                    </div>
-                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                      Google account connected
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                    <LogIn className="w-3.5 h-3.5 text-black dark:text-white" />
-                    <span>Connect Google</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Sync your progress across devices
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {!isGoogleLinked && (
-              <button
-                type="button"
-                disabled={isSigningIn}
-                onClick={handleGoogleConnect}
-                className="px-4 py-2 rounded-full bg-zinc-950 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs shadow-xs transition cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-98"
-              >
-                {isSigningIn ? (
-                  <span>Connecting...</span>
-                ) : (
-                  <>
-                    <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                      <path d="M12.24 10.285V13.4h6.887C18.2 16.14 15.645 18 12.24 18c-3.315 0-6-2.685-6-6s2.685-6 6-6c1.53 0 2.925.57 3.99 1.515l2.43-2.43C17.07 3.51 14.775 2.5 12.24 2.5 6.99 2.5 2.74 6.75 2.74 12s4.25 9.5 9.5 9.5c5.49 0 9.15-3.855 9.15-9.33 0-.63-.06-1.245-.18-1.885H12.24z" />
-                    </svg>
-                    <span>Sign In</span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-
-          {popupBlocked && (
-            <div className="px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 flex items-center justify-between gap-2">
-              <span>Google popup was blocked.</span>
-              <button
-                type="button"
-                onClick={() => window.open(window.location.href, '_blank')}
-                className="font-bold underline flex items-center gap-1 text-black dark:text-white"
-              >
-                Open tab <ExternalLink className="w-3 h-3 text-black dark:text-white" />
-              </button>
-            </div>
-          )}
-
           {/* Form Fields */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
             {selectedRole === 'teacher' ? (
               /* ================= TEACHER FIELDS ================= */
               <div className="space-y-3.5">
@@ -647,15 +674,66 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
               />
             </div>
 
+            {/* ======================================================== */}
+            {/* 2. SIGN IN BEFORE SAVE (RIGHT BEFORE ACTION BUTTON)       */}
+            {/* ======================================================== */}
+            {!isGoogleLinked ? (
+              <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-zinc-950 dark:text-white flex items-center gap-1.5">
+                    <LogIn className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <span>Sign in before saving</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    Sign in with Google to securely save your registration to the cloud
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={isSigningIn}
+                  onClick={handleGoogleConnect}
+                  className="px-4 py-2 rounded-full bg-zinc-950 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-xs shadow-xs transition cursor-pointer flex items-center justify-center gap-2 shrink-0 active:scale-98 disabled:opacity-50"
+                >
+                  {isSigningIn ? (
+                    <span>Connecting...</span>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                        <path d="M12.24 10.285V13.4h6.887C18.2 16.14 15.645 18 12.24 18c-3.315 0-6-2.685-6-6s2.685-6 6-6c1.53 0 2.925.57 3.99 1.515l2.43-2.43C17.07 3.51 14.775 2.5 12.24 2.5 6.99 2.5 2.74 6.75 2.74 12s4.25 9.5 9.5 9.5c5.49 0 9.15-3.855 9.15-9.33 0-.63-.06-1.245-.18-1.885H12.24z" />
+                      </svg>
+                      <span>Sign In with Google</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/80 dark:border-zinc-800 flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Ready to save to Google account: <strong className="text-zinc-900 dark:text-white">{user?.email}</strong></span>
+              </div>
+            )}
+
             {/* Action Bar */}
             <div className="pt-3 flex items-center justify-between gap-3 border-t border-zinc-100 dark:border-white/10">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-5 py-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
-              >
-                Skip
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+
+                {!isGoogleLinked && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleSubmit(e, true)}
+                    className="text-[11px] text-zinc-500 dark:text-zinc-400 hover:underline px-2 py-1 cursor-pointer"
+                  >
+                    Save locally without Google
+                  </button>
+                )}
+              </div>
 
               <button
                 type="submit"
@@ -674,10 +752,15 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
                     <div className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
                     <span>Saving...</span>
                   </>
+                ) : !isGoogleLinked ? (
+                  <>
+                    <LogIn className="w-3.5 h-3.5 text-white dark:text-zinc-950" />
+                    <span>Sign In & Save</span>
+                  </>
                 ) : (
                   <>
                     <Sparkles className="w-3.5 h-3.5 text-white dark:text-zinc-950" />
-                    <span>Save & Continue</span>
+                    <span>Save Profile</span>
                   </>
                 )}
               </button>

@@ -557,6 +557,104 @@ export function canUserUploadExam(user: AppUser | null): boolean {
   return isUserAdmin(user) || isUserTeacher(user);
 }
 
+export interface RegisteredTeacherRecord {
+  id: string;
+  uid: string;
+  email: string;
+  displayName: string;
+  teacherName?: string;
+  schoolName?: string;
+  school?: string;
+  teachingSubject?: string;
+  region?: string;
+  phoneNumber?: string;
+  isVerifiedTeacher: boolean;
+  registeredAt?: string;
+  createdAt?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  photoURL?: string;
+}
+
+/**
+ * Real-time listener for registered teachers from Firestore users collection.
+ * Admin can monitor, verify, or revoke teacher access.
+ */
+export function subscribeToRegisteredTeachers(
+  onUpdate: (teachers: RegisteredTeacherRecord[]) => void
+): () => void {
+  try {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('role', '==', 'teacher'), limit(100));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const teachers: RegisteredTeacherRecord[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as any;
+          teachers.push({
+            id: docSnap.id,
+            uid: data.id || data.uid || docSnap.id,
+            email: data.email || 'No email',
+            displayName: data.displayName || data.teacherName || 'Teacher',
+            teacherName: data.teacherName || data.displayName,
+            schoolName: data.schoolName || data.school || 'Unspecified School',
+            school: data.school || data.schoolName || 'Unspecified School',
+            teachingSubject: data.teachingSubject || data.subject || 'General Curriculum',
+            region: data.region || 'Ethiopia',
+            phoneNumber: data.phoneNumber,
+            isVerifiedTeacher: Boolean(data.isVerifiedTeacher),
+            registeredAt: data.registeredAt || data.createdAt,
+            createdAt: data.createdAt,
+            verifiedAt: data.verifiedAt,
+            verifiedBy: data.verifiedBy,
+            photoURL: data.photoURL,
+          });
+        });
+        // Sort: pending verification first, then most recently registered
+        teachers.sort((a, b) => {
+          if (a.isVerifiedTeacher === b.isVerifiedTeacher) {
+            return (b.registeredAt || b.createdAt || '').localeCompare(a.registeredAt || a.createdAt || '');
+          }
+          return a.isVerifiedTeacher ? 1 : -1;
+        });
+        onUpdate(teachers);
+      },
+      (error) => {
+        console.warn('Teacher snapshot listener warning:', error);
+      }
+    );
+    return unsubscribe;
+  } catch (err) {
+    console.error('Failed to subscribe to teachers:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Admin action to verify or revoke a teacher in Firestore users collection.
+ */
+export async function verifyTeacherInDb(
+  teacherUid: string,
+  verified: boolean,
+  adminUser: AppUser | null
+): Promise<boolean> {
+  try {
+    const teacherRef = doc(db, 'users', teacherUid);
+    await updateDoc(teacherRef, {
+      isVerifiedTeacher: verified,
+      verifiedBy: adminUser?.email || ADMIN_EMAIL,
+      verifiedAt: new Date().toISOString(),
+    });
+    return true;
+  } catch (err) {
+    console.error('Failed to verify teacher in Firestore:', err);
+    handleFirestoreError(err, OperationType.UPDATE, `users/${teacherUid}`);
+    return false;
+  }
+}
+
 /**
  * Real-time listener for school-specific teacher exams from Firestore.
  * If student has a school, queries exams for that school.
