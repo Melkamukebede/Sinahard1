@@ -239,180 +239,153 @@ export const HomeView: React.FC<HomeViewProps> = ({
     >
       {/* ─────────────────────────────────────────────────────────────
           1. ROLE-ADAPTIVE WORKSPACE BANNER
-          Tailored to Student, Teacher, or Administrator
+          Tailored to Teacher or Administrator.
+          Eliminated "Active Practice Portal for Grade 12 Students" banner per user request.
       ───────────────────────────────────────────────────────────── */}
-      <motion.div
-        variants={itemVariants}
-        className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm overflow-hidden"
-      >
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold border border-zinc-200 dark:border-zinc-700">
-                {isAdmin ? (
-                  <>
-                    <ShieldCheck className="w-3.5 h-3.5 text-black dark:text-white" />
-                    <span>Administrator Workspace</span>
-                  </>
-                ) : isTeacher ? (
-                  <>
+      {(isTeacher || isAdmin) && (
+        <motion.div
+          variants={itemVariants}
+          className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm overflow-hidden"
+        >
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-3 max-w-2xl">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold border border-zinc-200 dark:border-zinc-700">
+                  {isAdmin ? (
+                    <>
+                      <ShieldCheck className="w-3.5 h-3.5 text-black dark:text-white" />
+                      <span>Administrator Workspace</span>
+                    </>
+                  ) : (
+                    <>
+                      <School className="w-3.5 h-3.5 text-black dark:text-white" />
+                      <span>Verified Teacher Studio</span>
+                    </>
+                  )}
+                </span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">•</span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">{dateFormatted}</span>
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl font-bold font-['Outfit',sans-serif] text-zinc-950 dark:text-white tracking-tight leading-tight">
+                {isAdmin
+                  ? 'National Curriculum & Cloud Firestore Manager'
+                  : `Welcome, Teacher ${user?.teacherName || user?.displayName || 'Educator'}`}
+              </h1>
+
+              {/* School affiliation badge for teachers */}
+              {isTeacher && (
+                <div className="flex items-center gap-2 flex-wrap text-xs text-zinc-600 dark:text-zinc-300">
+                  <span className="inline-flex items-center gap-1 font-semibold text-zinc-900 dark:text-white">
                     <School className="w-3.5 h-3.5 text-black dark:text-white" />
-                    <span>Verified Teacher Studio</span>
-                  </>
-                ) : (
-                  <>
-                    <GraduationCap className="w-3.5 h-3.5 text-black dark:text-white" />
-                    <span>Student Practice Center • Grade {user?.grade || '12'}</span>
-                  </>
-                )}
-              </span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">•</span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">{dateFormatted}</span>
+                    <span>{user?.school || user?.schoolName || 'School Affiliated'}</span>
+                  </span>
+                  {user?.teachingSubject && (
+                    <>
+                      <span>•</span>
+                      <span className="font-medium text-zinc-600 dark:text-zinc-300">
+                        Subject: {user.teachingSubject}
+                      </span>
+                    </>
+                  )}
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <span>Admin Verified</span>
+                  </span>
+                </div>
+              )}
+
+              {/* Short & Brief Direction to use app for Verified Teacher */}
+              {isTeacher ? (
+                <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-2 mt-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-zinc-950 dark:text-white uppercase tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <span>Quick Teacher Guide</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                    <div className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                        1
+                      </span>
+                      <span>
+                        <strong className="text-zinc-950 dark:text-white">Create Exam:</strong> Use smart paste or structured builder to draft MCQ tests with explanations.
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                        2
+                      </span>
+                      <span>
+                        <strong className="text-zinc-950 dark:text-white">Push to Cloud:</strong> Publish your tests to Cloud Firestore for your students to access anytime.
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                        3
+                      </span>
+                      <span>
+                        <strong className="text-zinc-950 dark:text-white">My School:</strong> Manage, edit, or export local storage drafts and published school tests.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                  Curate official university entrance examinations, review Ethiopian Birr subscriptions, and manage Cloud Firestore database records.
+                </p>
+              )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold font-['Outfit',sans-serif] text-zinc-950 dark:text-white tracking-tight leading-tight">
-              {isAdmin
-                ? 'National Curriculum & Cloud Firestore Manager'
-                : isTeacher
-                ? `Welcome, Teacher ${user?.teacherName || user?.displayName || 'Educator'}`
-                : `Active Practice Portal for Grade ${user?.grade || '12'} Students`}
-            </h1>
-
-            {/* School affiliation badge for teachers */}
-            {isTeacher && (
-              <div className="flex items-center gap-2 flex-wrap text-xs text-zinc-600 dark:text-zinc-300">
-                <span className="inline-flex items-center gap-1 font-semibold text-zinc-900 dark:text-white">
-                  <School className="w-3.5 h-3.5 text-black dark:text-white" />
-                  <span>{user?.school || user?.schoolName || 'School Affiliated'}</span>
-                </span>
-                {user?.teachingSubject && (
-                  <>
-                    <span>•</span>
-                    <span className="font-medium text-zinc-600 dark:text-zinc-300">
-                      Subject: {user.teachingSubject}
-                    </span>
-                  </>
-                )}
-                <span>•</span>
-                <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-bold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-black dark:text-white" />
-                  <span>Admin Verified</span>
-                </span>
-              </div>
-            )}
-
-            {/* Short & Brief Direction to use app for Verified Teacher */}
-            {isTeacher ? (
-              <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-2 mt-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-zinc-950 dark:text-white uppercase tracking-wider">
-                  <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" />
-                  <span>Quick Teacher Guide</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                  <div className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      1
-                    </span>
-                    <span>
-                      <strong className="text-zinc-950 dark:text-white">Create Exam:</strong> Use smart paste or structured builder to draft MCQ tests with explanations.
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      2
-                    </span>
-                    <span>
-                      <strong className="text-zinc-950 dark:text-white">Push to Cloud:</strong> Publish your tests to Cloud Firestore for your students to access anytime.
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      3
-                    </span>
-                    <span>
-                      <strong className="text-zinc-950 dark:text-white">My School:</strong> Manage, edit, or export local storage drafts and published school tests.
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                {isAdmin
-                  ? 'Curate official university entrance examinations, review Ethiopian Birr subscriptions, and manage Cloud Firestore database records.'
-                  : 'Turn your textbooks and revision notes into active, timed practice tests with instant step-by-step solutions, formula support, and peer sharing.'}
-              </p>
-            )}
-          </div>
-
-          {/* Quick Action Button Group */}
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            {isAdmin ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('admin-subs')}
-                  className="px-5 py-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer flex items-center gap-2"
-                >
-                  <Award className="w-4 h-4 text-black dark:text-white" />
-                  <span>Subscriptions & Teachers</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('create')}
-                  className="px-5 py-2.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-xs font-bold transition cursor-pointer flex items-center gap-2"
-                >
-                  <PlusCircle className="w-4 h-4 text-white dark:text-zinc-950" />
-                  <span>Curate Exam</span>
-                </button>
-              </>
-            ) : isTeacher ? (
-              <>
-                {/* My School Button */}
-                <button
-                  id="teacher-my-school-btn"
-                  type="button"
-                  onClick={() => onNavigate('files')}
-                  className="px-5 py-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer flex items-center gap-2 active:scale-98"
-                >
-                  <School className="w-4 h-4 text-black dark:text-white" />
-                  <span>My School</span>
-                </button>
-                {/* Create Class Exam Button */}
-                <button
-                  id="teacher-create-class-exam-btn"
-                  type="button"
-                  onClick={() => onNavigate('create')}
-                  className="px-5 py-2.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-xs font-bold transition cursor-pointer flex items-center gap-2 shadow-xs active:scale-98"
-                >
-                  <PlusCircle className="w-4 h-4 text-white dark:text-zinc-950" />
-                  <span>Create Class Exam</span>
-                </button>
-              </>
-            ) : (
-              <>
-                {onOpenCuratedModal && (
+            {/* Quick Action Button Group */}
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              {isAdmin ? (
+                <>
                   <button
                     type="button"
-                    onClick={onOpenCuratedModal}
-                    className="px-5 py-2.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-xs font-bold transition cursor-pointer flex items-center gap-2 shadow-xs"
+                    onClick={() => onNavigate('admin-subs')}
+                    className="px-5 py-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer flex items-center gap-2"
                   >
-                    <BookOpen className="w-4 h-4 text-white dark:text-zinc-950" />
-                    <span>Prepared Curriculum</span>
+                    <Award className="w-4 h-4 text-black dark:text-white" />
+                    <span>Subscriptions & Teachers</span>
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => onNavigate('files')}
-                  className="px-5 py-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer flex items-center gap-2"
-                >
-                  <Play className="w-4 h-4 text-black dark:text-white" />
-                  <span>Exam Repository</span>
-                </button>
-              </>
-            )}
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('create')}
+                    className="px-5 py-2.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-xs font-bold transition cursor-pointer flex items-center gap-2"
+                  >
+                    <PlusCircle className="w-4 h-4 text-white dark:text-zinc-950" />
+                    <span>Curate Exam</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* My School Button */}
+                  <button
+                    id="teacher-my-school-btn"
+                    type="button"
+                    onClick={() => onNavigate('files')}
+                    className="px-5 py-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer flex items-center gap-2 active:scale-98"
+                  >
+                    <School className="w-4 h-4 text-black dark:text-white" />
+                    <span>My School</span>
+                  </button>
+                  {/* Create Class Exam Button */}
+                  <button
+                    id="teacher-create-class-exam-btn"
+                    type="button"
+                    onClick={() => onNavigate('create')}
+                    className="px-5 py-2.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-xs font-bold transition cursor-pointer flex items-center gap-2 shadow-xs active:scale-98"
+                  >
+                    <PlusCircle className="w-4 h-4 text-white dark:text-zinc-950" />
+                    <span>Create Class Exam</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
           TEACHER-SPECIFIC DASHBOARD:

@@ -27,6 +27,7 @@ export interface ExamMetadata {
   teacherName?: string;
   examYear?: string;
   curator?: string;
+  pushedToCloud?: boolean;
 }
 
 export interface Exam {
@@ -56,7 +57,7 @@ export interface Exam {
   teacherName?: string;
   examYear?: string;
   // Dual-type exam categorization & curated catalog fields
-  sourceType?: 'user_created' | 'curated_catalog';
+  sourceType?: 'user_created' | 'curated_catalog' | 'firestore';
   isDownloaded?: boolean;
   catalogId?: string;
   stream?: string;
@@ -70,6 +71,9 @@ export interface Exam {
   cloudUploadedAt?: string;
   authorEmail?: string;
   adminTag?: string;
+  cloudId?: string;
+  isPushedToCloud?: boolean;
+  pushedToCloud?: boolean;
 }
 
 export interface CloudUploadProgress {
