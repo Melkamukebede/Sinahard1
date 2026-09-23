@@ -1,21 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Navbar, PageTab } from './components/Navbar';
 import { HomeView } from './components/HomeView';
 import { FilesView } from './components/FilesView';
 import { ResultsView } from './components/ResultsView';
-import { CreateExamWizard } from './components/CreateExamWizard';
-import { PracticeModal } from './components/PracticeModal';
-import { PasteJsonModal } from './components/PasteJsonModal';
-import { ProfessorModal } from './components/ProfessorModal';
-import { NotificationSettingsModal } from './components/NotificationSettingsModal';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { AppDrawer } from './components/AppDrawer';
-import { ManualView } from './components/ManualView';
-import { SubscriptionModal } from './components/SubscriptionModal';
-import { AdminSubscriptionsView } from './components/AdminSubscriptionsView';
-import { CuratedExamsModal } from './components/CuratedExamsModal';
-import { DatabaseUploadModal } from './components/DatabaseUploadModal';
-import { StudentRegistrationModal } from './components/StudentRegistrationModal';
 import { MobileNav } from './components/MobileNav';
 import { CURATED_EXAMS_CATALOG } from './data/curatedCatalog';
 import { ThemeProvider } from './context/ThemeContext';
@@ -46,7 +35,6 @@ import {
   INITIAL_SAMPLE_EXAMS,
   saveLocalExams,
 } from './services/db';
-import { TeacherPendingVerificationView } from './components/TeacherPendingVerificationView';
 import { verifyChapaTransaction } from './services/chapa';
 import { verifyTelebirrPayment } from './services/telebirr';
 import { getUserTierStatus } from './services/subscriptionLimits';
@@ -54,6 +42,44 @@ import {
   subscribeToOfficialExams,
   getCachedOfficialExams,
 } from './services/officialExams';
+
+// Code-split heavy modals and secondary views for fast initial load
+const CreateExamWizard = React.lazy(() =>
+  import('./components/CreateExamWizard').then((m) => ({ default: m.CreateExamWizard }))
+);
+const PracticeModal = React.lazy(() =>
+  import('./components/PracticeModal').then((m) => ({ default: m.PracticeModal }))
+);
+const PasteJsonModal = React.lazy(() =>
+  import('./components/PasteJsonModal').then((m) => ({ default: m.PasteJsonModal }))
+);
+const ProfessorModal = React.lazy(() =>
+  import('./components/ProfessorModal').then((m) => ({ default: m.ProfessorModal }))
+);
+const NotificationSettingsModal = React.lazy(() =>
+  import('./components/NotificationSettingsModal').then((m) => ({ default: m.NotificationSettingsModal }))
+);
+const ManualView = React.lazy(() =>
+  import('./components/ManualView').then((m) => ({ default: m.ManualView }))
+);
+const SubscriptionModal = React.lazy(() =>
+  import('./components/SubscriptionModal').then((m) => ({ default: m.SubscriptionModal }))
+);
+const AdminSubscriptionsView = React.lazy(() =>
+  import('./components/AdminSubscriptionsView').then((m) => ({ default: m.AdminSubscriptionsView }))
+);
+const CuratedExamsModal = React.lazy(() =>
+  import('./components/CuratedExamsModal').then((m) => ({ default: m.CuratedExamsModal }))
+);
+const DatabaseUploadModal = React.lazy(() =>
+  import('./components/DatabaseUploadModal').then((m) => ({ default: m.DatabaseUploadModal }))
+);
+const UserRegistrationModal = React.lazy(() =>
+  import('./components/UserRegistrationModal').then((m) => ({ default: m.UserRegistrationModal }))
+);
+const TeacherPendingVerificationView = React.lazy(() =>
+  import('./components/TeacherPendingVerificationView').then((m) => ({ default: m.TeacherPendingVerificationView }))
+);
 
 function MainApp() {
   const {
@@ -489,19 +515,21 @@ function MainApp() {
   if (isUnverifiedTeacher && user) {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-[#070e1a] text-zinc-950 dark:text-white font-['Plus_Jakarta_Sans',sans-serif]">
-        <TeacherPendingVerificationView
-          user={user}
-          onSignOut={signOut}
-          onOpenRegistrationModal={openRegistrationModal}
-          onRefreshStatus={refreshUserProfile}
-        />
-        <StudentRegistrationModal
-          isOpen={isRegistrationModalOpen}
-          onClose={closeRegistrationModal}
-          onSuccess={() => {
-            showToast('Profile updated successfully!');
-          }}
-        />
+        <Suspense fallback={null}>
+          <TeacherPendingVerificationView
+            user={user}
+            onSignOut={signOut}
+            onOpenRegistrationModal={openRegistrationModal}
+            onRefreshStatus={refreshUserProfile}
+          />
+          <UserRegistrationModal
+            isOpen={isRegistrationModalOpen}
+            onClose={closeRegistrationModal}
+            onSuccess={() => {
+              showToast('Profile updated successfully!');
+            }}
+          />
+        </Suspense>
         {toastMessage && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold font-['Syne',sans-serif] shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200">
             {toastMessage}
@@ -586,52 +614,58 @@ function MainApp() {
         )}
 
         {activeTab === 'create' && (
-          <CreateExamWizard
-            key={editingExam ? `edit_${editingExam.id}` : `new_${createExamInitialMode}`}
-            initialExam={editingExam}
-            initialMode={editingExam ? 'manual' : createExamInitialMode}
-            onSaveExam={handleSaveExam}
-            onCancel={() => {
-              setEditingExam(null);
-              setCreateExamInitialMode('select');
-              setActiveTab('files');
-            }}
-            onOpenPasteModal={() => setIsPasteModalOpen(true)}
-            onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
-            userTier={userTier}
-            onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
-            onOpenDatabaseUpload={(isAdmin || Boolean(user && isUserTeacher(user))) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
-            isAdmin={isAdmin}
-            user={user}
-          />
+          <Suspense fallback={null}>
+            <CreateExamWizard
+              key={editingExam ? `edit_${editingExam.id}` : `new_${createExamInitialMode}`}
+              initialExam={editingExam}
+              initialMode={editingExam ? 'manual' : createExamInitialMode}
+              onSaveExam={handleSaveExam}
+              onCancel={() => {
+                setEditingExam(null);
+                setCreateExamInitialMode('select');
+                setActiveTab('files');
+              }}
+              onOpenPasteModal={() => setIsPasteModalOpen(true)}
+              onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
+              userTier={userTier}
+              onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+              onOpenDatabaseUpload={(isAdmin || Boolean(user && isUserTeacher(user))) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
+              isAdmin={isAdmin}
+              user={user}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'manual' && (
-          <ManualView
-            onNavigate={(tab) => {
-              if (tab !== 'create') {
-                setEditingExam(null);
-                setCreateExamInitialMode('select');
-              }
-              setActiveTab(tab);
-            }}
-            onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
-            onOpenPasteModal={handleOpenQuestionTextEditor}
-            onOpenRegistrationModal={openRegistrationModal}
-            onOpenCuratedModal={() => setIsCuratedModalOpen(true)}
-            onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
-            onOpenNotificationsModal={() => setIsNotificationsModalOpen(true)}
-            isAdmin={isAdmin}
-            user={user}
-          />
+          <Suspense fallback={null}>
+            <ManualView
+              onNavigate={(tab) => {
+                if (tab !== 'create') {
+                  setEditingExam(null);
+                  setCreateExamInitialMode('select');
+                }
+                setActiveTab(tab);
+              }}
+              onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
+              onOpenPasteModal={handleOpenQuestionTextEditor}
+              onOpenRegistrationModal={openRegistrationModal}
+              onOpenCuratedModal={() => setIsCuratedModalOpen(true)}
+              onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+              onOpenNotificationsModal={() => setIsNotificationsModalOpen(true)}
+              isAdmin={isAdmin}
+              user={user}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'admin-subs' && (
-          <AdminSubscriptionsView
-            user={user}
-            subscriptions={allSubscriptions}
-            onClose={() => setActiveTab('home')}
-          />
+          <Suspense fallback={null}>
+            <AdminSubscriptionsView
+              user={user}
+              subscriptions={allSubscriptions}
+              onClose={() => setActiveTab('home')}
+            />
+          </Suspense>
         )}
       </main>
 
@@ -685,36 +719,108 @@ function MainApp() {
         activeSubscription={activeSubscription}
       />
 
-      {/* Practice Modal */}
-      <PracticeModal
-        exam={activePracticeExam}
-        isOpen={activePracticeExam !== null}
-        onClose={() => setActivePracticeExam(null)}
-        onSubmitResult={handleSubmitResult}
-      />
+      {/* Lazy Modals wrapped in Suspense */}
+      <Suspense fallback={null}>
+        {/* Practice Modal */}
+        {activePracticeExam && (
+          <PracticeModal
+            exam={activePracticeExam}
+            isOpen={activePracticeExam !== null}
+            onClose={() => setActivePracticeExam(null)}
+            onSubmitResult={handleSubmitResult}
+          />
+        )}
 
-      {/* Paste JSON / Plain Text Modal */}
-      <PasteJsonModal
-        isOpen={isPasteModalOpen}
-        onClose={() => setIsPasteModalOpen(false)}
-        onAddQuestions={handleAddQuestionsFromPaste}
-        userTier={userTier}
-        onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
-      />
+        {/* Paste JSON / Plain Text Modal */}
+        {isPasteModalOpen && (
+          <PasteJsonModal
+            isOpen={isPasteModalOpen}
+            onClose={() => setIsPasteModalOpen(false)}
+            onAddQuestions={handleAddQuestionsFromPaste}
+            userTier={userTier}
+            onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+          />
+        )}
 
-      {/* Exam Professor Modal */}
-      <ProfessorModal
-        isOpen={isProfessorModalOpen}
-        onClose={() => setIsProfessorModalOpen(false)}
-        onGoToQuestionTextEditor={handleOpenQuestionTextEditor}
-        onGoToPaste={handleOpenQuestionTextEditor}
-      />
+        {/* Exam Professor Modal */}
+        {isProfessorModalOpen && (
+          <ProfessorModal
+            isOpen={isProfessorModalOpen}
+            onClose={() => setIsProfessorModalOpen(false)}
+            onGoToQuestionTextEditor={handleOpenQuestionTextEditor}
+            onGoToPaste={handleOpenQuestionTextEditor}
+          />
+        )}
 
-      {/* Push & Study Notification Settings Modal */}
-      <NotificationSettingsModal
-        isOpen={isNotificationsModalOpen}
-        onClose={() => setIsNotificationsModalOpen(false)}
-      />
+        {/* Push & Study Notification Settings Modal */}
+        {isNotificationsModalOpen && (
+          <NotificationSettingsModal
+            isOpen={isNotificationsModalOpen}
+            onClose={() => setIsNotificationsModalOpen(false)}
+          />
+        )}
+
+        {/* Curated Official Exams Download Modal */}
+        {isCuratedModalOpen && (
+          <CuratedExamsModal
+            isOpen={isCuratedModalOpen}
+            onClose={() => setIsCuratedModalOpen(false)}
+            onDownloadExam={handleDownloadCuratedExam}
+            downloadedCatalogIds={downloadedCatalogIds}
+            user={user}
+            officialExams={officialExams}
+            onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+          />
+        )}
+
+        {/* Ethiopian Birr Student Subscription & Chapa Checkout Modal */}
+        {isSubscriptionModalOpen && (
+          <SubscriptionModal
+            isOpen={isSubscriptionModalOpen}
+            onClose={() => setIsSubscriptionModalOpen(false)}
+            user={user}
+            activeSubscription={activeSubscription}
+            onSignInRequired={() => {
+              setIsSubscriptionModalOpen(false);
+              signInWithGoogle();
+            }}
+            onOpenSignIn={() => {
+              setIsSubscriptionModalOpen(false);
+              signInWithGoogle();
+            }}
+          />
+        )}
+
+        {/* Database Storage Upload Modal (Cloud Firestore - Admin & Teacher privileged) */}
+        {examForDatabaseUpload && (
+          <DatabaseUploadModal
+            isOpen={examForDatabaseUpload !== null}
+            exam={examForDatabaseUpload}
+            user={user}
+            onClose={() => setExamForDatabaseUpload(null)}
+            onOpenRegistrationModal={openRegistrationModal}
+            onUploadComplete={(updatedExam) => {
+              setExams((prev) =>
+                prev.map((e) => (e.id === updatedExam.id ? { ...e, ...updatedExam } : e))
+              );
+              showToast(`Questions successfully synced to Cloud Firestore repository!`);
+            }}
+          />
+        )}
+
+        {/* User Profile Registration Modal */}
+        <UserRegistrationModal
+          isOpen={isRegistrationModalOpen}
+          onClose={closeRegistrationModal}
+          onSuccess={(registeredProfile) => {
+            if (registeredProfile.role === 'teacher') {
+              showToast(`Registered successfully as Teacher for ${registeredProfile.school || 'your school'}!`);
+            } else {
+              showToast(`Registered successfully as Grade ${registeredProfile.grade || '12'} student!`);
+            }
+          }}
+        />
+      </Suspense>
 
       {/* Delete Exam Confirmation Dialog */}
       <ConfirmationDialog
@@ -725,61 +831,6 @@ function MainApp() {
         isDestructive
         onConfirm={handleDeleteExam}
         onCancel={() => setExamToDelete(null)}
-      />
-
-      {/* Curated Official Exams Download Modal */}
-      <CuratedExamsModal
-        isOpen={isCuratedModalOpen}
-        onClose={() => setIsCuratedModalOpen(false)}
-        onDownloadExam={handleDownloadCuratedExam}
-        downloadedCatalogIds={downloadedCatalogIds}
-        user={user}
-        officialExams={officialExams}
-        onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
-      />
-
-      {/* Ethiopian Birr Student Subscription & Chapa Checkout Modal */}
-      <SubscriptionModal
-        isOpen={isSubscriptionModalOpen}
-        onClose={() => setIsSubscriptionModalOpen(false)}
-        user={user}
-        activeSubscription={activeSubscription}
-        onSignInRequired={() => {
-          setIsSubscriptionModalOpen(false);
-          signInWithGoogle();
-        }}
-        onOpenSignIn={() => {
-          setIsSubscriptionModalOpen(false);
-          signInWithGoogle();
-        }}
-      />
-
-      {/* Database Storage Upload Modal (Cloud Firestore - Admin & Teacher privileged) */}
-      <DatabaseUploadModal
-        isOpen={examForDatabaseUpload !== null}
-        exam={examForDatabaseUpload}
-        user={user}
-        onClose={() => setExamForDatabaseUpload(null)}
-        onOpenRegistrationModal={openRegistrationModal}
-        onUploadComplete={(updatedExam) => {
-          setExams((prev) =>
-            prev.map((e) => (e.id === updatedExam.id ? { ...e, ...updatedExam } : e))
-          );
-          showToast(`Questions successfully synced to Cloud Firestore repository!`);
-        }}
-      />
-
-      {/* Student Profile Registration & Critical Academic Forms Modal */}
-      <StudentRegistrationModal
-        isOpen={isRegistrationModalOpen}
-        onClose={closeRegistrationModal}
-        onSuccess={(registeredProfile) => {
-          if (registeredProfile.role === 'teacher') {
-            showToast(`Registered successfully as Teacher for ${registeredProfile.school || 'your school'}!`);
-          } else {
-            showToast(`Registered successfully as Grade ${registeredProfile.grade || '12'} student!`);
-          }
-        }}
       />
 
       {/* Direct Practice Mode Launching Overlay for Shared Links */}

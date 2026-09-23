@@ -62,13 +62,19 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 // Test initial connection as required by firebase skill
 export async function testConnection(): Promise<boolean> {
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Connection check timed out')), 3000)
+    );
+    await Promise.race([getDocFromServer(doc(db, 'test', 'connection')), timeoutPromise]);
     return true;
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firebase connection: client appears offline, falling back to local cache.');
+    if (error instanceof Error) {
+      if (error.message.includes('the client is offline') || error.message.includes('timed out') || error.message.includes('Backend didn\'t respond')) {
+        console.info('Firebase offline cache mode active.');
+        return false;
+      }
     }
     return false;
   }
 }
-testConnection();
+testConnection().catch(() => {});

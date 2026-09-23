@@ -161,7 +161,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Payments</span>
+              <span>Admin Hub</span>
             </button>
           )}
         </nav>
@@ -283,6 +283,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                       </p>
                     )}
                   </div>
+
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        onTabChange('admin-subs');
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl text-left text-zinc-950 dark:text-white bg-zinc-100 dark:bg-white/[0.08] hover:bg-zinc-200 dark:hover:bg-white/[0.12] flex items-center gap-2.5 cursor-pointer transition text-xs font-bold"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Admin Hub (Teachers & Payments)</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
