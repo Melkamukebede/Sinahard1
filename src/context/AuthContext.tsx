@@ -41,6 +41,7 @@ const LOCAL_STUDENT_PHONE_KEY = 'student_phone';
 const LOCAL_STUDENT_IS_REGISTERED_KEY = 'student_is_registered';
 const LOCAL_USER_ROLE_KEY = 'user_account_role';
 const LOCAL_TEACHER_NAME_KEY = 'teacher_display_name';
+const LOCAL_TEACHER_IS_VERIFIED_KEY = 'teacher_is_verified';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -55,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isRegistered = localStorage.getItem(LOCAL_STUDENT_IS_REGISTERED_KEY) === 'true';
     const savedRole = (localStorage.getItem(LOCAL_USER_ROLE_KEY) as any) || 'student';
     const savedTeacherName = localStorage.getItem(LOCAL_TEACHER_NAME_KEY) || '';
+    const savedIsVerifiedTeacher = localStorage.getItem(LOCAL_TEACHER_IS_VERIFIED_KEY) === 'true';
 
     if (savedGuestName) {
       return {
@@ -69,6 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         schoolName: savedSchool,
         school: savedSchool,
         teacherName: savedTeacherName,
+        isVerifiedTeacher: savedRole === 'teacher' ? savedIsVerifiedTeacher : (savedRole === 'admin'),
         region: savedRegion,
         targetExamYear: savedTargetYear,
         phoneNumber: savedPhone,
@@ -102,14 +105,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const localRegistered = localStorage.getItem(LOCAL_STUDENT_IS_REGISTERED_KEY) === 'true';
         const savedRole = (localStorage.getItem(LOCAL_USER_ROLE_KEY) as any) || (currentUser.email === 'melkamukebede11@gmail.com' ? 'admin' : 'student');
         const savedTeacherName = localStorage.getItem(LOCAL_TEACHER_NAME_KEY) || '';
+        const savedIsVerifiedTeacher = localStorage.getItem(LOCAL_TEACHER_IS_VERIFIED_KEY) === 'true';
+        const isEmailAdmin = currentUser.email?.toLowerCase().trim() === 'melkamukebede11@gmail.com';
+        const initialRole = isEmailAdmin ? 'admin' : savedRole;
 
         let appUser: AppUser = {
           uid: currentUser.uid,
           email: currentUser.email,
-          displayName: currentUser.displayName || (savedRole === 'teacher' ? 'Teacher' : 'Student'),
+          displayName: currentUser.displayName || (initialRole === 'teacher' ? 'Teacher' : 'Student'),
           photoURL: currentUser.photoURL,
           isAnonymous: currentUser.isAnonymous,
-          role: currentUser.email === 'melkamukebede11@gmail.com' ? 'admin' : savedRole,
+          role: initialRole,
           grade: savedGrade,
           stream: savedStream,
           schoolName: savedSchool,
@@ -119,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           targetExamYear: savedTargetYear,
           phoneNumber: savedPhone,
           isRegistered: localRegistered,
+          isVerifiedTeacher: (isEmailAdmin || initialRole === 'admin') ? true : savedIsVerifiedTeacher,
           metadata: {
             creationTime: currentUser.metadata.creationTime,
             lastSignInTime: currentUser.metadata.lastSignInTime,
@@ -131,7 +138,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userRef = doc(db, 'users', currentUser.uid);
           const userSnap = await getDoc(userRef);
           if (!userSnap.exists()) {
-            const initialRole = currentUser.email === 'melkamukebede11@gmail.com' ? 'admin' : savedRole;
             await setDoc(userRef, {
               id: currentUser.uid,
               email: currentUser.email || '',
@@ -147,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               targetExamYear: savedTargetYear,
               phoneNumber: savedPhone,
               isRegistered: localRegistered,
+              isVerifiedTeacher: (isEmailAdmin || initialRole === 'admin') ? true : savedIsVerifiedTeacher,
               createdAt: new Date().toISOString(),
             });
             // If new user and not yet fully registered, open registration modal
@@ -155,7 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           } else {
             const data = userSnap.data();
-            const resolvedRole = currentUser.email === 'melkamukebede11@gmail.com' 
+            const resolvedRole = isEmailAdmin 
               ? 'admin' 
               : (data?.role || savedRole || 'student');
             const resolvedGrade = data?.grade || savedGrade;
@@ -181,9 +188,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (resolvedPhone) localStorage.setItem(LOCAL_STUDENT_PHONE_KEY, resolvedPhone);
             if (resolvedIsRegistered) localStorage.setItem(LOCAL_STUDENT_IS_REGISTERED_KEY, 'true');
 
-            const isVerifiedTeacher = currentUser.email === 'melkamukebede11@gmail.com'
+            const isVerifiedTeacher = (isEmailAdmin || resolvedRole === 'admin')
               ? true
-              : Boolean(data?.isVerifiedTeacher === true);
+              : Boolean(
+                  data?.isVerifiedTeacher === true ||
+                  data?.isVerifiedTeacher === 'true' ||
+                  data?.status === 'verified' ||
+                  data?.isVerified === true ||
+                  data?.verified === true
+                );
+
+            localStorage.setItem(LOCAL_TEACHER_IS_VERIFIED_KEY, String(isVerifiedTeacher));
 
             appUser = {
               ...appUser,
@@ -220,9 +235,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (docSnap) => {
             if (docSnap.exists()) {
               const liveData = docSnap.data();
-              const isAdminEmail = currentUser.email === 'melkamukebede11@gmail.com';
+              const isAdminEmail = currentUser.email?.toLowerCase().trim() === 'melkamukebede11@gmail.com';
               const liveRole = isAdminEmail ? 'admin' : (liveData.role || 'student');
-              const liveVerified = isAdminEmail ? true : Boolean(liveData.isVerifiedTeacher === true);
+              const liveVerified = (isAdminEmail || liveRole === 'admin')
+                ? true
+                : Boolean(
+                    liveData.isVerifiedTeacher === true ||
+                    liveData.isVerifiedTeacher === 'true' ||
+                    liveData.status === 'verified' ||
+                    liveData.isVerified === true ||
+                    liveData.verified === true
+                  );
+
+              localStorage.setItem(LOCAL_TEACHER_IS_VERIFIED_KEY, String(liveVerified));
 
               setUser((prev) => {
                 if (!prev) return prev;
@@ -328,6 +353,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await fbSignOut(auth);
       localStorage.removeItem(LOCAL_GUEST_NAME_KEY);
+      localStorage.removeItem(LOCAL_TEACHER_IS_VERIFIED_KEY);
       setUser(null);
     } catch (err: unknown) {
       console.error('Sign-Out Error:', err);
@@ -395,13 +421,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 3. Firestore persistence if authenticated
     if (firebaseUser) {
       try {
+        const isEmailAdmin = firebaseUser.email?.toLowerCase().trim() === 'melkamukebede11@gmail.com';
+        const isVerified = isEmailAdmin ? true : Boolean(profileData.isVerifiedTeacher ?? user?.isVerifiedTeacher ?? false);
+        localStorage.setItem(LOCAL_TEACHER_IS_VERIFIED_KEY, String(isVerified));
+
         const userRef = doc(db, 'users', firebaseUser.uid);
         await setDoc(
           userRef,
           {
             ...profileData,
             ...(resolvedSchool ? { school: resolvedSchool, schoolName: resolvedSchool } : {}),
-            isVerifiedTeacher: (firebaseUser.email === 'melkamukebede11@gmail.com') ? true : Boolean(profileData.isVerifiedTeacher ?? user?.isVerifiedTeacher ?? false),
+            isVerifiedTeacher: isVerified,
             isRegistered: true,
             updatedAt: new Date().toISOString(),
           },
@@ -420,9 +450,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userSnap = await getDoc(userRef);
       if (userSnap.exists()) {
         const data = userSnap.data();
-        const isAdminEmail = firebaseUser.email === 'melkamukebede11@gmail.com';
+        const isAdminEmail = firebaseUser.email?.toLowerCase().trim() === 'melkamukebede11@gmail.com';
         const liveRole = isAdminEmail ? 'admin' : (data.role || 'student');
-        const liveVerified = isAdminEmail ? true : Boolean(data.isVerifiedTeacher === true);
+        const liveVerified = (isAdminEmail || liveRole === 'admin')
+          ? true
+          : Boolean(
+              data.isVerifiedTeacher === true ||
+              data.isVerifiedTeacher === 'true' ||
+              data.status === 'verified' ||
+              data.isVerified === true ||
+              data.verified === true
+            );
+
+        localStorage.setItem(LOCAL_TEACHER_IS_VERIFIED_KEY, String(liveVerified));
 
         setUser((prev) => {
           if (!prev) return prev;

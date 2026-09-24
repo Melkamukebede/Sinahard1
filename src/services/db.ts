@@ -558,7 +558,9 @@ export function saveLocalSubscriptions(subs: UserSubscription[]) {
 }
 
 export function isUserAdmin(user: AppUser | null): boolean {
-  if (!user || !user.email) return false;
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  if (!user.email) return false;
   return user.email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase();
 }
 
@@ -570,7 +572,15 @@ export function isUserTeacher(user: AppUser | null): boolean {
 export function isTeacherVerified(user: AppUser | null): boolean {
   if (!user) return false;
   if (isUserAdmin(user)) return true;
-  return user.role === 'teacher' && Boolean(user.isVerifiedTeacher === true);
+  if (user.role !== 'teacher') return false;
+  return Boolean(
+    user.isVerifiedTeacher === true ||
+    (user as any).isVerifiedTeacher === 'true' ||
+    (user as any).isVerified === true ||
+    (user as any).isVerified === 'true' ||
+    (user as any).status === 'verified' ||
+    (user as any).verified === true
+  );
 }
 
 export function canUserUploadExam(user: AppUser | null): boolean {

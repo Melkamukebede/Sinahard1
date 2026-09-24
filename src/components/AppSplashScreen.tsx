@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SinahardLogo } from './SinahardLogo';
 import { useAuth } from '../context/AuthContext';
-import { isUserAdmin, isUserTeacher } from '../services/db';
+import { isUserAdmin, isUserTeacher, isTeacherVerified } from '../services/db';
 import { ShieldCheck, GraduationCap, School, Compass, Sparkles } from 'lucide-react';
 
 interface AppSplashScreenProps {
@@ -11,9 +11,9 @@ interface AppSplashScreenProps {
 
 export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) => {
   const { user, loading: authLoading } = useAuth();
-  const [progress, setProgress] = useState(12);
+  const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('Connecting to Sinahard...');
-  const [detectedRole, setDetectedRole] = useState<'admin' | 'teacher' | 'student' | 'guest' | null>(null);
+  const [detectedRole, setDetectedRole] = useState<'admin' | 'teacher_verified' | 'teacher_pending' | 'student' | 'guest' | null>(null);
   const [isClosing, setIsClosing] = useState(false);
 
   const startTimeRef = useRef<number>(Date.now());
@@ -21,112 +21,122 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
 
   // Background Role Evaluation
   useEffect(() => {
-    if (!authLoading) {
-      if (user && isUserAdmin(user)) {
-        setDetectedRole('admin');
-      } else if (user && isUserTeacher(user)) {
-        setDetectedRole('teacher');
-      } else if (user && user.uid !== 'guest' && !user.isAnonymous) {
-        setDetectedRole('student');
-      } else {
-        setDetectedRole('guest');
-      }
+    if (user && isUserAdmin(user)) {
+      setDetectedRole('admin');
+    } else if (user && isUserTeacher(user)) {
+      setDetectedRole(isTeacherVerified(user) ? 'teacher_verified' : 'teacher_pending');
+    } else if (user && user.uid !== 'guest' && !user.isAnonymous) {
+      setDetectedRole('student');
+    } else if (!authLoading) {
+      setDetectedRole('guest');
     }
   }, [user, authLoading]);
 
-  // Smooth Progression Loop
+  // Guaranteed 1000ms (1 second) Smooth Progression Loop for Every User
   useEffect(() => {
     let animationFrameId: number;
+    const DURATION = 1000; // 1000ms (1 second) progress shower for all users
 
-    const updateProgress = () => {
+    const tick = () => {
       const elapsed = Date.now() - startTimeRef.current;
-      const minDuration = 1400; // minimum duration (ms) for a silky smooth, luxurious feel
+      const progressFraction = Math.min(1, elapsed / DURATION);
 
-      if (authLoading) {
-        // While auth is still checking in the background, smoothly advance up to ~75%
-        const simulated = Math.min(75, Math.floor((elapsed / 1200) * 75) + 12);
-        setProgress(simulated);
+      // Smooth progress calculation (0% to 100%)
+      let currentPercent = Math.min(100, Math.floor(progressFraction * 100));
 
-        if (simulated < 35) {
-          setStatusText('Verifying credentials...');
-        } else if (simulated < 65) {
-          setStatusText('Checking account permissions...');
-        } else {
-          setStatusText('Resolving user workspace...');
-        }
+      // If auth is still resolving over network at 90%, briefly hold at 90% until ready
+      if (authLoading && currentPercent > 90) {
+        currentPercent = 90;
+      }
 
-        animationFrameId = requestAnimationFrame(updateProgress);
+      setProgress(currentPercent);
+
+      // Micro status labels during progression
+      if (currentPercent < 30) {
+        setStatusText('Connecting to Sinahard...');
+      } else if (currentPercent < 65) {
+        setStatusText('Verifying credentials & permissions...');
+      } else if (currentPercent < 95) {
+        setStatusText('Preparing workspace...');
       } else {
-        // Auth is resolved in background! Now evaluate role and smoothly finish to 100%
-        const remainingTo100 = Math.max(0, minDuration - elapsed);
-
-        if (elapsed < minDuration) {
-          const ratio = elapsed / minDuration;
-          const target = Math.min(95, Math.floor(75 + ratio * 20));
-          setProgress((prev) => Math.max(prev, target));
-          animationFrameId = requestAnimationFrame(updateProgress);
+        // 95% - 100% final confirmation
+        if (user && isUserAdmin(user)) {
+          setStatusText('Administrator access verified');
+        } else if (user && isUserTeacher(user)) {
+          setStatusText(isTeacherVerified(user) ? 'Teacher studio verified' : 'Teacher workspace ready');
+        } else if (user && user.uid !== 'guest' && !user.isAnonymous) {
+          setStatusText('Student profile verified');
         } else {
-          // Reached final stage
-          setProgress(100);
-
-          if (user && isUserAdmin(user)) {
-            setStatusText('Admin access verified');
-          } else if (user && isUserTeacher(user)) {
-            setStatusText('Teacher workspace verified');
-          } else if (user && user.uid !== 'guest' && !user.isAnonymous) {
-            setStatusText('Student profile verified');
-          } else {
-            setStatusText('Guest mode ready');
-          }
-
-          if (!completedRef.current) {
-            completedRef.current = true;
-            // Brief pause at 100% so user sees completion before seamless fade out
-            setTimeout(() => {
-              setIsClosing(true);
-              setTimeout(() => {
-                onComplete();
-              }, 450); // matches fade exit duration
-            }, 300);
-          }
+          setStatusText('Guest mode ready');
         }
+      }
+
+      // Check if finished (completed 1000ms AND auth resolved)
+      if (progressFraction >= 1 && !authLoading) {
+        setProgress(100);
+        if (!completedRef.current) {
+          completedRef.current = true;
+          // Hold at 100% for 180ms so user clearly perceives 100% completion before elegant fade
+          setTimeout(() => {
+            setIsClosing(true);
+            setTimeout(() => {
+              onComplete();
+            }, 350);
+          }, 180);
+        }
+      } else {
+        animationFrameId = requestAnimationFrame(tick);
       }
     };
 
-    animationFrameId = requestAnimationFrame(updateProgress);
+    animationFrameId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationFrameId);
   }, [authLoading, user, onComplete]);
 
-  // Role info badge helper
+  // Role info badge
   const renderRoleBadge = () => {
-    if (!detectedRole) return null;
+    if (!detectedRole) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 text-xs font-semibold border border-zinc-500/20 backdrop-blur-md">
+          <Sparkles className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '3s' }} />
+          <span>Verifying access...</span>
+        </span>
+      );
+    }
 
     switch (detectedRole) {
       case 'admin':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20 backdrop-blur-md">
-            <ShieldCheck className="w-3.5 h-3.5" />
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20 backdrop-blur-md shadow-xs animate-in fade-in duration-200">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
             <span>Administrator Access</span>
           </span>
         );
-      case 'teacher':
+      case 'teacher_verified':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-bold border border-sky-500/20 backdrop-blur-md">
-            <School className="w-3.5 h-3.5" />
-            <span>Teacher Portal</span>
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-bold border border-sky-500/20 backdrop-blur-md shadow-xs animate-in fade-in duration-200">
+            <School className="w-3.5 h-3.5 text-sky-500" />
+            <span>Teacher Studio (Verified)</span>
+          </span>
+        );
+      case 'teacher_pending':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-500/20 backdrop-blur-md shadow-xs animate-in fade-in duration-200">
+            <School className="w-3.5 h-3.5 text-amber-500" />
+            <span>Teacher Studio</span>
           </span>
         );
       case 'student':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold border border-blue-500/20 backdrop-blur-md">
-            <GraduationCap className="w-3.5 h-3.5" />
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold border border-blue-500/20 backdrop-blur-md shadow-xs animate-in fade-in duration-200">
+            <GraduationCap className="w-3.5 h-3.5 text-blue-500" />
             <span>Student Dashboard</span>
           </span>
         );
       case 'guest':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 text-xs font-semibold border border-zinc-500/20 backdrop-blur-md">
-            <Compass className="w-3.5 h-3.5" />
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 text-xs font-semibold border border-zinc-500/20 backdrop-blur-md shadow-xs animate-in fade-in duration-200">
+            <Compass className="w-3.5 h-3.5 text-zinc-500" />
             <span>Guest Explorer</span>
           </span>
         );
@@ -140,7 +150,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white dark:bg-[#060c18] overflow-hidden select-none"
         >
           {/* Ambient Lighting Orbs */}
@@ -152,9 +162,9 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
             
             {/* Animated Sinahard Emblem */}
             <motion.div
-              initial={{ scale: 0.8, opacity: 0, y: 15 }}
+              initial={{ scale: 0.82, opacity: 0, y: 12 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
               className="relative mb-6"
             >
               {/* Pulsing Backlight Ring */}
@@ -167,10 +177,10 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
 
             {/* App Brand Name & Please wait... */}
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.15 }}
-              className="space-y-1.5 mb-8"
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="space-y-1.5 mb-7"
             >
               <h1 className="text-2xl sm:text-3xl font-extrabold font-['Outfit',sans-serif] tracking-tight text-zinc-950 dark:text-white">
                 Sinahard
@@ -181,11 +191,11 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
               </div>
             </motion.div>
 
-            {/* Advanced Animated Progressor */}
+            {/* Guaranteed 1000ms Animated Progressor */}
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.25 }}
+              transition={{ duration: 0.4, delay: 0.15 }}
               className="w-full space-y-3"
             >
               {/* Progress Track */}
@@ -194,7 +204,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
                 <motion.div
                   className="h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-400 to-blue-600 relative overflow-hidden"
                   style={{ width: `${progress}%` }}
-                  transition={{ ease: 'easeOut', duration: 0.2 }}
+                  transition={{ ease: 'easeOut', duration: 0.1 }}
                 >
                   {/* High-speed Specular Shimmer Ray */}
                   <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
@@ -209,16 +219,16 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
                   {statusText}
                 </span>
                 <span className="font-mono font-bold text-zinc-900 dark:text-zinc-200">
-                  {Math.round(progress)}%
+                  {progress}%
                 </span>
               </div>
             </motion.div>
 
-            {/* Resolved Role Indicator (Discreet & Elegant) */}
+            {/* Resolved Role Indicator */}
             <motion.div
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.35 }}
+              transition={{ duration: 0.35, delay: 0.2 }}
               className="mt-6 h-7 flex items-center justify-center"
             >
               {renderRoleBadge()}

@@ -84,6 +84,7 @@ function MainApp() {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
   const {
     user,
+    loading: authLoading,
     signInWithGoogle,
     signOut,
     isRegistrationModalOpen,
@@ -105,7 +106,8 @@ function MainApp() {
   const isAdmin = Boolean(user && !user.isAnonymous && user.uid !== 'guest' && isUserAdmin(user));
   const isTeacher = Boolean(user && isUserTeacher(user));
   const isVerifiedTeacher = Boolean(user && isTeacherVerified(user));
-  const isUnverifiedTeacher = Boolean(user && user.role === 'teacher' && !isVerifiedTeacher);
+  // CRITICAL: Teacher is only unverified if auth is finished loading, user is logged in, and they are genuinely unverified
+  const isUnverifiedTeacher = Boolean(!authLoading && user && user.role === 'teacher' && !isVerifiedTeacher && !isAdmin);
 
   // If teacher, disallow results tab or payment modals
   useEffect(() => {
@@ -511,13 +513,13 @@ function MainApp() {
     .filter((e) => e.isDownloaded || e.sourceType === 'curated_catalog')
     .map((e) => e.catalogId || e.id);
 
-  // If registered as teacher and waiting for admin verification, display the dedicated pending screen
-  if (isUnverifiedTeacher && user) {
-    return (
-      <>
-        {showSplashScreen && (
-          <AppSplashScreen onComplete={() => setShowSplashScreen(false)} />
-        )}
+  return (
+    <>
+      {showSplashScreen && (
+        <AppSplashScreen onComplete={() => setShowSplashScreen(false)} />
+      )}
+
+      {isUnverifiedTeacher && user ? (
         <div className="min-h-screen bg-zinc-50 dark:bg-[#070e1a] text-zinc-950 dark:text-white font-['Plus_Jakarta_Sans',sans-serif]">
           <Suspense fallback={null}>
             <TeacherPendingVerificationView
@@ -540,16 +542,8 @@ function MainApp() {
             </div>
           )}
         </div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      {showSplashScreen && (
-        <AppSplashScreen onComplete={() => setShowSplashScreen(false)} />
-      )}
-      <div className="min-h-screen bg-transparent text-zinc-900 dark:text-zinc-100 transition-colors font-['Plus_Jakarta_Sans',sans-serif] selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-950 relative">
+      ) : (
+        <div className="min-h-screen bg-transparent text-zinc-900 dark:text-zinc-100 transition-colors font-['Plus_Jakarta_Sans',sans-serif] selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-950 relative">
       {/* Navigation Bar */}
       <Navbar
         activeTab={activeTab}
@@ -903,6 +897,7 @@ function MainApp() {
         </div>
       )}
     </div>
+    )}
     </>
   );
 }
