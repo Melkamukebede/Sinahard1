@@ -16,10 +16,14 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
   const [detectedRole, setDetectedRole] = useState<'admin' | 'teacher_verified' | 'teacher_pending' | 'student' | 'guest' | null>(null);
   const [isClosing, setIsClosing] = useState(false);
 
-  const startTimeRef = useRef<number>(Date.now());
-  const completedRef = useRef(false);
+  // Store stable refs to avoid interrupting progress animation on re-renders
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
-  // Background Role Evaluation
+  const userRef = useRef(user);
+  userRef.current = user;
+
+  // Real-time background role detection
   useEffect(() => {
     if (user && isUserAdmin(user)) {
       setDetectedRole('admin');
@@ -32,73 +36,65 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
     }
   }, [user, authLoading]);
 
-  // Guaranteed 1000ms (1 second) Smooth Progression Loop for Every User
+  // Guaranteed visible progress shower running smoothly on mount
   useEffect(() => {
     let animationFrameId: number;
-    const DURATION = 1000; // 1000ms (1 second) progress shower for all users
+    const startTime = Date.now();
+    // 2200ms visible progress duration - smooth, clear, and perfectly perceptible
+    const PROGRESS_DURATION = 2200;
 
     const tick = () => {
-      const elapsed = Date.now() - startTimeRef.current;
-      const progressFraction = Math.min(1, elapsed / DURATION);
+      const elapsed = Date.now() - startTime;
+      const progressFraction = Math.min(1, elapsed / PROGRESS_DURATION);
 
-      // Smooth progress calculation (0% to 100%)
-      let currentPercent = Math.min(100, Math.floor(progressFraction * 100));
-
-      // If auth is still resolving over network at 90%, briefly hold at 90% until ready
-      if (authLoading && currentPercent > 90) {
-        currentPercent = 90;
-      }
-
+      // Smooth progression from 0% to 100%
+      const currentPercent = Math.min(100, Math.floor(progressFraction * 100));
       setProgress(currentPercent);
 
-      // Micro status labels during progression
-      if (currentPercent < 30) {
+      // Micro status labels during progress
+      if (currentPercent < 25) {
         setStatusText('Connecting to Sinahard...');
-      } else if (currentPercent < 65) {
+      } else if (currentPercent < 55) {
         setStatusText('Verifying credentials & permissions...');
-      } else if (currentPercent < 95) {
-        setStatusText('Preparing workspace...');
+      } else if (currentPercent < 85) {
+        setStatusText('Configuring workspace...');
       } else {
-        // 95% - 100% final confirmation
-        if (user && isUserAdmin(user)) {
+        const u = userRef.current;
+        if (u && isUserAdmin(u)) {
           setStatusText('Administrator access verified');
-        } else if (user && isUserTeacher(user)) {
-          setStatusText(isTeacherVerified(user) ? 'Teacher studio verified' : 'Teacher workspace ready');
-        } else if (user && user.uid !== 'guest' && !user.isAnonymous) {
+        } else if (u && isUserTeacher(u)) {
+          setStatusText(isTeacherVerified(u) ? 'Teacher studio verified' : 'Teacher workspace ready');
+        } else if (u && u.uid !== 'guest' && !u.isAnonymous) {
           setStatusText('Student profile verified');
         } else {
           setStatusText('Guest mode ready');
         }
       }
 
-      // Check if finished (completed 1000ms AND auth resolved)
-      if (progressFraction >= 1 && !authLoading) {
-        setProgress(100);
-        if (!completedRef.current) {
-          completedRef.current = true;
-          // Hold at 100% for 180ms so user clearly perceives 100% completion before elegant fade
-          setTimeout(() => {
-            setIsClosing(true);
-            setTimeout(() => {
-              onComplete();
-            }, 350);
-          }, 180);
-        }
-      } else {
+      if (progressFraction < 1) {
         animationFrameId = requestAnimationFrame(tick);
+      } else {
+        setProgress(100);
+        // Pause briefly at 100% for user confirmation, then trigger graceful exit fade
+        setTimeout(() => {
+          setIsClosing(true);
+          setTimeout(() => {
+            onCompleteRef.current();
+          }, 350);
+        }, 220);
       }
     };
 
     animationFrameId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [authLoading, user, onComplete]);
+  }, []);
 
-  // Role info badge
+  // Role info badge helper
   const renderRoleBadge = () => {
     if (!detectedRole) {
       return (
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 text-xs font-semibold border border-zinc-500/20 backdrop-blur-md">
-          <Sparkles className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '3s' }} />
+          <Sparkles className="w-3.5 h-3.5 animate-spin text-sky-500" style={{ animationDuration: '3s' }} />
           <span>Verifying access...</span>
         </span>
       );
@@ -147,11 +143,11 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
     <AnimatePresence>
       {!isClosing && (
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white dark:bg-[#060c18] overflow-hidden select-none"
+          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-white dark:bg-[#070e1a] overflow-hidden select-none"
         >
           {/* Ambient Lighting Orbs */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[500px] h-[340px] sm:h-[500px] rounded-full bg-sky-500/10 dark:bg-sky-500/15 blur-[100px] pointer-events-none" />
@@ -162,7 +158,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
             
             {/* Animated Sinahard Emblem */}
             <motion.div
-              initial={{ scale: 0.82, opacity: 0, y: 12 }}
+              initial={{ scale: 0.85, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
               className="relative mb-6"
@@ -179,7 +175,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
+              transition={{ duration: 0.4, delay: 0.08 }}
               className="space-y-1.5 mb-7"
             >
               <h1 className="text-2xl sm:text-3xl font-extrabold font-['Outfit',sans-serif] tracking-tight text-zinc-950 dark:text-white">
@@ -191,11 +187,11 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
               </div>
             </motion.div>
 
-            {/* Guaranteed 1000ms Animated Progressor */}
+            {/* Advanced Animated Progressor */}
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.15 }}
+              transition={{ duration: 0.4, delay: 0.12 }}
               className="w-full space-y-3"
             >
               {/* Progress Track */}
@@ -228,7 +224,7 @@ export const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ onComplete }) 
             <motion.div
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.2 }}
+              transition={{ duration: 0.35, delay: 0.18 }}
               className="mt-6 h-7 flex items-center justify-center"
             >
               {renderRoleBadge()}

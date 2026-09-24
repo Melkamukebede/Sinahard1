@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { Navbar, PageTab } from './components/Navbar';
 import { HomeView } from './components/HomeView';
 import { FilesView } from './components/FilesView';
@@ -82,6 +82,9 @@ import { AppSplashScreen } from './components/AppSplashScreen';
 
 function MainApp() {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
+  const handleSplashComplete = useCallback(() => {
+    setShowSplashScreen(false);
+  }, []);
   const {
     user,
     loading: authLoading,
@@ -516,7 +519,7 @@ function MainApp() {
   return (
     <>
       {showSplashScreen && (
-        <AppSplashScreen onComplete={() => setShowSplashScreen(false)} />
+        <AppSplashScreen onComplete={handleSplashComplete} />
       )}
 
       {isUnverifiedTeacher && user ? (
