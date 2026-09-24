@@ -987,6 +987,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                   {recentResults.map((r, index) => {
                     const isPassed = (r.percentage || 0) >= 70;
+                    const diffMs = Date.now() - new Date(r.date).getTime();
+                    const diffMin = Math.floor(diffMs / 60000);
+                    const diffHr = Math.floor(diffMin / 60);
+                    const diffDays = Math.floor(diffHr / 24);
+                    const timeAgo = diffMin < 1 ? 'Just now' : diffMin < 60 ? `${diffMin}m ago` : diffHr < 24 ? `${diffHr}h ago` : diffDays === 1 ? 'Yesterday' : diffDays < 7 ? `${diffDays}d ago` : new Date(r.date).toLocaleDateString();
+
                     return (
                       <div
                         key={index}
@@ -997,7 +1003,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                             {r.examTitle}
                           </h4>
                           <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                            <span>{new Date(r.date).toLocaleDateString()}</span>
+                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{timeAgo}</span>
                             <span>•</span>
                             <span>{r.score}/{r.total} correct</span>
                             <span>•</span>

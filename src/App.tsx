@@ -77,11 +77,11 @@ const DatabaseUploadModal = React.lazy(() =>
 const UserRegistrationModal = React.lazy(() =>
   import('./components/UserRegistrationModal').then((m) => ({ default: m.UserRegistrationModal }))
 );
-const TeacherPendingVerificationView = React.lazy(() =>
-  import('./components/TeacherPendingVerificationView').then((m) => ({ default: m.TeacherPendingVerificationView }))
-);
+import { TeacherPendingVerificationView } from './components/TeacherPendingVerificationView';
+import { AppSplashScreen } from './components/AppSplashScreen';
 
 function MainApp() {
+  const [showSplashScreen, setShowSplashScreen] = useState(true);
   const {
     user,
     signInWithGoogle,
@@ -514,33 +514,42 @@ function MainApp() {
   // If registered as teacher and waiting for admin verification, display the dedicated pending screen
   if (isUnverifiedTeacher && user) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-[#070e1a] text-zinc-950 dark:text-white font-['Plus_Jakarta_Sans',sans-serif]">
-        <Suspense fallback={null}>
-          <TeacherPendingVerificationView
-            user={user}
-            onSignOut={signOut}
-            onOpenRegistrationModal={openRegistrationModal}
-            onRefreshStatus={refreshUserProfile}
-          />
-          <UserRegistrationModal
-            isOpen={isRegistrationModalOpen}
-            onClose={closeRegistrationModal}
-            onSuccess={() => {
-              showToast('Profile updated successfully!');
-            }}
-          />
-        </Suspense>
-        {toastMessage && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold font-['Syne',sans-serif] shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200">
-            {toastMessage}
-          </div>
+      <>
+        {showSplashScreen && (
+          <AppSplashScreen onComplete={() => setShowSplashScreen(false)} />
         )}
-      </div>
+        <div className="min-h-screen bg-zinc-50 dark:bg-[#070e1a] text-zinc-950 dark:text-white font-['Plus_Jakarta_Sans',sans-serif]">
+          <Suspense fallback={null}>
+            <TeacherPendingVerificationView
+              user={user}
+              onSignOut={signOut}
+              onOpenRegistrationModal={openRegistrationModal}
+              onRefreshStatus={refreshUserProfile}
+            />
+            <UserRegistrationModal
+              isOpen={isRegistrationModalOpen}
+              onClose={closeRegistrationModal}
+              onSuccess={() => {
+                showToast('Profile updated successfully!');
+              }}
+            />
+          </Suspense>
+          {toastMessage && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold font-['Syne',sans-serif] shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200">
+              {toastMessage}
+            </div>
+          )}
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-transparent text-zinc-900 dark:text-zinc-100 transition-colors font-['Plus_Jakarta_Sans',sans-serif] selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-950 relative">
+    <>
+      {showSplashScreen && (
+        <AppSplashScreen onComplete={() => setShowSplashScreen(false)} />
+      )}
+      <div className="min-h-screen bg-transparent text-zinc-900 dark:text-zinc-100 transition-colors font-['Plus_Jakarta_Sans',sans-serif] selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-950 relative">
       {/* Navigation Bar */}
       <Navbar
         activeTab={activeTab}
@@ -894,6 +903,7 @@ function MainApp() {
         </div>
       )}
     </div>
+    </>
   );
 }
 

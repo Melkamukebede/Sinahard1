@@ -104,7 +104,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             >
               <BarChart3 className="w-4 h-4" />
             </div>
-            <span className="text-[10px] tracking-tight">Results</span>
+            <span className="text-[10px] tracking-tight">Activity</span>
           </button>
         )}
 

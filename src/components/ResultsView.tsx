@@ -27,6 +27,31 @@ interface ResultsViewProps {
   onNavigateToFiles: () => void;
 }
 
+function formatRelativeTime(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Recently';
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return 'Just now';
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHr = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHr / 24);
+
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHr < 24) return `${diffHr}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  } catch {
+    return 'Recently';
+  }
+}
+
+const RECENT_LIMIT = 10;
+
 export const ResultsView: React.FC<ResultsViewProps> = ({
   results,
   onClearAllResults,
@@ -34,12 +59,14 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   onNavigateToFiles,
 }) => {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-  const [filterMode, setFilterMode] = useState<'all' | 'passed' | 'review'>('all');
+  const [filterMode, setFilterMode] = useState<'recent' | 'all' | 'passed' | 'review'>('recent');
   const [onlyMistakesMap, setOnlyMistakesMap] = useState<Record<number, boolean>>({});
   const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
   const [resultToDelete, setResultToDelete] = useState<string | number | null>(null);
 
   const totalExams = results.length;
+  const recentCount = Math.min(totalExams, RECENT_LIMIT);
+
   const avgScore = totalExams
     ? Math.round(results.reduce((acc, r) => acc + (r.percentage || 0), 0) / totalExams)
     : 0;
@@ -52,7 +79,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const passRate = totalExams ? Math.round((passCount / totalExams) * 100) : 0;
 
   const filteredResults = useMemo(() => {
-    return results.map((r, originalIdx) => ({ r, originalIdx })).filter(({ r }) => {
+    return results.map((r, originalIdx) => ({ r, originalIdx })).filter(({ r, originalIdx }) => {
+      if (filterMode === 'recent') {
+        return originalIdx < RECENT_LIMIT;
+      }
       const isPassed = (r.percentage || 0) >= 70;
       if (filterMode === 'passed') return isPassed;
       if (filterMode === 'review') return !isPassed;
@@ -86,11 +116,16 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               <BarChart3 className="w-5 h-5 text-zinc-900 dark:text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
-                Performance Analytics
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-900 dark:text-white">
+                  Recent Activity & Performance
+                </h1>
+                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                  Live Sync
+                </span>
+              </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Summary of your test attempts, accuracy, and study progress
+                Your recent practice test attempts, score progression, and question reviews
               </p>
             </div>
           </div>
@@ -177,9 +212,21 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         <div className="space-y-3">
           {/* Filter Bar */}
           <div className="flex items-center justify-between px-1 flex-wrap gap-2">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <Filter className="w-3.5 h-3.5 text-zinc-400" />
               <span className="text-xs font-semibold text-zinc-500">Filter:</span>
+              <button
+                type="button"
+                onClick={() => setFilterMode('recent')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                  filterMode === 'recent'
+                    ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 shadow-2xs'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                <Clock className="w-3 h-3 text-emerald-500" />
+                <span>Recent Activity ({recentCount})</span>
+              </button>
               {(['all', 'passed', 'review'] as const).map((mode) => (
                 <button
                   key={mode}
@@ -191,7 +238,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                       : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                   }`}
                 >
-                  {mode === 'all' && `All (${totalExams})`}
+                  {mode === 'all' && `All History (${totalExams})`}
                   {mode === 'passed' && `Passed (${passCount})`}
                   {mode === 'review' && `Needs Review (${totalExams - passCount})`}
                 </button>
@@ -199,9 +246,22 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             </div>
 
             <span className="text-[11px] text-zinc-400">
-              Showing {filteredResults.length} of {totalExams}
+              Showing {filteredResults.length} of {totalExams} {filterMode === 'recent' ? '(Recent)' : ''}
             </span>
           </div>
+
+          {filterMode === 'recent' && totalExams > RECENT_LIMIT && (
+            <div className="px-4 py-2 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400">
+              <span>Showing your {recentCount} most recent practice sessions.</span>
+              <button
+                type="button"
+                onClick={() => setFilterMode('all')}
+                className="font-bold text-zinc-900 dark:text-white hover:underline cursor-pointer ml-2"
+              >
+                View All {totalExams} Records
+              </button>
+            </div>
+          )}
 
           {/* List of Attempt Cards */}
           <div className="space-y-3">
@@ -254,15 +314,22 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                           </span>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3 text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+                        <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+                          <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                            <Clock className="w-3 h-3" />
+                            {formatRelativeTime(result.date)}
+                          </span>
+                          <span>•</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3 text-zinc-400" />
                             {new Date(result.date).toLocaleDateString()}
                           </span>
+                          <span>•</span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3 text-zinc-400" />
                             {formatTime(result.timeSpent || 0)}
                           </span>
+                          <span>•</span>
                           <span className="flex items-center gap-1">
                             <Target className="w-3 h-3 text-zinc-400" />
                             <strong className="text-zinc-800 dark:text-zinc-200">{result.score}</strong> / {result.total} correct

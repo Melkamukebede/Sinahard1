@@ -131,7 +131,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5" />
-              Results
+              Recent Activity
             </button>
           )}
           <button
@@ -445,7 +445,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <BarChart3 className="w-4 h-4" />
-            <span>Results</span>
+            <span>Activity</span>
           </button>
         )}
         <button

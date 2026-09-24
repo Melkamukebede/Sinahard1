@@ -349,8 +349,8 @@ export function subscribeToResults(
 
   try {
     const attemptsRef = collection(db, 'user_attempts');
-    // Dedicated user_attempts collection decoupling practice performance metrics from exams library
-    const q = query(attemptsRef, where('userId', '==', user.uid), limit(100));
+    // Optimize: query only recent practice activity (20 most recent sessions) to minimize read units & payload size
+    const q = query(attemptsRef, where('userId', '==', user.uid), limit(20));
 
     const unsubscribe = onSnapshot(
       q,
@@ -372,15 +372,17 @@ export function subscribeToResults(
           } as ExamResult);
         });
 
-        // Merge firestore results with local results
+        // Merge firestore results with local results, keeping only recent active sessions
         const currentLocal = getLocalResults();
         const mergedMap = new Map<string, ExamResult>();
         currentLocal.forEach((r) => mergedMap.set(String(r.id), r));
         firestoreResults.forEach((r) => mergedMap.set(String(r.id), r));
         const mergedList = Array.from(mergedMap.values());
         mergedList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        saveLocalResults(mergedList);
-        onUpdate(mergedList);
+        // Optimize local storage footprint: keep up to 30 most recent practice sessions
+        const recentOnlyList = mergedList.slice(0, 30);
+        saveLocalResults(recentOnlyList);
+        onUpdate(recentOnlyList);
       },
       (error) => {
         console.warn('Firestore user_attempts subscription fallback to local:', error);
@@ -431,31 +433,43 @@ export async function saveResultToDb(result: ExamResult, user: AppUser | null): 
     userId: user ? user.uid : 'guest',
   };
   localResults.unshift(resWithId);
-  saveLocalResults(localResults);
+  // Keep local storage lean by saving up to 30 most recent practice attempts
+  saveLocalResults(localResults.slice(0, 30));
 
   if (user) {
     try {
-      // Optimize & sanitize payload for Firestore (prevent undefined values and strip unused keys)
-      const sanitizedAnswers = (resWithId.answers || []).map((ans) => ({
-        text: ans.text || '',
-        userAnswer: ans.userAnswer || '',
-        correctAnswer: ans.correctAnswer || '',
-        isCorrect: Boolean(ans.isCorrect),
-        ...(ans.explanation ? { explanation: ans.explanation } : {}),
-      }));
+      // Optimize & sanitize payload keys for Firestore:
+      // Cap individual answer text/explanation to prevent document bloat while preserving essential review data
+      const sanitizedAnswers = (resWithId.answers || []).map((ans) => {
+        const item: {
+          userAnswer: string;
+          correctAnswer: string;
+          isCorrect: boolean;
+          text?: string;
+          explanation?: string;
+        } = {
+          userAnswer: String(ans.userAnswer ?? '').slice(0, 150),
+          correctAnswer: String(ans.correctAnswer ?? '').slice(0, 150),
+          isCorrect: Boolean(ans.isCorrect),
+        };
+        if (ans.text) item.text = String(ans.text).slice(0, 400);
+        if (ans.explanation) item.explanation = String(ans.explanation).slice(0, 400);
+        return item;
+      });
 
+      // Lean, optimized keys strictly typed without undefineds or shadow keys
       const firestoreResultPayload = {
         id: String(resWithId.id),
         examId: String(resWithId.examId || ''),
-        examTitle: String(resWithId.examTitle || ''),
+        examTitle: String(resWithId.examTitle || '').slice(0, 160),
         userId: user.uid,
         date: resWithId.date || new Date().toISOString(),
-        score: Number(resWithId.score) || 0,
-        total: Number(resWithId.total) || 0,
-        percentage: Number(resWithId.percentage) || 0,
-        timeSpent: Number(resWithId.timeSpent) || 0,
+        score: Math.max(0, Number(resWithId.score) || 0),
+        total: Math.max(1, Number(resWithId.total) || 1),
+        percentage: Math.min(100, Math.max(0, Number(resWithId.percentage) || 0)),
+        timeSpent: Math.max(0, Number(resWithId.timeSpent) || 0),
         answers: sanitizedAnswers,
-        ...(resWithId.subjectType ? { subjectType: String(resWithId.subjectType) } : {}),
+        ...(resWithId.subjectType ? { subjectType: String(resWithId.subjectType).slice(0, 60) } : {}),
       };
 
       const attemptDocRef = doc(db, 'user_attempts', String(resWithId.id));
