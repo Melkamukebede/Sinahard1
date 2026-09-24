@@ -91,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   const isSigningInRef = useRef<boolean>(false);
+  const unsubUserRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -230,7 +231,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Setup real-time listener for current user's profile updates (e.g. admin verification)
         const userRef = doc(db, 'users', currentUser.uid);
-        const unsubUser = onSnapshot(
+        if (unsubUserRef.current) {
+          unsubUserRef.current();
+        }
+        unsubUserRef.current = onSnapshot(
           userRef,
           (docSnap) => {
             if (docSnap.exists()) {
@@ -272,11 +276,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.warn('Real-time user profile sync error:', err);
           }
         );
-
-        return () => {
-          unsubUser();
-        };
       } else {
+        if (unsubUserRef.current) {
+          unsubUserRef.current();
+          unsubUserRef.current = null;
+        }
         // Fallback to local guest if saved
         const savedGuestName = localStorage.getItem(LOCAL_GUEST_NAME_KEY);
         if (savedGuestName) {
@@ -301,7 +305,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (unsubUserRef.current) {
+        unsubUserRef.current();
+        unsubUserRef.current = null;
+      }
+    };
   }, []);
 
   const signInWithGoogle = async (): Promise<boolean> => {

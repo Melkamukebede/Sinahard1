@@ -324,12 +324,17 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
                 {user?.photoURL ? (
                   <img
                     src={user.photoURL}
-                    alt={displayName || teacherName || 'User'}
+                    alt={displayName || teacherName || user.email || 'User'}
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
                     className="w-9 h-9 rounded-full object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = 'none';
+                    }}
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold flex items-center justify-center text-xs shrink-0">
-                    {(displayName || teacherName || 'U').charAt(0).toUpperCase()}
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-sky-500 to-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                    {(displayName || teacherName || user?.email || 'U').charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="min-w-0">

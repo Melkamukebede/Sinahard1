@@ -127,13 +127,17 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 {user?.photoURL ? (
                   <img
                     src={user.photoURL}
-                    alt={user.displayName || 'User'}
+                    alt={user.displayName || user.email || 'User'}
                     className="w-10 h-10 rounded-full border border-white/80 dark:border-white/20 object-cover shadow-2xs"
                     referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = 'none';
+                    }}
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white font-bold flex items-center justify-center text-sm border border-white/80 dark:border-white/10 shadow-2xs">
-                    {user?.displayName?.charAt(0) || 'S'}
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-sky-500 to-blue-600 text-white font-bold flex items-center justify-center text-sm border border-white/80 dark:border-white/10 shadow-2xs">
+                    {(user?.displayName || user?.email || 'S').charAt(0).toUpperCase()}
                   </div>
                 )}
 

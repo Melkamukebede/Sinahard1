@@ -61,11 +61,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { unreadAlertsCount } = useNotifications();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [manualNoticeOpen, setManualNoticeOpen] = useState(false);
+  const [avatarImgError, setAvatarImgError] = useState(false);
 
   const isCloudSynced = Boolean(user && user.uid !== 'guest' && !user.isAnonymous);
   const isAdmin = isUserAdmin(user);
   const isTeacher = Boolean(user && isUserTeacher(user));
   const isPremiumActive = isUserSubscriptionActive(activeSubscription);
+
+  // Derive stable monogram initial from user displayName, email, or role
+  const userMonogram = (
+    user?.displayName ||
+    user?.email ||
+    (user?.role === 'teacher' ? 'T' : 'S')
+  ).trim().charAt(0).toUpperCase() || 'U';
 
   const handleSignInClick = async () => {
     if (isSigningIn) return;
@@ -207,7 +215,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Firebase Authentication & Sync Status */}
-          {authLoading ? (
+          {authLoading && !user ? (
             <div className="w-8 h-8 rounded-full border-2 border-zinc-400/30 border-t-zinc-900 dark:border-t-white animate-spin" />
           ) : user && isCloudSynced ? (
             <div className="relative">
@@ -216,19 +224,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
               >
-                {user.photoURL ? (
+                {user.photoURL && !avatarImgError ? (
                   <img
                     src={user.photoURL}
-                    alt={user.displayName || 'User'}
-                    className="w-6 h-6 rounded-full object-cover"
+                    alt={user.displayName || user.email || 'User'}
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                    className="w-6 h-6 rounded-full object-cover shrink-0"
+                    onError={() => setAvatarImgError(true)}
                   />
                 ) : (
-                  <div className="w-6 h-6 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center justify-center">
-                    {user.displayName?.charAt(0) || 'U'}
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-sky-500 to-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                    {userMonogram}
                   </div>
                 )}
                 <span className="text-xs font-bold max-w-[100px] truncate text-zinc-900 dark:text-white">
-                  {user.displayName || (user.role === 'teacher' ? 'Teacher' : 'Student')}
+                  {user.displayName || user.email?.split('@')[0] || (user.role === 'teacher' ? 'Teacher' : 'Student')}
                 </span>
                 {isAdmin ? (
                   <span className="hidden sm:inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
@@ -248,16 +259,34 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-72 rounded-[28px] bg-white dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 shadow-2xl p-4 z-50 text-sm animate-in fade-in zoom-in-95 duration-150 space-y-3">
-                  <div className="pb-3 border-b border-zinc-100 dark:border-zinc-800/80 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <p className="font-bold text-zinc-950 dark:text-white truncate text-sm">
-                        {user.displayName || 'User'}
-                      </p>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
-                        {isAdmin ? 'Admin' : user.role || 'Student'}
-                      </span>
+                  <div className="pb-3 border-b border-zinc-100 dark:border-zinc-800/80 space-y-2">
+                    <div className="flex items-center gap-3">
+                      {user.photoURL && !avatarImgError ? (
+                        <img
+                          src={user.photoURL}
+                          alt={user.displayName || user.email || 'User'}
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          className="w-10 h-10 rounded-full object-cover shrink-0 border border-zinc-200 dark:border-white/10"
+                          onError={() => setAvatarImgError(true)}
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-sky-500 to-blue-600 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-xs">
+                          {userMonogram}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="font-bold text-zinc-950 dark:text-white truncate text-sm">
+                            {user.displayName || user.email?.split('@')[0] || 'User'}
+                          </p>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shrink-0">
+                            {isAdmin ? 'Admin' : user.role || 'Student'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user.email}</p>
+                      </div>
                     </div>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user.email}</p>
                     
                     <div className="pt-1 flex flex-wrap items-center gap-1.5">
                       {user.role === 'teacher' ? (
