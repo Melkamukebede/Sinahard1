@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AppUser, UserRole } from '../types';
@@ -456,15 +457,22 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
           {/* SINGLE PROMINENT GOOGLE SIGN IN CARD                     */}
           {/* ======================================================== */}
           {!isGoogleLinked ? (
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-zinc-950 dark:text-white flex items-center gap-1.5">
-                  <LogIn className="w-3.5 h-3.5 text-black dark:text-white shrink-0" />
-                  <span>Connect with Google</span>
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/30 dark:border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0 mt-0.5">
+                  <AlertTriangle className="w-4 h-4 text-black dark:text-white" />
                 </div>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  Sync your exam progress, bookmarks, and test scores to the cloud
-                </p>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-zinc-950 dark:text-white flex items-center gap-1.5 flex-wrap">
+                    <span>First sign in to sync</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/25 text-zinc-900 dark:text-amber-200">
+                      Recommended
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
+                    Sign in with your Google account first to securely sync and backup your exams, bookmarks, and scores.
+                  </p>
+                </div>
               </div>
 
               {/* ONLY ONE Google Sign-In Button */}

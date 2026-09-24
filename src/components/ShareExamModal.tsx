@@ -67,7 +67,7 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
   const questionCount = exam.questions?.length || 0;
   const streamLabel = exam.stream || exam.metadata?.stream || 'General';
 
-  // Generate short sharing link using requested production domain: https://questions-creator.pages.dev/
+  // Generate short sharing link using requested production domain: https://sinahard.pages.dev/
   const compactExamId = (exam.catalogId || exam.id).trim();
   const shortLink = `${SHARE_BASE_URL}/?id=${encodeURIComponent(compactExamId)}`;
 
@@ -257,7 +257,7 @@ ${shortLink}`;
               </label>
               <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-200/80 dark:border-zinc-700 flex items-center gap-1">
                 <Link className="w-2.5 h-2.5" />
-                <span>questions-creator.pages.dev</span>
+                <span>{typeof window !== 'undefined' && window.location.host ? window.location.host : 'sinahard.pages.dev'}</span>
               </span>
             </div>
             <div className="flex items-center gap-2">
