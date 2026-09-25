@@ -143,13 +143,14 @@ export interface AppUser {
   targetExamYear?: string | number;
   phoneNumber?: string;
   isRegistered?: boolean;
+  coins?: number;
   metadata?: {
     creationTime?: string;
     lastSignInTime?: string;
   };
 }
 
-export type SubscriptionDuration = '1day' | '1week' | '1month' | '6months';
+export type SubscriptionDuration = 'plan_29' | 'plan_49' | 'plan_74' | 'plan_99' | '1day' | '1week' | '1month' | '3months' | '6months' | string;
 
 export type PaymentMethod = 'chapa' | 'telebirr' | 'cbe' | 'abyssinia';
 
@@ -161,6 +162,7 @@ export interface SubscriptionPlan {
   durationLabel: string;
   days: number;
   priceETB: number;
+  coins: number;
   badge?: string;
   popular?: boolean;
   description: string;
@@ -173,6 +175,7 @@ export interface UserSubscription {
   userName?: string;
   planDuration: SubscriptionDuration;
   amountETB: number;
+  coinsAdded?: number;
   paymentMethod: PaymentMethod;
   transactionReference: string;
   paymentStatus: PaymentStatus;

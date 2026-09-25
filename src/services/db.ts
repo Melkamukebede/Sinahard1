@@ -29,40 +29,45 @@ export const ADMIN_EMAIL = 'melkamukebede11@gmail.com';
 
 export const ETHIOPIAN_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
-    id: '1day',
-    name: 'Day Pass',
-    durationLabel: '24 Hours',
-    days: 1,
-    priceETB: 19.9,
-    description: 'Instant 24-hour full access to all premium exams, solutions, and .txt exports.',
-  },
-  {
-    id: '1week',
-    name: 'Weekly Booster',
+    id: 'plan_29',
+    name: 'Starter Pass',
     durationLabel: '7 Days',
     days: 7,
     priceETB: 29.9,
-    badge: 'Popular for Tests',
-    description: '7 days of unlimited practice and download privileges across all subjects and grades.',
+    coins: 4,
+    badge: '4 Coins',
+    description: '4 practice coins (7 days access) for full exams, step-by-step solutions, and offline practice.',
   },
   {
-    id: '1month',
-    name: 'Monthly Scholar',
+    id: 'plan_49',
+    name: 'Student Booster',
+    durationLabel: '15 Days',
+    days: 15,
+    priceETB: 49.9,
+    coins: 6,
+    badge: 'Popular • 6 Coins',
+    popular: true,
+    description: '6 practice coins with full access, LaTeX step-by-step solutions, and offline exam caching.',
+  },
+  {
+    id: 'plan_74',
+    name: 'Scholar Pack',
     durationLabel: '30 Days',
     days: 30,
-    priceETB: 49.9,
-    badge: 'Best Value',
-    popular: true,
-    description: 'Full monthly access, LaTeX step-by-step math explanations, and bulk study downloads.',
+    priceETB: 74.9,
+    coins: 10,
+    badge: 'Best Value • 10 Coins',
+    description: '10 practice coins for 30 days of comprehensive national entrance exam preparation.',
   },
   {
-    id: '6months',
-    name: 'Semester Master',
-    durationLabel: '6 Months (180 Days)',
-    days: 180,
+    id: 'plan_99',
+    name: 'Master Bundle',
+    durationLabel: '60 Days',
+    days: 60,
     priceETB: 99.9,
-    badge: 'Save 65%',
-    description: 'Complete semester exam prep covering all Ethiopian curriculum units and national exams.',
+    coins: 16,
+    badge: 'Max Savings • 16 Coins',
+    description: '16 practice coins for 60 days covering all curriculum units, unlimited downloads, and VIP support.',
   },
 ];
 
@@ -780,13 +785,19 @@ export function calculateSubscriptionExpiry(duration: SubscriptionDuration): {
   expiresAt: string;
 } {
   const start = new Date();
-  const daysMap: Record<SubscriptionDuration, number> = {
+  const matchedPlan = ETHIOPIAN_SUBSCRIPTION_PLANS.find((p) => p.id === duration);
+  const daysMap: Record<string, number> = {
+    plan_29: 7,
+    plan_49: 15,
+    plan_74: 30,
+    plan_99: 60,
     '1day': 1,
     '1week': 7,
     '1month': 30,
+    '3months': 90,
     '6months': 180,
   };
-  const daysToAdd = daysMap[duration] || 1;
+  const daysToAdd = matchedPlan?.days || daysMap[duration] || 7;
   const expiry = new Date(start.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
 
   return {

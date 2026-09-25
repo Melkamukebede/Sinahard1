@@ -1039,14 +1039,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <div>
                 <div className="flex items-center gap-2.5">
                   <h3 className="text-sm sm:text-base font-bold font-['Outfit',sans-serif] text-zinc-950 dark:text-white">
-                    {isPremiumActive ? 'Premium Membership Active' : 'Ethiopian Birr Student Plans'}
+                    {isPremiumActive ? 'Sinahard Pro Active' : 'Sinahard Coin Plans (ETB)'}
                   </h3>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
-                    {isPremiumActive ? 'Active' : 'Telebirr / CBE'}
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    {isPremiumActive ? 'Pro Scholar' : 'From 29.9 ETB (4 Coins)'}
                   </span>
                 </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                  Unlimited practice tests, step-by-step LaTeX formula reasoning, and offline plain-text exam exports.
+                  {isPremiumActive
+                    ? 'Unlimited full exams, LaTeX math explanations, and offline practice passes.'
+                    : 'Get 4 to 16 practice coins from 29.9 ETB. Fully verified offline on your device!'}
                 </p>
               </div>
             </div>

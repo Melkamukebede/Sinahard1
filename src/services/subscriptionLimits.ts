@@ -1,5 +1,6 @@
 import { AppUser, UserSubscription } from '../types';
 import { isUserSubscriptionActive, isUserTeacher, isUserAdmin } from './db';
+import { getUserCoins } from './coinService';
 
 const FIRST_VISIT_STORAGE_KEY = 'exam_master_first_seen_timestamp';
 export const TRIAL_DURATION_DAYS = 3;
@@ -9,13 +10,13 @@ export const PLAN_LIMITS = {
     maxQuestionsPerExam: 20,
     maxImportQuestions: 20,
     label: 'Guest Mode',
-    description: 'Instant local practice: up to 20 questions per exam without an account.',
+    description: 'Instant local practice: up to 20 questions per exam without an account. 0 Coins.',
   },
   free: {
     maxQuestionsPerExam: 20,
     maxImportQuestions: 20,
     label: 'Free Student',
-    description: 'Up to 20 questions per exam with permanent cloud backup across all devices.',
+    description: '1 Starter Coin for full exam practice, plus 20 questions per exam permanently offline.',
   },
   trial: {
     maxQuestionsPerExam: 50,
@@ -26,17 +27,20 @@ export const PLAN_LIMITS = {
   premium: {
     maxQuestionsPerExam: Infinity,
     maxImportQuestions: Infinity,
-    label: 'Premium Scholar',
-    description: 'Unlimited questions, bulk .txt imports, full solutions, and priority support.',
+    label: 'Sinahard Pro',
+    description: 'Unlimited exams, LaTeX step-by-step solutions, offline caching, and priority downloads.',
   },
 };
 
 export interface UserTierStatus {
   tier: 'premium' | 'trial' | 'free' | 'guest';
+  displayTier: 'guest' | 'free' | 'pro';
   isPremium: boolean;
+  isPro: boolean;
   isTrial: boolean;
   isFree: boolean;
   isGuest: boolean;
+  coins: number;
   trialDaysRemaining: number;
   maxQuestionsPerExam: number;
   maxImportQuestions: number;
@@ -83,15 +87,20 @@ export function getUserTierStatus(
   activeSubscription: UserSubscription | null,
   accountCreationTime?: string | null
 ): UserTierStatus {
+  const currentCoins = getUserCoins(user, activeSubscription);
+
   // 0. Teachers & Administrators have full authoring privileges with zero paywalls
   if (user && (isUserTeacher(user) || isUserAdmin(user))) {
     const isAdm = isUserAdmin(user);
     return {
       tier: 'premium',
+      displayTier: 'pro',
       isPremium: true,
+      isPro: true,
       isTrial: false,
       isFree: false,
       isGuest: false,
+      coins: 999,
       trialDaysRemaining: 0,
       maxQuestionsPerExam: Infinity,
       maxImportQuestions: Infinity,
@@ -108,14 +117,17 @@ export function getUserTierStatus(
   if (isPremium) {
     return {
       tier: 'premium',
+      displayTier: 'pro',
       isPremium: true,
+      isPro: true,
       isTrial: false,
       isFree: false,
       isGuest: false,
+      coins: currentCoins,
       trialDaysRemaining: 0,
       maxQuestionsPerExam: PLAN_LIMITS.premium.maxQuestionsPerExam,
       maxImportQuestions: PLAN_LIMITS.premium.maxImportQuestions,
-      tierBadge: 'Premium Active',
+      tierBadge: 'Pro Scholar',
       tierDescription: PLAN_LIMITS.premium.description,
       accountAgeDays: 0,
     };
@@ -126,14 +138,17 @@ export function getUserTierStatus(
   if (isGuestUser) {
     return {
       tier: 'guest',
+      displayTier: 'guest',
       isPremium: false,
+      isPro: false,
       isTrial: false,
       isFree: false,
       isGuest: true,
+      coins: 0,
       trialDaysRemaining: 0,
       maxQuestionsPerExam: PLAN_LIMITS.guest.maxQuestionsPerExam,
       maxImportQuestions: PLAN_LIMITS.guest.maxImportQuestions,
-      tierBadge: 'Guest Mode (20 Qs)',
+      tierBadge: 'Guest (0 Coins)',
       tierDescription: PLAN_LIMITS.guest.description,
       accountAgeDays: 0,
     };
@@ -149,10 +164,13 @@ export function getUserTierStatus(
     const daysRemaining = Math.max(1, Math.ceil(TRIAL_DURATION_DAYS - accountAgeDays));
     return {
       tier: 'trial',
+      displayTier: currentCoins > 1 ? 'pro' : 'free',
       isPremium: false,
+      isPro: currentCoins > 1,
       isTrial: true,
       isFree: false,
       isGuest: false,
+      coins: currentCoins,
       trialDaysRemaining: daysRemaining,
       maxQuestionsPerExam: PLAN_LIMITS.trial.maxQuestionsPerExam,
       maxImportQuestions: PLAN_LIMITS.trial.maxImportQuestions,
@@ -165,14 +183,17 @@ export function getUserTierStatus(
   // 4. Standard Free Tier (after 3 days of account age)
   return {
     tier: 'free',
+    displayTier: currentCoins > 1 ? 'pro' : 'free',
     isPremium: false,
+    isPro: currentCoins > 1,
     isTrial: false,
     isFree: true,
     isGuest: false,
+    coins: currentCoins,
     trialDaysRemaining: 0,
     maxQuestionsPerExam: PLAN_LIMITS.free.maxQuestionsPerExam,
     maxImportQuestions: PLAN_LIMITS.free.maxImportQuestions,
-    tierBadge: 'Free Tier (Synced)',
+    tierBadge: 'Free Tier',
     tierDescription: PLAN_LIMITS.free.description,
     accountAgeDays: Math.floor(accountAgeDays),
   };

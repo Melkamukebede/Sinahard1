@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AppUser, UserRole } from '../types';
+import { AppCoin } from './AppCoin';
+import { getUserCoins } from '../services/coinService';
 
 export interface UserRegistrationModalProps {
   isOpen: boolean;
@@ -324,6 +326,10 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
     try {
       await updateStudentProfile(profileData);
       localStorage.setItem('has_completed_role_onboarding', 'true');
+      // Initialize free coin locally for instant offline usage
+      if (user || profileData.displayName) {
+        getUserCoins({ uid: user?.uid || 'student', ...profileData } as AppUser);
+      }
 
       setSavedSuccess(true);
       if (onSuccess) {
@@ -468,9 +474,13 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
                     <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/25 text-zinc-900 dark:text-amber-200">
                       Recommended
                     </span>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <AppCoin size="xs" />
+                      <span>1 Free Coin Included</span>
+                    </span>
                   </div>
                   <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
-                    Sign in with your Google account first to securely sync and backup your exams, bookmarks, and scores.
+                    Sign in with your Google account first to securely sync your exams, and immediately claim your 1 Free Coin for offline exams.
                   </p>
                 </div>
               </div>

@@ -27,6 +27,8 @@ import { AuthNoticeModal } from './AuthNoticeModal';
 import { isUserAdmin, isUserSubscriptionActive, isUserTeacher } from '../services/db';
 import { UserSubscription } from '../types';
 import { SinahardLogo } from './SinahardLogo';
+import { AppCoin } from './AppCoin';
+import { getUserCoins } from '../services/coinService';
 
 export type PageTab = 'home' | 'files' | 'results' | 'create' | 'manual' | 'admin-subs';
 
@@ -68,6 +70,30 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isTeacher = Boolean(user && isUserTeacher(user));
   const isPremiumActive = isUserSubscriptionActive(activeSubscription);
 
+  // Coin and Tier State
+  const [userCoins, setUserCoins] = useState<number>(() => getUserCoins(user, activeSubscription));
+
+  React.useEffect(() => {
+    setUserCoins(getUserCoins(user, activeSubscription));
+    const handleCoinsChanged = (e: Event) => {
+      const custom = e as CustomEvent<{ coins: number }>;
+      if (custom.detail && typeof custom.detail.coins === 'number') {
+        setUserCoins(custom.detail.coins);
+      } else {
+        setUserCoins(getUserCoins(user, activeSubscription));
+      }
+    };
+    window.addEventListener('sinahard_coins_updated', handleCoinsChanged);
+    return () => {
+      window.removeEventListener('sinahard_coins_updated', handleCoinsChanged);
+    };
+  }, [user, activeSubscription]);
+
+  const isGuest = !user || user.uid === 'guest' || user.isAnonymous;
+  const isStaff = Boolean(isAdmin || isTeacher);
+  const isPro = isStaff || isPremiumActive || userCoins >= 4;
+  const isFree = !isGuest && !isPro;
+
   // Derive stable monogram initial from user displayName, email, or role
   const userMonogram = (
     user?.displayName ||
@@ -86,7 +112,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-2xl bg-white/70 dark:bg-[#070e1a]/85 border-b border-white/60 dark:border-white/10 transition-colors shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
-        {/* Brand */}
+        {/* Brand with Dynamic Guest / Free / Pro Badge */}
         <div
           onClick={() => onTabChange('home')}
           className="flex items-center gap-2.5 cursor-pointer select-none group"
@@ -94,7 +120,42 @@ export const Navbar: React.FC<NavbarProps> = ({
           <SinahardLogo size="md" idSuffix="navbar" />
           <div className="flex flex-col">
             <span className="font-['Outfit',sans-serif] font-bold text-lg tracking-tight text-zinc-900 dark:text-white flex items-center">
-              Sinahard <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 ml-1.5">Pro</span>
+              Sinahard
+              {isGuest ? (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openRegistrationModal();
+                  }}
+                  className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 ml-1.5 cursor-pointer hover:border-zinc-400 transition"
+                  title="Guest Mode (0 Coins) - Register to get 1 Free Coin"
+                >
+                  Guest
+                </span>
+              ) : isPro ? (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenSubscriptionModal?.();
+                  }}
+                  className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 ml-1.5 flex items-center gap-1 cursor-pointer hover:bg-amber-500/25 transition shadow-2xs"
+                  title="Pro Scholar Plan Active"
+                >
+                  <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+                  Pro
+                </span>
+              ) : (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenSubscriptionModal?.();
+                  }}
+                  className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 ml-1.5 cursor-pointer hover:bg-sky-500/25 transition shadow-2xs"
+                  title="Free Registered Tier"
+                >
+                  Free
+                </span>
+              )}
             </span>
           </div>
         </div>
@@ -212,6 +273,35 @@ export const Navbar: React.FC<NavbarProps> = ({
             {unreadAlertsCount > 0 && (
               <span className="w-2 h-2 rounded-full bg-zinc-900 dark:bg-white animate-pulse" />
             )}
+          </button>
+
+          {/* Top Navigation Coin & Tier Pill Button (Guest / Free / Pro) */}
+          <button
+            id="navbar-coin-pill-btn"
+            type="button"
+            onClick={isGuest ? openRegistrationModal : (onOpenSubscriptionModal || openRegistrationModal)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer shadow-xs active:scale-98 border ${
+              isPro
+                ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 border-amber-500/35'
+                : !isGuest
+                ? 'bg-sky-500/10 hover:bg-sky-500/20 text-sky-900 dark:text-sky-200 border-sky-500/30'
+                : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
+            }`}
+            title={
+              isPro
+                ? `Sinahard Pro • ${isStaff || isPremiumActive ? 'Unlimited Access' : `${userCoins} Coins`}`
+                : !isGuest
+                ? `Free Account • ${userCoins} Coin${userCoins === 1 ? '' : 's'} Available. Tap to view plans.`
+                : 'Guest Mode • 0 Coins. Tap to register and claim 1 Free Coin!'
+            }
+          >
+            <span className="text-[10px] font-extrabold uppercase tracking-wide">
+              {isPro ? 'Pro' : isGuest ? 'Guest' : 'Free'}
+            </span>
+            <AppCoin size="xs" />
+            <span className="font-mono font-extrabold text-[11px]">
+              {isStaff || isPremiumActive ? '∞' : userCoins}
+            </span>
           </button>
 
           {/* Firebase Authentication & Sync Status */}

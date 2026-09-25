@@ -44,6 +44,8 @@ import {
   TelebirrConfigStatus,
 } from '../services/telebirr';
 import { SinahardLogo } from './SinahardLogo';
+import { AppCoin } from './AppCoin';
+import { getUserCoins, addCoinsToUser } from '../services/coinService';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -65,7 +67,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   onOpenSignIn,
 }) => {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>(
-    ETHIOPIAN_SUBSCRIPTION_PLANS[2] // 1 month selected by default
+    ETHIOPIAN_SUBSCRIPTION_PLANS[1] || ETHIOPIAN_SUBSCRIPTION_PLANS[0]
   );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('telebirr');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -430,8 +432,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         );
 
         if (onSubscriptionCreated) onSubscriptionCreated(sub);
+        await addCoinsToUser(user || effectiveUser, selectedPlan.coins);
         setSuccessNotice(
-          `Thank you! Your ${paymentMethod.toUpperCase()} transaction #${transactionRef.trim()} was recorded. We are verifying it.`
+          `Thank you! Your ${paymentMethod.toUpperCase()} transaction #${transactionRef.trim()} was recorded. +${selectedPlan.coins} Coins credited to your account!`
         );
       }
     } catch (err) {
@@ -488,9 +491,38 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </div>
         </div>
 
+        {/* Current Coin Balance & Status Card */}
+        <div className="mx-6 mt-4 p-4 rounded-[22px] bg-gradient-to-r from-amber-500/10 via-sky-500/10 to-emerald-500/10 dark:from-amber-500/15 dark:via-sky-500/15 dark:to-emerald-500/15 border border-amber-500/30 dark:border-amber-500/20 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <AppCoin size="lg" animate={true} />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                  Your Balance:
+                </span>
+                <span className="font-mono text-sm font-extrabold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  {getUserCoins(user, activeSubscription)} Coins
+                </span>
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+                  {!user || user.uid === 'guest' || user.isAnonymous ? 'Guest Tier' : isActive ? 'Pro Tier' : 'Free Tier'}
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
+                {!user || user.uid === 'guest' || user.isAnonymous
+                  ? 'Guests have 0 coins. Register with Google to get 1 Free Coin or top up.'
+                  : '1 Coin unlocks 1 full practice exam or comprehensive solution pass.'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-3 py-1.5 rounded-xl border border-emerald-500/25 shrink-0">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>100% Offline Verified</span>
+          </div>
+        </div>
+
         {/* Current Active Status Alert */}
         {isActive && activeSubscription && (
-          <div className="mx-6 mt-4 p-4 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
+          <div className="mx-6 mt-3 p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-5 h-5 text-zinc-950 dark:text-white shrink-0" />
               <div>
@@ -514,9 +546,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         <div className="relative p-6 space-y-5">
           {/* Plan Duration Selector */}
           <div>
-            <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 block mb-2.5">
-              1. Choose Duration
-            </label>
+            <div className="flex items-center justify-between mb-2.5">
+              <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 block">
+                1. Choose Payment Plan
+              </label>
+              <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                Offline Capable • No Expiry on Coins
+              </span>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {ETHIOPIAN_SUBSCRIPTION_PLANS.map((plan) => {
                 const isSelected = selectedPlan.id === plan.id;
@@ -527,7 +564,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     onClick={() => handleSelectPlan(plan)}
                     className={`relative p-3.5 rounded-[22px] text-left border transition cursor-pointer flex flex-col justify-between shadow-xs active:scale-98 ${
                       isSelected
-                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent'
+                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent ring-2 ring-amber-400/50'
                         : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
                     }`}
                   >
@@ -542,9 +579,17 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     )}
                     <div>
                       <span className={`text-xs font-bold block ${isSelected ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}`}>
+                        {plan.name}
+                      </span>
+                      <span className={`text-[11px] block mt-0.5 ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500'}`}>
                         {plan.durationLabel}
                       </span>
-                      <span className={`text-[11px] ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500'}`}>{plan.name}</span>
+                      <div className="flex items-center gap-1.5 mt-2 py-1 px-2 rounded-lg bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 w-fit">
+                        <AppCoin size="xs" />
+                        <span className={`text-xs font-extrabold font-mono ${isSelected ? 'text-amber-300 dark:text-amber-800' : 'text-amber-600 dark:text-amber-400'}`}>
+                          {plan.coins} Coins
+                        </span>
+                      </div>
                     </div>
                     <div className={`mt-3 pt-2 border-t ${isSelected ? 'border-white/20 dark:border-zinc-300' : 'border-zinc-100 dark:border-zinc-800/60'}`}>
                       <span className={`text-base font-extrabold font-['Outfit',sans-serif] ${isSelected ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}`}>
