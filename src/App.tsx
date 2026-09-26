@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { Navbar, PageTab } from './components/Navbar';
-import { HomeView } from './components/HomeView';
-import { FilesView } from './components/FilesView';
-import { ResultsView } from './components/ResultsView';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+
+// Dynamically import your views
+const HomeView = lazy(() => import('./components/HomeView').then(module => ({ default: module.HomeView })));
+const FilesView = lazy(() => import('./components/FilesView').then(module => ({ default: module.FilesView })));
+const ResultsView = lazy(() => import('./components/ResultsView').then(module => ({ default: module.ResultsView })));
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { AppDrawer } from './components/AppDrawer';
 import { MobileNav } from './components/MobileNav';
@@ -42,6 +45,13 @@ import {
   subscribeToOfficialExams,
   getCachedOfficialExams,
 } from './services/officialExams';
+import {
+  isAppOffline,
+  subscribeToNetworkState,
+  enforceOfflineExamCreation,
+  enforceOfflineExamPractice,
+  enforceOfflineQuestionImport,
+} from './firebase';
 
 // Code-split heavy modals and secondary views for fast initial load
 const CreateExamWizard = React.lazy(() =>
@@ -123,6 +133,14 @@ function MainApp() {
   const [activePracticeExam, setActivePracticeExam] = useState<Exam | null>(null);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
   const [createExamInitialMode, setCreateExamInitialMode] = useState<'select' | 'manual' | 'paste'>('select');
+
+  // Network and Firebase offline tracking
+  const [isOffline, setIsOffline] = useState<boolean>(() => isAppOffline());
+  useEffect(() => {
+    return subscribeToNetworkState((offline) => {
+      setIsOffline(offline);
+    });
+  }, []);
 
   // Modals
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
@@ -371,7 +389,12 @@ function MainApp() {
 
   // Actions
   const handleStartPractice = (exam: Exam) => {
-    setActivePracticeExam(exam);
+    // Enforce Free/Guest limits when offline
+    const result = enforceOfflineExamPractice(exam, user, activeSubscription);
+    if (result.wasCapped && result.notice) {
+      showToast(result.notice);
+    }
+    setActivePracticeExam(result.practiceExam);
   };
 
   const handleEditExam = (exam: Exam) => {
@@ -395,31 +418,43 @@ function MainApp() {
   };
 
   const handleSaveExam = async (exam: Exam) => {
+    // Strictly enforce Free/Guest limit (20 questions) if offline to prevent unauthorized excess usage
+    const enforcement = enforceOfflineExamCreation(exam, user, userTier);
+    const examToSave = enforcement.clampedExam;
+
+    if (enforcement.wasClamped && enforcement.warning) {
+      showToast(enforcement.warning);
+    }
+
     // Optimistic UI update instantly
     setExams((prev) => {
-      const idx = prev.findIndex((e) => e.id === exam.id);
+      const idx = prev.findIndex((e) => e.id === examToSave.id);
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = exam;
+        next[idx] = examToSave;
         return next;
       }
-      return [exam, ...prev];
+      return [examToSave, ...prev];
     });
     setEditingExam(null);
     setActiveTab('files');
 
     try {
-      await saveExamToDb(exam, user);
-      showToast('Exam saved to your library!');
+      await saveExamToDb(examToSave, user);
+      showToast(enforcement.wasClamped ? 'Exam saved (capped to 20 questions offline)' : 'Exam saved to your library!');
     } catch {
       showToast('Failed to save exam');
     }
   };
 
   const handleAddQuestionsFromPaste = async (newQuestions: Question[]) => {
-    let questionsToAdd = newQuestions;
-    if (!userTier.isPremium && questionsToAdd.length > userTier.maxImportQuestions) {
-      questionsToAdd = questionsToAdd.slice(0, userTier.maxImportQuestions);
+    // Enforce offline Free/Guest import limits if network unavailable
+    const enforcement = enforceOfflineQuestionImport(newQuestions, user, userTier.isPremium);
+    const questionsToAdd = enforcement.allowedQuestions;
+
+    if (enforcement.wasCapped && enforcement.message) {
+      showToast(enforcement.message);
+    } else if (!userTier.isPremium && questionsToAdd.length > userTier.maxImportQuestions) {
       showToast(
         `Imported first ${userTier.maxImportQuestions} questions (${
           userTier.isTrial ? '5-Day Trial' : 'Free'
@@ -563,60 +598,66 @@ function MainApp() {
         activeSubscription={activeSubscription}
       />
 
-      {/* Main Content Area */}
+    {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-24 md:pb-8">
         {activeTab === 'home' && (
-          <HomeView
-            exams={exams}
-            results={results}
-            onNavigate={(tab) => {
-              if (tab !== 'create') {
-                setEditingExam(null);
-                setCreateExamInitialMode('select');
-              }
-              setActiveTab(tab);
-            }}
-            onStartPractice={handleStartPractice}
-            onOpenPasteModal={handleOpenQuestionTextEditor}
-            onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
-            onOpenSubscriptionModal={isTeacher ? undefined : () => setIsSubscriptionModalOpen(true)}
-            onOpenCuratedModal={() => setIsCuratedModalOpen(true)}
-            onOpenRegistrationModal={openRegistrationModal}
-            activeSubscription={activeSubscription}
-            userTier={userTier}
-            user={user}
-            isAdmin={isAdmin}
-            onOpenDatabaseUpload={(isAdmin || isTeacher) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
-            onEditExam={handleEditExam}
-            onDeleteExam={(id) => setExamToDelete(id)}
-          />
+          <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+            <HomeView
+              exams={exams}
+              results={results}
+              onNavigate={(tab) => {
+                if (tab !== 'create') {
+                  setEditingExam(null);
+                  setCreateExamInitialMode('select');
+                }
+                setActiveTab(tab);
+              }}
+              onStartPractice={handleStartPractice}
+              onOpenPasteModal={handleOpenQuestionTextEditor}
+              onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
+              onOpenSubscriptionModal={isTeacher ? undefined : () => setIsSubscriptionModalOpen(true)}
+              onOpenCuratedModal={() => setIsCuratedModalOpen(true)}
+              onOpenRegistrationModal={openRegistrationModal}
+              activeSubscription={activeSubscription}
+              userTier={userTier}
+              user={user}
+              isAdmin={isAdmin}
+              onOpenDatabaseUpload={(isAdmin || isTeacher) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
+              onEditExam={handleEditExam}
+              onDeleteExam={(id) => setExamToDelete(id)}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'files' && (
-          <FilesView
-            exams={exams}
-            onStartPractice={handleStartPractice}
-            onEditExam={handleEditExam}
-            onDeleteExam={(id) => setExamToDelete(id)}
-            onCreateNew={() => {
-              setEditingExam(null);
-              setCreateExamInitialMode('select');
-              setActiveTab('create');
-            }}
-            onOpenCuratedCatalogModal={() => setIsCuratedModalOpen(true)}
-            onOpenDatabaseUpload={(isAdmin || isTeacher) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
-            isAdmin={isAdmin}
-            user={user}
-          />
+          <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+            <FilesView
+              exams={exams}
+              onStartPractice={handleStartPractice}
+              onEditExam={handleEditExam}
+              onDeleteExam={(id) => setExamToDelete(id)}
+              onCreateNew={() => {
+                setEditingExam(null);
+                setCreateExamInitialMode('select');
+                setActiveTab('create');
+              }}
+              onOpenCuratedCatalogModal={() => setIsCuratedModalOpen(true)}
+              onOpenDatabaseUpload={(isAdmin || isTeacher) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
+              isAdmin={isAdmin}
+              user={user}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'results' && !isTeacher && (
-          <ResultsView
-            results={results}
-            onDeleteResult={handleDeleteResult}
-            onClearAllResults={handleClearAllResults}
-            onNavigateToFiles={() => setActiveTab('files')}
-          />
+          <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+            <ResultsView
+              results={results}
+              onDeleteResult={handleDeleteResult}
+              onClearAllResults={handleClearAllResults}
+              onNavigateToFiles={() => setActiveTab('files')}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'create' && (

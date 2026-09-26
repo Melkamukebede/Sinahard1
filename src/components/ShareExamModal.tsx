@@ -154,14 +154,14 @@ ${shortLink}`;
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg rounded-t-[32px] sm:rounded-[32px] bg-white dark:bg-[#070e1a] border border-zinc-200/80 dark:border-white/10 shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 max-h-[92vh] sm:max-h-[90vh] flex flex-col"
+        className="relative w-full max-w-lg rounded-t-[32px] sm:rounded-[32px] bg-white dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 max-h-[92vh] sm:max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile Drag Indicator Handle */}
         <div className="sm:hidden w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto mt-3 mb-1" />
 
         {/* Modal Header */}
-        <div className="px-5 sm:px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between shrink-0 bg-white/80 dark:bg-[#070e1a]/80 backdrop-blur-md">
+        <div className="px-5 sm:px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between shrink-0 bg-white/80 dark:bg-[#0c182b]/80 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center shadow-xs shrink-0">
               <Share2 className="w-4 h-4" />
@@ -188,7 +188,7 @@ ${shortLink}`;
         {/* Scrollable Content */}
         <div className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1">
           {/* Exam Summary Specification Card */}
-          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 space-y-3">
+          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#070e1a] border border-zinc-200/80 dark:border-white/10 space-y-3">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
                 <GraduationCap className="w-3 h-3" />
@@ -376,7 +376,7 @@ ${shortLink}`;
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-5 border-t border-zinc-100 dark:border-white/10 bg-zinc-50/80 dark:bg-[#070e1a] flex items-center justify-between gap-3 shrink-0">
+        <div className="p-4 sm:p-5 border-t border-zinc-100 dark:border-white/10 bg-zinc-50/80 dark:bg-[#0c182b] flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}

@@ -109,7 +109,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       {/* ─────────────────────────────────────────────────────────────
           ANALYTICS SUMMARY HEADER
       ───────────────────────────────────────────────────────────── */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0c182b] border border-zinc-200/80 dark:border-zinc-800 shadow-xs space-y-5">
+      <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[000000] border border-zinc-200/80 dark:border-zinc-800 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center shrink-0 border border-zinc-200/60 dark:border-zinc-700">
@@ -281,7 +281,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               return (
                 <div
                   key={result.id || originalIdx}
-                  className="rounded-2xl bg-white dark:bg-[#0c182b] border border-zinc-200/80 dark:border-zinc-800 shadow-2xs overflow-hidden transition-all"
+                  className="rounded-2xl bg-white dark:bg-[000000] border border-zinc-200/80 dark:border-zinc-800 shadow-2xs overflow-hidden transition-all"
                 >
                   {/* Card Row */}
                   <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -383,7 +383,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                       {displayedAnswers.map((ans, aIdx) => (
                         <div
                           key={aIdx}
-                          className="p-3.5 rounded-xl bg-white dark:bg-[#0c182b] border border-zinc-200/70 dark:border-zinc-800 space-y-2 text-xs"
+                          className="p-3.5 rounded-xl bg-white dark:bg-[000000] border border-zinc-200/70 dark:border-zinc-800 space-y-2 text-xs"
                         >
                           <div className="flex items-start gap-2.5">
                             <div

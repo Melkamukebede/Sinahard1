@@ -245,7 +245,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {(isTeacher || isAdmin) && (
         <motion.div
           variants={itemVariants}
-          className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm overflow-hidden"
+          className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm overflow-hidden"
         >
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
@@ -412,7 +412,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* Teacher Metrics Bento */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm"
+            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm"
           >
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               {/* Total Authored */}
@@ -508,7 +508,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* SIMPLIFIED EXAMS DISPLAY FOR TEACHER: PUSHED TO CLOUD & LOCAL STORAGE */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm space-y-6"
+            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm space-y-6"
           >
             {/* Header & Filter Controls */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800">
@@ -719,7 +719,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* 2. WELCOME & 4 CORE POINTS OF SINAHARD */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm overflow-hidden"
+            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm overflow-hidden"
           >
             <div className="space-y-6">
               <div className="border-b border-zinc-100 dark:border-zinc-800/80 pb-6">
@@ -867,7 +867,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* 3. METRIC CARDS BENTO - STUDENT */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm"
+            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm"
           >
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               {/* Total Modules */}
@@ -951,7 +951,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* 4. RECENT PRACTICE HISTORY - STUDENT */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm"
+            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm"
           >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -1030,7 +1030,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* 5. ETHIOPIAN BIRR SUBSCRIPTION FOOTER BANNER - STUDENT ONLY */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-5"
+            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-5"
           >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold shadow-xs shrink-0">

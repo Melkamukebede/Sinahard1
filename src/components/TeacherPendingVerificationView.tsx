@@ -57,9 +57,9 @@ export const TeacherPendingVerificationView: React.FC<TeacherPendingVerification
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-[#070e1a] text-zinc-950 dark:text-white font-['Plus_Jakarta_Sans',sans-serif] selection:bg-zinc-950 selection:text-white dark:selection:bg-white dark:selection:text-zinc-950">
+    <div className="min-h-screen bg-zinc-50 dark:bg-[000000] text-zinc-950 dark:text-white font-['Plus_Jakarta_Sans',sans-serif] selection:bg-zinc-950 selection:text-white dark:selection:bg-white dark:selection:text-zinc-950">
       {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-30 w-full backdrop-blur-2xl bg-white/80 dark:bg-[#070e1a]/85 border-b border-zinc-200/80 dark:border-white/10 shadow-2xs">
+      <header className="sticky top-0 z-30 w-full backdrop-blur-2xl bg-white/80 dark:bg-[000000]/85 border-b border-zinc-200/80 dark:border-white/10 shadow-2xs">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <SinahardLogo size="md" idSuffix="teacher-pending" />
@@ -101,7 +101,7 @@ export const TeacherPendingVerificationView: React.FC<TeacherPendingVerification
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[#0c182b] border border-zinc-200/90 dark:border-white/10 p-6 sm:p-10 shadow-sm relative overflow-hidden"
+          className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000] border border-zinc-200/90 dark:border-white/10 p-6 sm:p-10 shadow-sm relative overflow-hidden"
         >
           {/* Subtle background glow */}
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-zinc-100 dark:bg-zinc-800/40 blur-3xl pointer-events-none" />
@@ -167,7 +167,7 @@ export const TeacherPendingVerificationView: React.FC<TeacherPendingVerification
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-[32px] bg-white dark:bg-[#0c182b] border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm space-y-4"
+          className="rounded-[32px] bg-white dark:bg-[000000] border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm space-y-4"
         >
           <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800">
             <div className="flex items-center gap-2">
@@ -229,7 +229,7 @@ export const TeacherPendingVerificationView: React.FC<TeacherPendingVerification
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[#0c182b] border border-zinc-200/90 dark:border-white/10 p-6 sm:p-10 shadow-sm space-y-6"
+          className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000] border border-zinc-200/90 dark:border-white/10 p-6 sm:p-10 shadow-sm space-y-6"
         >
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-900 dark:text-white">

@@ -56,7 +56,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-[32px] bg-white/95 dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
+      <div className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-[32px] bg-white/95 dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
         {/* Header */}
         <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02]">
           <div className="flex items-center gap-2.5">

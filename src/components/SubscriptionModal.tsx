@@ -452,14 +452,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     >
       <div
         ref={modalContentRef}
-        className="relative w-full max-w-2xl my-2 sm:my-4 rounded-[32px] bg-white/95 dark:bg-[#070e1a]/95 border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-2xl my-2 sm:my-4 rounded-[32px] bg-white/95 dark:bg-[000000]/95 border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200"
       >
         {/* Subtle Atmospheric Ambient Glow */}
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-zinc-500/5 dark:bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-zinc-600/5 dark:bg-white/[0.01] rounded-full blur-3xl pointer-events-none" />
 
         {/* Modal Header - Sticky so it is always accessible at the upmost position */}
-        <div className="sticky top-0 z-30 px-6 pt-5 pb-4 bg-white/95 dark:bg-[#070e1a]/95 border-b border-zinc-200/80 dark:border-white/10 flex items-start justify-between backdrop-blur-xl">
+        <div className="sticky top-0 z-30 px-6 pt-5 pb-4 bg-white/95 dark:bg-[000000]/95 border-b border-zinc-200/80 dark:border-white/10 flex items-start justify-between backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <SinahardLogo size="lg" idSuffix="sub-modal" />
             <div>
@@ -522,7 +522,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
         {/* Current Active Status Alert */}
         {isActive && activeSubscription && (
-          <div className="mx-6 mt-3 p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
+          <div className="mx-6 mt-3 p-3.5 rounded-[22px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-5 h-5 text-zinc-950 dark:text-white shrink-0" />
               <div>
@@ -565,7 +565,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     className={`relative p-3.5 rounded-[22px] text-left border transition cursor-pointer flex flex-col justify-between shadow-xs active:scale-98 ${
                       isSelected
                         ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent ring-2 ring-amber-400/50'
-                        : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
+                        : 'bg-white dark:bg-[000000] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
                     }`}
                   >
                     {plan.badge && (
@@ -629,7 +629,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     className={`p-3 rounded-[22px] text-left border transition cursor-pointer flex items-center gap-2.5 shadow-xs active:scale-98 relative overflow-hidden ${
                       isSelected
                         ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent'
-                        : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
+                        : 'bg-white dark:bg-[000000] border-white/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
                     }`}
                   >
                     <div
@@ -663,7 +663,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </div>
 
           {/* Payment Account Details Box - Porcelain Container */}
-          <div className="p-4 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-3">
+          <div className="p-4 rounded-[24px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs space-y-3">
             {paymentMethod === 'telebirr' && (
               <div className="space-y-3">
                 {/* Telebirr Mode Switcher with Coming Soon for API */}
@@ -932,7 +932,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
           {/* Guest account notice */}
           {(!user || user.uid === 'guest') && (
-            <div className="p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-[22px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <AlertCircle className="w-4 h-4 text-zinc-400 shrink-0" />
                 <span className="text-xs text-zinc-600 dark:text-zinc-300">
@@ -953,7 +953,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
           {/* Active Checkout Portal Card (for both Telebirr and Chapa) */}
           {checkoutUrl && (
-            <div className="p-4 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 space-y-3.5 shadow-sm">
+            <div className="p-4 rounded-[24px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 space-y-3.5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-zinc-900 dark:bg-white animate-ping" />
@@ -1073,7 +1073,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             {showComparison && (
               <div className="p-4 pt-1 border-t border-white/60 dark:border-white/10 space-y-3 text-xs animate-in fade-in duration-200">
                 {/* Guest Mode */}
-                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
+                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5 text-zinc-500" />
@@ -1092,7 +1092,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </div>
 
                 {/* Logged-In User */}
-                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
+                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       <Globe className="w-3.5 h-3.5 text-zinc-500" />
@@ -1111,7 +1111,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </div>
 
                 {/* Premium Scholar */}
-                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
+                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       <Crown className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />

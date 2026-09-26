@@ -32,7 +32,7 @@ export const AuthNoticeModal: React.FC<AuthNoticeModalProps> = ({ isOpen, onClos
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
         id="auth-notice-modal"
-        className="relative w-full max-w-md rounded-[32px] bg-white/95 dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden p-6 space-y-5 backdrop-blur-2xl"
+        className="relative w-full max-w-md rounded-[32px] bg-white/95 dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden p-6 space-y-5 backdrop-blur-2xl"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -70,7 +70,7 @@ export const AuthNoticeModal: React.FC<AuthNoticeModalProps> = ({ isOpen, onClos
           <button
             type="button"
             onClick={handleOpenNewTab}
-            className="w-full flex items-center justify-between p-3.5 rounded-[20px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-zinc-900 border border-white/80 dark:border-white/10 text-zinc-900 dark:text-white transition cursor-pointer shadow-xs group"
+            className="w-full flex items-center justify-between p-3.5 rounded-[20px] bg-white dark:bg-[000000] hover:bg-zinc-50 dark:hover:bg-zinc-900 border border-white/80 dark:border-white/10 text-zinc-900 dark:text-white transition cursor-pointer shadow-xs group"
           >
             <div className="flex items-center gap-2.5 text-left">
               <ExternalLink className="w-4 h-4 text-zinc-900 dark:text-white shrink-0 group-hover:scale-110 transition-transform" />
@@ -108,7 +108,7 @@ export const AuthNoticeModal: React.FC<AuthNoticeModalProps> = ({ isOpen, onClos
                 onChange={(e) => setNickname(e.target.value)}
                 placeholder="Enter student name..."
                 maxLength={24}
-                className="flex-1 px-3.5 py-1.5 rounded-full text-xs bg-white dark:bg-[#0c182b] border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                className="flex-1 px-3.5 py-1.5 rounded-full text-xs bg-white dark:bg-[000000] border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-400"
               />
               <button
                 type="submit"

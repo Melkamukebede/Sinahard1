@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Question } from '../types';
 import { UserTierStatus } from '../services/subscriptionLimits';
+import { isAppOffline, subscribeToNetworkState, OFFLINE_FREE_GUEST_LIMITS } from '../firebase';
 
 interface PasteJsonModalProps {
   isOpen: boolean;
@@ -65,9 +66,15 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [previewQuestions, setPreviewQuestions] = useState<Question[]>([]);
 
-  const maxLimit = userTier?.maxImportQuestions ?? 20;
-  const isPremium = userTier?.isPremium ?? false;
-  const isExceedingLimit = !isPremium && previewQuestions.length > maxLimit;
+  // Offline tracking to enforce Free/Guest limits when network is unavailable
+  const [isOffline, setIsOffline] = useState<boolean>(() => isAppOffline());
+  useEffect(() => {
+    return subscribeToNetworkState(setIsOffline);
+  }, []);
+
+  const maxLimit = isOffline ? OFFLINE_FREE_GUEST_LIMITS.maxImportQuestions : (userTier?.maxImportQuestions ?? 20);
+  const isPremium = !isOffline && (userTier?.isPremium ?? false);
+  const isExceedingLimit = (!isPremium || isOffline) && previewQuestions.length > maxLimit;
 
   // Helper: auto-fix unescaped LaTeX backslashes inside JSON strings
   const fixLatexBackslashes = (raw: string): string => {
@@ -322,7 +329,11 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
                   <h3 className="font-bold text-base font-['Outfit',sans-serif]">
                     Paste as Text File / Questions
                   </h3>
-                  {userTier && (
+                  {isOffline ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300">
+                      ⚡ Offline Limit (Max 20)
+                    </span>
+                  ) : userTier && (
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                         userTier.isPremium
@@ -474,15 +485,17 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
                 </div>
                 <div className="space-y-1">
                   <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                    <span>{userTier?.isTrial ? '3-Day Trial Import Limit' : 'Free Account Limit'}: {maxLimit} Questions</span>
+                    <span>{isOffline ? 'Offline Free/Guest Import Limit' : (userTier?.isTrial ? '3-Day Trial Import Limit' : 'Free Account Limit')}: {maxLimit} Questions</span>
                     <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
                       Pasted {previewQuestions.length}
                     </span>
                   </div>
                   <p className="text-zinc-600 dark:text-zinc-300 text-[11px] leading-relaxed">
-                    {userTier?.isTrial
+                    {isOffline
+                      ? `When the network is unavailable, imports are restricted to the Free/Guest limit of ${maxLimit} questions. The first ${maxLimit} questions will be imported.`
+                      : userTier?.isTrial
                       ? `During your 3-day welcome trial (${userTier.trialDaysRemaining} days remaining), you can import up to ${maxLimit} questions per exam. You can import the first ${maxLimit} questions now, or upgrade for unlimited bulk questions.`
-                      : `Standard student accounts can import up to ${maxLimit} questions per exam. You can import the first ${maxLimit} questions now, or upgrade to Premium starting at 19.9 ETB for unlimited imports.`}
+                      : `Standard student accounts can import up to ${maxLimit} questions per exam. You can import the first ${maxLimit} questions now, or upgrade to Premium for unlimited imports.`}
                   </p>
                 </div>
               </motion.div>

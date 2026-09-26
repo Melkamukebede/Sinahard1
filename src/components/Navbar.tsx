@@ -29,6 +29,7 @@ import { UserSubscription } from '../types';
 import { SinahardLogo } from './SinahardLogo';
 import { AppCoin } from './AppCoin';
 import { getUserCoins } from '../services/coinService';
+import { isAppOffline, subscribeToNetworkState } from '../firebase';
 
 export type PageTab = 'home' | 'files' | 'results' | 'create' | 'manual' | 'admin-subs';
 
@@ -89,9 +90,15 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
   }, [user, activeSubscription]);
 
+  // Offline state subscription
+  const [isOffline, setIsOffline] = useState<boolean>(() => isAppOffline());
+  React.useEffect(() => {
+    return subscribeToNetworkState(setIsOffline);
+  }, []);
+
   const isGuest = !user || user.uid === 'guest' || user.isAnonymous;
   const isStaff = Boolean(isAdmin || isTeacher);
-  const isPro = isStaff || isPremiumActive || userCoins >= 4;
+  const isPro = !isOffline && (isStaff || isPremiumActive || userCoins >= 4);
   const isFree = !isGuest && !isPro;
 
   // Derive stable monogram initial from user displayName, email, or role
@@ -161,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Center Nav Tabs */}
-        <nav className="hidden md:flex items-center p-1 rounded-full bg-white/70 dark:bg-[#0c182b]/80 backdrop-blur-md border border-white/80 dark:border-white/10 text-xs sm:text-sm shadow-xs">
+        <nav className="hidden md:flex items-center p-1 rounded-full bg-white/70 dark:bg-[#0c182b] backdrop-blur-md border border-white/80 dark:border-white/10 text-xs sm:text-sm shadow-xs">
           <button
             id="nav-tab-home"
             type="button"
@@ -275,6 +282,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
+          {/* Offline indicator badge */}
+          {isOffline && (
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/25 shrink-0"
+              title="Network unavailable: Free/Guest 20-question limit enforced for creation and practice."
+            >
+              <CloudOff className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span className="hidden sm:inline">Offline (Free Cap)</span>
+              <span className="sm:hidden">Offline</span>
+            </div>
+          )}
+
           {/* Top Navigation Coin & Tier Pill Button (Guest / Free / Pro) */}
           <button
             id="navbar-coin-pill-btn"
@@ -349,7 +368,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-72 rounded-[28px] bg-white dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 shadow-2xl p-4 z-50 text-sm animate-in fade-in zoom-in-95 duration-150 space-y-3">
-                  <div className="pb-3 border-b border-zinc-100 dark:border-zinc-800/80 space-y-2">
+                  <div className="pb-3 border-b border-zinc-100 dark:border-white/10 space-y-2">
                     <div className="flex items-center gap-3">
                       {user.photoURL && !avatarImgError ? (
                         <img
@@ -475,7 +494,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {showUserMenu && (
                 <div className="absolute right-0 top-11 mt-1 w-72 rounded-[28px] bg-white dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 shadow-2xl p-4 z-50 text-sm space-y-3">
-                  <div className="pb-3 border-b border-zinc-100 dark:border-zinc-800/80 space-y-1">
+                  <div className="pb-3 border-b border-zinc-100 dark:border-white/10 space-y-1">
                     <p className="font-bold text-zinc-950 dark:text-white truncate">
                       {user.displayName}
                     </p>

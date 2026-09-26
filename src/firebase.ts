@@ -59,6 +59,8 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
+import { setFirebaseReachable } from './services/firebaseOfflineService';
+
 // Test initial connection as required by firebase skill
 export async function testConnection(): Promise<boolean> {
   try {
@@ -66,8 +68,10 @@ export async function testConnection(): Promise<boolean> {
       setTimeout(() => reject(new Error('Connection check timed out')), 3000)
     );
     await Promise.race([getDocFromServer(doc(db, 'test', 'connection')), timeoutPromise]);
+    setFirebaseReachable(true);
     return true;
   } catch (error) {
+    setFirebaseReachable(false);
     if (error instanceof Error) {
       if (error.message.includes('the client is offline') || error.message.includes('timed out') || error.message.includes('Backend didn\'t respond')) {
         console.info('Firebase offline cache mode active.');
@@ -78,3 +82,19 @@ export async function testConnection(): Promise<boolean> {
   }
 }
 testConnection().catch(() => {});
+
+// Re-export Offline & Free/Guest Enforcement Utilities in Firebase Logic
+export {
+  isAppOffline,
+  subscribeToNetworkState,
+  enforceOfflineExamCreation,
+  enforceOfflineExamPractice,
+  enforceOfflineQuestionImport,
+  OFFLINE_FREE_GUEST_LIMITS,
+  setFirebaseReachable,
+} from './services/firebaseOfflineService';
+export type {
+  OfflineCreationValidationResult,
+  OfflinePracticeValidationResult,
+} from './services/firebaseOfflineService';
+

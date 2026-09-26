@@ -10,10 +10,9 @@ import {
   FileText,
   HelpCircle,
   Code,
-  Lightbulb,
   Zap,
-  ChevronDown,
-  ChevronUp,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 
 interface ProfessorModalProps {
@@ -45,12 +44,20 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('Medium');
   const [promptStyle, setPromptStyle] = useState<PromptStyle>('brief');
 
-  // UI View Tab
+  // UI View Tab & Interactive States
   const [activeView, setActiveView] = useState<ActiveView>('prompt');
   const [copied, setCopied] = useState<boolean>(false);
+  const [isCopying, setIsCopying] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+
+  const triggerRegeneration = () => {
+    setIsGenerating(true);
+    setTimeout(() => setIsGenerating(false), 200);
+  };
 
   // Quick curriculum presets
   const applyPreset = (preset: 'physics' | 'math12' | 'chemistry' | 'freshman' | 'senior' | 'biology' | 'social') => {
+    triggerRegeneration();
     if (preset === 'physics') {
       setSubjectType('calculation');
       setGrade(10);
@@ -122,8 +129,8 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
     if (difficulty === 'Easy') {
       return {
         label: 'Easy (Foundational)',
-        badgeColor: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
-        summary: 'Direct single-formula application & core definition recall without complex isolation.',
+        badgeColor: 'text-blue-700 dark:text-blue-300 bg-blue-500/10 border-blue-500/30 font-bold',
+        summary: 'Direct single-formula calculations & core concept recall.',
         briefGuide: 'Direct single-formula usage, clean numbers, standard SI units, distinct distractors without tricky traps.',
         detailedDirective: `DIFFICULTY LEVEL DIRECTIVE: EASY (FOUNDATIONAL / RECALL):
 - Primary Focus: Direct single-step concept recall and single-formula calculation.
@@ -135,8 +142,8 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
     } else if (difficulty === 'Hard') {
       return {
         label: 'Hard (Advanced / Entrance)',
-        badgeColor: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20',
-        summary: 'Multi-concept synthesis, non-trivial algebraic derivation, and subtle distractor traps.',
+        badgeColor: 'text-rose-700 dark:text-rose-300 bg-rose-500/10 border-rose-500/30 font-bold',
+        summary: 'Multi-concept synthesis & realistic distractor traps.',
         briefGuide: 'Combines 2+ principles (e.g. Energy + Kinematics), non-trivial algebra, unit conversion traps, and realistic misconception distractors.',
         detailedDirective: `DIFFICULTY LEVEL DIRECTIVE: HARD (ADVANCED / COMPETITIVE & UNIVERSITY ENTRANCE):
 - Primary Focus: High-rigor, multi-concept synthesis combining two or more physical principles (e.g. Conservation of Mechanical Energy + Kinematics, or Work-Energy Theorem + Friction and Newton's 2nd Law; or optimization calculus).
@@ -149,8 +156,8 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
       // Medium
       return {
         label: 'Medium (Standard Exam)',
-        badgeColor: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
-        summary: 'Ethiopian National Exam / standard curriculum benchmark with 2-step algebraic reasoning.',
+        badgeColor: 'text-amber-700 dark:text-amber-300 bg-amber-500/10 border-amber-500/30 font-bold',
+        summary: 'National exam benchmark with 2-step algebraic reasoning.',
         briefGuide: 'Standard preparatory exam standard: 2-step reasoning (e.g. find acceleration first), algebraic rearrangement, and plausible distractors.',
         detailedDirective: `DIFFICULTY LEVEL DIRECTIVE: MEDIUM (STANDARD EXAM / NATIONAL CURRICULUM):
 - Primary Focus: Standard Ethiopian National Exam / university preparatory exam benchmark.
@@ -384,12 +391,16 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
   }, [subjectType, grade, subject, topics, timeLimit]);
 
   const handleCopy = async () => {
+    setIsCopying(true);
     try {
       await navigator.clipboard.writeText(generatedPrompt);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
+      setTimeout(() => {
+        setIsCopying(false);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }, 220);
     } catch {
-      // fallback
+      setIsCopying(false);
     }
   };
 
@@ -398,28 +409,32 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
   return (
     <div
       id="professor-modal-overlay"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-md animate-in fade-in duration-150 font-['Plus_Jakarta_Sans',sans-serif]"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in duration-150 font-['Plus_Jakarta_Sans',sans-serif]"
     >
       <div
         id="professor-modal-container"
-        className="relative w-full max-w-3xl max-h-[92vh] flex flex-col rounded-[32px] bg-white/95 dark:bg-[#070e1a]/95 border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl"
+        className="relative w-full max-w-3xl max-h-[92vh] flex flex-col rounded-[32px] bg-black text-white border border-zinc-800 shadow-2xl overflow-hidden backdrop-blur-2xl"
       >
-        {/* Subtle Atmospheric Ambient Glow */}
-        <div className="absolute top-0 right-1/4 w-80 h-80 bg-zinc-500/5 dark:bg-white/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-zinc-500/5 dark:bg-white/5 rounded-full blur-3xl pointer-events-none" />
+        {/* Top Accent Line */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-zinc-700" />
 
-        {/* Header - Frosted Glass Bar */}
-        <div className="relative px-6 py-4 border-b border-white/60 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl">
+        {/* Header */}
+        <div className="relative px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-black">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center shadow-2xs">
-              <Sparkles className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+            <div className="w-10 h-10 rounded-2xl bg-white text-black border-2 border-black flex items-center justify-center shadow-xs">
+              <Sparkles className="w-5 h-5 text-black stroke-[2.5]" />
             </div>
             <div>
-              <h3 className="font-bold text-base font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
-                AI Prompt Builder
-              </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Step-wise math & science exam prompts for ChatGPT, Claude, Gemini & DeepSeek
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-base font-['Outfit',sans-serif] text-white">
+                  AI Prompt Studio
+                </h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-900 text-white border border-zinc-700">
+                  1-Click Format
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400">
+                Instant exam prompts for ChatGPT, Claude, Gemini & DeepSeek
               </p>
             </div>
           </div>
@@ -428,31 +443,36 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
             id="professor-modal-close-btn"
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+            className="w-8 h-8 rounded-full bg-white text-black hover:bg-zinc-100 flex items-center justify-center transition cursor-pointer border border-black"
             aria-label="Close AI Prompt Builder"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 text-black stroke-[2.5]" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="relative flex-1 overflow-y-auto p-6 space-y-4 text-xs">
-          {/* Porcelain Hint Banner */}
-          <div className="p-4 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex items-start gap-3">
-            <HelpCircle className="w-4 h-4 text-zinc-600 dark:text-zinc-400 shrink-0 mt-0.5" />
-            <div className="space-y-0.5">
-              <span className="font-bold text-zinc-900 dark:text-white block">
-                Direct AI Integration
+        <div className="relative flex-1 overflow-y-auto p-5 sm:p-6 space-y-3.5 text-xs bg-black">
+          {/* Workflow Banner */}
+          <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 shadow-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-white text-black flex items-center justify-center shrink-0 border border-black shadow-xs">
+                <HelpCircle className="w-4 h-4 text-black stroke-[2.5]" />
+              </div>
+              <span className="text-xs font-semibold text-zinc-200">
+                1. Copy Prompt → 2. Ask AI → 3. Paste plain text into Question Editor
               </span>
-              <p className="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
-                Copy this prompt, send it to any AI (ChatGPT, Claude, Gemini, DeepSeek), and paste the resulting plain text straight back into the Question Text Editor.
-              </p>
             </div>
+            {isGenerating && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white text-black text-[11px] font-bold border border-black shrink-0">
+                <Loader2 className="w-3 h-3 text-black stroke-[2.5] animate-spin" />
+                <span>Formatting...</span>
+              </div>
+            )}
           </div>
 
           {/* Quick Curriculum Presets */}
           <div className="space-y-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 px-1 block">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-1 block">
               Curriculum Presets:
             </span>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -469,7 +489,7 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                   key={p.id}
                   type="button"
                   onClick={() => applyPreset(p.id as any)}
-                  className="px-3 py-1.5 rounded-full text-xs bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 shadow-2xs active:scale-98 cursor-pointer transition"
+                  className="px-3 py-1 rounded-full text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white shadow-2xs active:scale-98 cursor-pointer transition hover:border-white"
                 >
                   {p.label}
                 </button>
@@ -478,93 +498,88 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
           </div>
 
           {/* Archetype: Math & Science (Vertical Steps) vs Theory */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setSubjectType('calculation')}
-              className={`p-4 rounded-[22px] border text-left transition cursor-pointer flex items-start gap-3 shadow-xs active:scale-98 ${
+              onClick={() => {
+                triggerRegeneration();
+                setSubjectType('calculation');
+              }}
+              className={`p-3.5 rounded-[22px] border text-left transition cursor-pointer flex items-start gap-3 shadow-xs active:scale-98 ${
                 subjectType === 'calculation'
-                  ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent'
-                  : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
+                  ? 'bg-white text-black border-2 border-black'
+                  : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700'
               }`}
             >
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                subjectType === 'calculation'
-                  ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950'
-                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white'
-              }`}>
-                <Calculator className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-white text-black border border-black shadow-xs flex items-center justify-center shrink-0">
+                <Calculator className="w-4 h-4 text-black stroke-[2.5]" />
               </div>
               <div>
                 <div className="font-bold flex items-center gap-1.5">
-                  <span className={subjectType === 'calculation' ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}>Math & Science</span>
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold ${
+                  <span className={subjectType === 'calculation' ? 'text-black' : 'text-white'}>Math & Science</span>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border ${
                     subjectType === 'calculation'
-                      ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
+                      ? 'bg-black text-white border-black'
+                      : 'bg-zinc-900 text-white border-zinc-700'
                   }`}>
-                    No Numbers in Explanations
+                    KaTeX Math
                   </span>
                 </div>
-                <p className={`text-[11px] mt-1 leading-relaxed ${
-                  subjectType === 'calculation' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500 dark:text-zinc-400'
-                }`}>
-                  Vertical steps using **Formula:**, **Calculation:**, and **Answer:** with KaTeX display formulas.
+                <p className={`text-[11px] mt-0.5 leading-relaxed ${subjectType === 'calculation' ? 'text-zinc-700' : 'text-zinc-400'}`}>
+                  Step-wise equations with Formula, Calculation & Answer.
                 </p>
               </div>
             </button>
 
             <button
               type="button"
-              onClick={() => setSubjectType('theory')}
-              className={`p-4 rounded-[22px] border text-left transition cursor-pointer flex items-start gap-3 shadow-xs active:scale-98 ${
+              onClick={() => {
+                triggerRegeneration();
+                setSubjectType('theory');
+              }}
+              className={`p-3.5 rounded-[22px] border text-left transition cursor-pointer flex items-start gap-3 shadow-xs active:scale-98 ${
                 subjectType === 'theory'
-                  ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent'
-                  : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
+                  ? 'bg-white text-black border-2 border-black'
+                  : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700'
               }`}
             >
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                subjectType === 'theory'
-                  ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950'
-                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white'
-              }`}>
-                <BookOpen className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-white text-black border border-black shadow-xs flex items-center justify-center shrink-0">
+                <BookOpen className="w-4 h-4 text-black stroke-[2.5]" />
               </div>
               <div>
                 <div className="font-bold flex items-center gap-1.5">
-                  <span className={subjectType === 'theory' ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}>Theory & Concepts</span>
-                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold ${
+                  <span className={subjectType === 'theory' ? 'text-black' : 'text-white'}>Theory & Concepts</span>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border ${
                     subjectType === 'theory'
-                      ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
+                      ? 'bg-black text-white border-black'
+                      : 'bg-zinc-900 text-white border-zinc-700'
                   }`}>
                     Conceptual
                   </span>
                 </div>
-                <p className={`text-[11px] mt-1 leading-relaxed ${
-                  subjectType === 'theory' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500 dark:text-zinc-400'
-                }`}>
-                  Focuses on core concepts, key reasons, and distractor analysis without numbered lists.
+                <p className={`text-[11px] mt-0.5 leading-relaxed ${subjectType === 'theory' ? 'text-zinc-700' : 'text-zinc-400'}`}>
+                  Core principles, reasons & distractor analysis.
                 </p>
               </div>
             </button>
           </div>
 
-          {/* Core Configuration Inputs Porcelain Card */}
-          <div className="p-5 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Core Configuration Inputs */}
+          <div className="p-4 sm:p-5 rounded-[22px] bg-zinc-950 border border-zinc-800 shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+              <label className="block text-[11px] font-bold text-zinc-200 mb-1">
                 Grade
               </label>
               <div className="flex items-center gap-1.5">
                 <select
                   value={['9', '10', '11', '12', 'Freshman', 'Senior University', 'University Senior'].includes(String(grade)) ? (String(grade) === 'University Senior' ? 'Senior University' : String(grade)) : 'custom'}
                   onChange={(e) => {
+                    triggerRegeneration();
                     if (e.target.value !== 'custom') {
                       setGrade(e.target.value);
                     }
                   }}
-                  className="w-32 px-3 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 cursor-pointer"
+                  className="w-32 px-3 py-2 rounded-full bg-black border border-zinc-700 text-white text-xs font-semibold focus:outline-hidden focus:border-white cursor-pointer"
                 >
                   <option value="9">Grade 9</option>
                   <option value="10">Grade 10</option>
@@ -577,41 +592,50 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                 <input
                   type="text"
                   value={grade}
-                  onChange={(e) => setGrade(e.target.value)}
+                  onChange={(e) => {
+                    triggerRegeneration();
+                    setGrade(e.target.value);
+                  }}
                   placeholder="e.g. 10"
-                  className="flex-1 px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
+                  className="flex-1 px-3.5 py-2 rounded-full bg-black border border-zinc-700 text-white text-xs focus:outline-hidden focus:border-white font-medium"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+              <label className="block text-[11px] font-bold text-zinc-200 mb-1">
                 Subject
               </label>
               <input
                 type="text"
                 value={subject}
-                onChange={(e) => setSubject(e.target.value)}
+                onChange={(e) => {
+                  triggerRegeneration();
+                  setSubject(e.target.value);
+                }}
                 placeholder="e.g. Physics"
-                className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
+                className="w-full px-3.5 py-2 rounded-full bg-black border border-zinc-700 text-white text-xs focus:outline-hidden focus:border-white font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+              <label className="block text-[11px] font-bold text-zinc-200 mb-1">
                 Topic
               </label>
               <input
                 type="text"
                 value={topics}
-                onChange={(e) => setTopics(e.target.value)}
+                onChange={(e) => {
+                  triggerRegeneration();
+                  setTopics(e.target.value);
+                }}
                 placeholder="e.g. Classical Mechanics"
-                className="w-full px-3.5 py-2 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
+                className="w-full px-3.5 py-2 rounded-full bg-black border border-zinc-700 text-white text-xs focus:outline-hidden focus:border-white font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+              <label className="block text-[11px] font-bold text-zinc-200 mb-1">
                 Time Limit (minutes)
               </label>
               <div className="flex items-center gap-2">
@@ -619,11 +643,14 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                   <button
                     key={t}
                     type="button"
-                    onClick={() => setTimeLimit(t)}
-                    className={`px-2.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition border ${
+                    onClick={() => {
+                      triggerRegeneration();
+                      setTimeLimit(t);
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer transition border ${
                       timeLimit === t
-                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent font-bold'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
+                        ? 'bg-white text-black border-black shadow-xs'
+                        : 'bg-black border-zinc-700 text-zinc-300'
                     }`}
                   >
                     {t}m
@@ -634,19 +661,22 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                   min="1"
                   max="180"
                   value={timeLimit}
-                  onChange={(e) => setTimeLimit(Math.max(1, parseInt(e.target.value, 10) || 20))}
-                  className="w-20 px-2.5 py-1.5 text-xs rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-medium text-center focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10"
+                  onChange={(e) => {
+                    triggerRegeneration();
+                    setTimeLimit(Math.max(1, parseInt(e.target.value, 10) || 20));
+                  }}
+                  className="w-20 px-2.5 py-1.5 text-xs rounded-full bg-black border border-zinc-700 text-white font-medium text-center focus:outline-hidden focus:border-white"
                 />
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200">
+                <label className="text-[11px] font-bold text-zinc-200">
                   Question Count
                 </label>
-                <span className="text-[11px] font-bold text-zinc-900 dark:text-white">
-                  {totalQuestions} Questions
+                <span className="text-[11px] font-bold text-white">
+                  {totalQuestions} Qs
                 </span>
               </div>
               <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
@@ -654,23 +684,27 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                   <button
                     key={num}
                     type="button"
-                    onClick={() => setTotalQuestions(num)}
-                    className={`px-3 py-1.5 rounded-full border text-xs font-semibold cursor-pointer transition shadow-2xs ${
+                    onClick={() => {
+                      triggerRegeneration();
+                      setTotalQuestions(num);
+                    }}
+                    className={`px-3 py-1.5 rounded-full border text-xs font-bold cursor-pointer transition shadow-2xs ${
                       totalQuestions === num
-                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold border-transparent'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        ? 'bg-white text-black border-black shadow-xs'
+                        : 'bg-black border-zinc-700 text-zinc-300 hover:bg-zinc-900'
                     }`}
                   >
                     {num}
                   </button>
                 ))}
-                <div className="flex items-center gap-1 flex-1 min-w-[85px]">
+                <div className="flex items-center gap-1 flex-1 min-w-[75px]">
                   <input
                     type="number"
                     min="1"
                     max="100"
                     value={totalQuestions}
                     onChange={(e) => {
+                      triggerRegeneration();
                       const val = parseInt(e.target.value, 10);
                       if (!isNaN(val) && val > 0) {
                         setTotalQuestions(Math.min(100, Math.max(1, val)));
@@ -679,10 +713,9 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                       }
                     }}
                     placeholder="Custom"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white font-medium focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 text-center"
-                    title="Enter any number of questions manually"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-full bg-black border border-zinc-700 text-white font-medium focus:outline-hidden focus:border-white text-center"
+                    title="Enter any number of questions"
                   />
-                  <span className="text-[10px] text-zinc-400 shrink-0">custom</span>
                 </div>
               </div>
             </div>
@@ -690,10 +723,10 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
             {/* Difficulty Level with Dynamic Directive Handling */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200">
+                <label className="text-[11px] font-bold text-zinc-200">
                   Difficulty Level
                 </label>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${difficultyConfig.badgeColor}`}>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-black bg-white text-black">
                   {difficultyConfig.label}
                 </span>
               </div>
@@ -702,80 +735,95 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                   <button
                     key={lvl}
                     type="button"
-                    onClick={() => setDifficulty(lvl)}
-                    className={`flex-1 py-1.5 rounded-full border text-xs font-semibold cursor-pointer transition shadow-2xs ${
+                    onClick={() => {
+                      triggerRegeneration();
+                      setDifficulty(lvl);
+                    }}
+                    className={`flex-1 py-1.5 rounded-full border text-xs font-bold cursor-pointer transition shadow-2xs ${
                       difficulty === lvl
-                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold border-transparent'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
+                        ? 'bg-white text-black border-black shadow-xs'
+                        : 'bg-black border-zinc-700 text-zinc-300 hover:border-white'
                     }`}
                   >
                     {lvl}
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 leading-tight">
+              <p className="text-[10px] text-zinc-400 mt-1 leading-tight font-medium">
                 {difficultyConfig.summary}
               </p>
             </div>
           </div>
 
-          {/* View Selector: Master Prompt vs .txt Output Preview + Brief vs Detailed */}
-          <div className="pt-2 space-y-2">
-            <div className="flex items-center justify-between flex-wrap gap-2 border-b border-white/60 dark:border-white/10 pb-2">
+          {/* View Selector: Master Prompt vs .txt Output Preview */}
+          <div className="pt-1 space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2 border-b border-zinc-800 pb-2">
               <div className="flex items-center gap-2">
                 {/* Main View Tabs */}
-                <div className="flex items-center gap-1.5 p-1 rounded-full bg-zinc-100 dark:bg-zinc-800/80 border border-white/60 dark:border-white/10">
+                <div className="flex items-center gap-1.5 p-1 rounded-full bg-zinc-950 border border-zinc-800">
                   <button
                     type="button"
                     onClick={() => setActiveView('prompt')}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                       activeView === 'prompt'
-                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                        ? 'bg-white text-black border border-black shadow-xs'
+                        : 'text-zinc-400 hover:text-white'
                     }`}
                   >
-                    <Code className="w-3.5 h-3.5" />
+                    <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                      <Code className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+                    </span>
                     <span>AI Prompt</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveView('txt_preview')}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                       activeView === 'txt_preview'
-                        ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                        ? 'bg-white text-black border border-black shadow-xs'
+                        : 'text-zinc-400 hover:text-white'
                     }`}
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Expected .txt Result</span>
+                    <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                      <FileText className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+                    </span>
+                    <span>Expected Result</span>
                   </button>
                 </div>
 
                 {/* Brief vs Detailed Toggle (Only in Prompt view) */}
                 {activeView === 'prompt' && (
-                  <div className="flex items-center gap-1 p-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60">
+                  <div className="flex items-center gap-1 p-0.5 rounded-full bg-zinc-950 border border-zinc-800">
                     <button
                       type="button"
-                      onClick={() => setPromptStyle('brief')}
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                      onClick={() => {
+                        triggerRegeneration();
+                        setPromptStyle('brief');
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
                         promptStyle === 'brief'
-                          ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                          : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                          ? 'bg-white text-black shadow-xs'
+                          : 'text-zinc-400 hover:text-white'
                       }`}
                       title="Concise high-impact prompt"
                     >
-                      <Zap className="w-3 h-3 text-amber-500" />
-                      <span>Brief Prompt</span>
+                      <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                        <Zap className="w-3 h-3 text-black stroke-[2.5]" />
+                      </span>
+                      <span>Brief</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setPromptStyle('detailed')}
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                      onClick={() => {
+                        triggerRegeneration();
+                        setPromptStyle('detailed');
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
                         promptStyle === 'detailed'
-                          ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                          : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                          ? 'bg-white text-black shadow-xs'
+                          : 'text-zinc-400 hover:text-white'
                       }`}
-                      title="Full pedagogical master prompt"
+                      title="Full pedagogical rubric"
                     >
                       <span>Full Rubric</span>
                     </button>
@@ -785,11 +833,26 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
 
               <button
                 type="button"
+                disabled={isCopying}
                 onClick={handleCopy}
-                className="px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-xs active:scale-98"
+                className="px-4 py-2 rounded-full bg-white text-black hover:bg-zinc-100 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer transition shadow-[0_3px_0_#000000] border-2 border-black active:scale-98 disabled:opacity-50"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-zinc-950 dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Copied to Clipboard!' : 'Copy Prompt'}</span>
+                {isCopying ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 text-black stroke-[2.5] animate-spin" />
+                    <span>Copying...</span>
+                  </>
+                ) : copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+                    <span>Copy Prompt</span>
+                  </>
+                )}
               </button>
             </div>
 
@@ -801,13 +864,13 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                   rows={9}
                   readOnly
                   value={generatedPrompt}
-                  className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 select-all focus:outline-hidden shadow-xs"
+                  className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-zinc-950 border border-zinc-800 text-white select-all focus:outline-hidden shadow-xs"
                 />
-                <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1 flex-wrap gap-2">
-                  <span>Works seamlessly with ChatGPT, Claude, Gemini, and DeepSeek.</span>
-                  <span className="text-zinc-900 dark:text-white font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-900 dark:bg-white" />
-                    Clean plain text format ready for instant import
+                <div className="flex items-center justify-between text-[11px] text-zinc-400 px-1 flex-wrap gap-2">
+                  <span>Works with ChatGPT, Claude, Gemini & DeepSeek.</span>
+                  <span className="text-white font-medium flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                    Plain text format with KaTeX formulas
                   </span>
                 </div>
               </div>
@@ -820,10 +883,10 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                   rows={9}
                   readOnly
                   value={sampleTxtPreview}
-                  className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 select-all focus:outline-hidden shadow-xs"
+                  className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-zinc-950 border border-zinc-800 text-white select-all focus:outline-hidden shadow-xs"
                 />
-                <p className="text-[11px] text-zinc-500 px-1">
-                  Notice how each math question has vertical step-wise calculations using <strong>**Formula:**</strong>, <strong>**Calculation:**</strong>, and <strong>**Answer:**</strong> without numbered steps.
+                <p className="text-[11px] text-zinc-400 px-1">
+                  Vertical calculation steps using <strong>**Formula:**</strong>, <strong>**Calculation:**</strong>, and <strong>**Answer:**</strong>.
                 </p>
               </div>
             )}
@@ -831,14 +894,9 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-white/60 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] backdrop-blur-xl flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <span className="hidden sm:inline">
-              1. Copy Prompt → 2. Ask AI → 3. Paste into Question Text Editor
-            </span>
-            <span className="sm:hidden">
-              Prompt ready for AI
-            </span>
+        <div className="px-6 py-3.5 border-t border-zinc-800 bg-black flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs text-zinc-400 font-medium">
+            <span>Ready for AI</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -846,7 +904,7 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
               id="professor-footer-close-btn"
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-full border border-white/60 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-600 dark:text-zinc-400 font-semibold text-xs hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer shadow-xs transition"
+              className="px-4 py-2 rounded-full border border-zinc-700 bg-zinc-900 text-white font-bold text-xs hover:bg-zinc-800 cursor-pointer shadow-xs transition"
             >
               Close
             </button>
@@ -862,10 +920,10 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
                   onGoToPaste();
                 }
               }}
-              className="px-5 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98 transition"
+              className="px-5 py-2 rounded-full bg-white text-black hover:bg-zinc-100 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer shadow-[0_3px_0_#000000] border-2 border-black active:scale-98 transition"
             >
-              <span>Next: Question Text Editor</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <span>Next: Question Editor</span>
+              <ArrowRight className="w-3.5 h-3.5 text-black stroke-[2.5]" />
             </button>
           </div>
         </div>
@@ -873,3 +931,4 @@ Ribosomes perform protein synthesis, the endoplasmic reticulum processes lipids 
     </div>
   );
 };
+

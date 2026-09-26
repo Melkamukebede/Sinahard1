@@ -324,7 +324,7 @@ export const DatabaseUploadModal: React.FC<DatabaseUploadModalProps> = ({
           </div>
 
           {/* Sub-header View Switcher */}
-          <div className="px-6 py-2.5 flex items-center justify-between border-b border-zinc-100 dark:border-white/10 bg-white dark:bg-[#0c182b] text-xs">
+          <div className="px-6 py-2.5 flex items-center justify-between border-b border-zinc-100 dark:border-white/10 bg-white dark:bg-[#070e1a] text-xs">
             <div className="flex items-center gap-2">
               <button
                 type="button"

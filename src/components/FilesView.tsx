@@ -340,7 +340,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
         {/* Top Header Row */}
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center shadow-xs border border-white/80 dark:border-white/10">
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center shadow-xs border border-white/80 dark:border-zinc-800">
               <BookOpen className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
             </div>
             <div>
@@ -364,10 +364,12 @@ export const FilesView: React.FC<FilesViewProps> = ({
               <button
                 type="button"
                 onClick={onOpenCuratedCatalogModal}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-950 dark:bg-white hover:bg-black dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs transition cursor-pointer shadow-xs active:scale-98"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black hover:bg-zinc-900 text-white font-bold text-xs transition cursor-pointer shadow-[0_3px_0_#000000] border-2 border-black active:scale-98"
                 title={user?.grade ? `Download exams filtered for Grade ${user.grade}` : 'Browse official curriculum exams'}
               >
-                <CloudDownload className="w-3.5 h-3.5" />
+                <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                  <CloudDownload className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+                </span>
                 <span>Download Exams {user?.grade ? `(G${user.grade})` : ''}</span>
               </button>
             )}
@@ -379,7 +381,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 border border-white/80 dark:border-white/10 font-semibold text-xs cursor-pointer transition shadow-xs active:scale-98"
                 title="Upload questions to Cloud Firestore"
               >
-                <CloudUpload className="w-3.5 h-3.5 text-black dark:text-white" />
+                <CloudUpload className="w-3.5 h-3.5 text-black stroke-[2.5]" />
                 <span>Upload</span>
               </button>
             )}

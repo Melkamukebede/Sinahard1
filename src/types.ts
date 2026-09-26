@@ -28,6 +28,8 @@ export interface ExamMetadata {
   examYear?: string;
   curator?: string;
   pushedToCloud?: boolean;
+  offlineCapped?: boolean;
+  originalQuestionCount?: number;
 }
 
 export interface Exam {

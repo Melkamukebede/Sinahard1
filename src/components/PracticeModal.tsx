@@ -17,12 +17,14 @@ import {
   Check,
   Minimize2,
   Maximize2,
+  CloudOff,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Exam, ExamAnswerRecord, ExamResult, Question } from '../types';
 import { MathRenderer } from './MathRenderer';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { useNotifications } from '../context/NotificationContext';
+import { isAppOffline } from '../firebase';
 
 interface PracticeModalProps {
   exam: Exam | null;
@@ -322,7 +324,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
       <div
         key={q.id || qIndex}
         id={`practice-question-${qIndex}`}
-        className="p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-4 transition-all"
+        className="p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs space-y-4 transition-all"
       >
         {/* Card Header: Question Number */}
         <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
@@ -363,7 +365,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             } else {
               optionCardClasses = isDisabled
                 ? 'bg-zinc-50/60 dark:bg-white/[0.02] border-zinc-200/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400 opacity-60 cursor-not-allowed'
-                : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] cursor-pointer shadow-2xs';
+                : 'bg-white dark:bg-[000000] border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[18181b] cursor-pointer shadow-2xs';
             }
 
             return (
@@ -414,7 +416,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 cursor-pointer transition border shadow-2xs active:scale-98 ${
               isExplRevealed
                 ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-700'
-                : 'bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 border-white/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[#0f1d33]'
+                : 'bg-white dark:bg-[000000] text-zinc-700 dark:text-zinc-300 border-white/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[18181b]'
             }`}
           >
             {isExplRevealed ? (
@@ -491,7 +493,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-        <div className="w-full max-w-4xl h-[94vh] max-h-[880px] bg-white/95 dark:bg-[#0c182b] border border-white/80 dark:border-white/10 rounded-[32px] shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
+        <div className="w-full max-w-4xl h-[94vh] max-h-[880px] bg-white/95 dark:bg-[000000] border border-white/80 dark:border-white/10 rounded-[32px] shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
           {/* Header Bar using App Color Design */}
           <div className="px-5 sm:px-6 py-3.5 border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between gap-3 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md flex-wrap">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -499,6 +501,12 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               <h2 className="font-['Outfit',sans-serif] font-bold text-sm sm:text-base text-zinc-900 dark:text-white truncate">
                 {exam.name}
               </h2>
+              {Boolean(isAppOffline() || exam.metadata?.offlineCapped) && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-center gap-1 shrink-0" title="Offline Free/Guest 20-question cap active">
+                  <CloudOff className="w-2.5 h-2.5" />
+                  <span>Offline (Max 20)</span>
+                </span>
+              )}
             </div>
 
             {/* Center Controls: Mode Toggle (1 to 1 vs 6 to 1) & Compact Mode Toggle */}
@@ -583,7 +591,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                     ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 animate-pulse'
                     : timeLeft <= 60
                     ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 animate-pulse'
-                    : 'bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-200 border-white/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[#0f1d33]'
+                    : 'bg-white dark:bg-[000000] text-zinc-700 dark:text-zinc-200 border-white/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[18181b]'
                 }`}
               >
                 {isPaused ? (
@@ -706,7 +714,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             {/* Anti-Peek Paused Overlay (Active only when paused) */}
             {isPaused && (
               <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/40 dark:bg-black/40 backdrop-blur-xs p-6 animate-in fade-in duration-200">
-                <div className="max-w-md w-full p-8 rounded-[28px] bg-white/90 dark:bg-[#0c182b]/90 border border-white/80 dark:border-white/10 shadow-2xl text-center backdrop-blur-xl">
+                <div className="max-w-md w-full p-8 rounded-[28px] bg-white/90 dark:bg-[000000]/90 border border-white/80 dark:border-white/10 shadow-2xl text-center backdrop-blur-xl">
                   <div className="w-16 h-16 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
                     <Pause className="w-8 h-8 fill-current" />
                   </div>
@@ -739,7 +747,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                   type="button"
                   disabled={currentIndex === 0}
                   onClick={handlePrev1to1}
-                  className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
+                  className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[000000] text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-[18181b] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Previous</span>
@@ -772,7 +780,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                   type="button"
                   disabled={batchPage === 0}
                   onClick={handlePrevBatch}
-                  className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-[#0f1d33] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
+                  className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[000000] text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-[18181b] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Prev<span className="hidden sm:inline">ious 6 Questions</span></span>

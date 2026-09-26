@@ -89,12 +89,12 @@ OUTPUT RULES:
       {/* ─────────────────────────────────────────────────────────────
           LAYER 1: TRANSLUCENT CONTAINER (Guide Header Banner)
       ───────────────────────────────────────────────────────────── */}
-      <div className="relative p-6 sm:p-7 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] overflow-hidden">
+      <div className="relative p-6 sm:p-7 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[000000]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] overflow-hidden">
         {/* Subtle Atmospheric Ambient Glow */}
         <div className="absolute -top-24 -right-24 w-80 h-80 bg-zinc-500/5 dark:bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="space-y-3 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 text-xs font-semibold shadow-xs">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 text-xs font-semibold shadow-xs">
             <BookOpen className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
             <span>Quick & Clear Guide</span>
           </div>
@@ -109,7 +109,7 @@ OUTPUT RULES:
           LAYER 1: TRANSLUCENT CONTAINER (3 Ways to Add Questions)
           LAYER 2: PORCELAIN CARDS
       ───────────────────────────────────────────────────────────── */}
-      <div className="relative p-5 sm:p-7 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-4 overflow-hidden">
+      <div className="relative p-5 sm:p-7 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[000000]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-4 overflow-hidden">
         {/* Subtle Atmospheric Ambient Glow */}
         <div className="absolute -top-24 -left-24 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -125,7 +125,7 @@ OUTPUT RULES:
 
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-3.5">
           {/* Way 1: Manually */}
-          <div className="p-4 sm:p-5 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 flex flex-col justify-between space-y-3 shadow-xs">
+          <div className="p-4 sm:p-5 rounded-[24px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 flex flex-col justify-between space-y-3 shadow-xs">
             <div className="space-y-2">
               <div className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-bold text-xs">
                 1
@@ -148,7 +148,7 @@ OUTPUT RULES:
           </div>
 
           {/* Way 2: Copy & Paste from AI */}
-          <div className="p-4 sm:p-5 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 flex flex-col justify-between space-y-3 shadow-xs">
+          <div className="p-4 sm:p-5 rounded-[24px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 flex flex-col justify-between space-y-3 shadow-xs">
             <div className="space-y-2">
               <div className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-bold text-xs">
                 2
@@ -171,7 +171,7 @@ OUTPUT RULES:
           </div>
 
           {/* Way 3: Import from Files */}
-          <div className="p-4 sm:p-5 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 flex flex-col justify-between space-y-3 shadow-xs">
+          <div className="p-4 sm:p-5 rounded-[24px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 flex flex-col justify-between space-y-3 shadow-xs">
             <div className="space-y-2">
               <div className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 flex items-center justify-center font-bold text-xs">
                 3
@@ -196,7 +196,7 @@ OUTPUT RULES:
       </div>
 
       {/* Share Exams with Friends */}
-      <div className="relative p-5 sm:p-6 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden">
+      <div className="relative p-5 sm:p-6 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[000000]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden">
         <div className="flex items-start gap-3.5 relative z-10">
           <div className="w-10 h-10 rounded-2xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold shadow-xs shrink-0 mt-0.5">
             <Share2 className="w-5 h-5 text-white dark:text-zinc-950" />
@@ -222,7 +222,7 @@ OUTPUT RULES:
       </div>
 
       {/* Ready-to-Use AI Prompt */}
-      <div className="relative p-5 sm:p-6 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-3 overflow-hidden">
+      <div className="relative p-5 sm:p-6 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[000000]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-3 overflow-hidden">
         <div className="relative z-10 flex items-center justify-between flex-wrap gap-2">
           <div>
             <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-bold text-xs uppercase tracking-wider">
@@ -244,7 +244,7 @@ OUTPUT RULES:
               setCopiedPrompt(true);
               setTimeout(() => setCopiedPrompt(false), 2000);
             }}
-            className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 border border-white/80 dark:border-white/10 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
+            className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[000000] hover:bg-zinc-50 dark:hover:bg-[18181b] text-zinc-800 dark:text-zinc-200 border border-white/80 dark:border-white/10 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
           >
             {copiedPrompt ? (
               <>
@@ -260,13 +260,13 @@ OUTPUT RULES:
           </button>
         </div>
 
-        <div className="relative z-10 p-4 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 font-mono text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed shadow-xs">
+        <div className="relative z-10 p-4 rounded-[22px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 font-mono text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed shadow-xs">
           {samplePrompt}
         </div>
       </div>
 
       {/* Expandable Math & Science Formulas Area */}
-      <div className="relative rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] overflow-hidden">
+      <div className="relative rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[000000]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] overflow-hidden">
         <button
           type="button"
           onClick={() => setIsMathExpanded((prev) => !prev)}
@@ -321,7 +321,7 @@ OUTPUT RULES:
                     value={formulaInput}
                     onChange={(e) => setFormulaInput(e.target.value)}
                     placeholder="e.g. \frac{a}{b} or x^2"
-                    className="w-full px-3.5 py-2.5 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 font-mono text-xs text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 shadow-xs"
+                    className="w-full px-3.5 py-2.5 rounded-full bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 font-mono text-xs text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 shadow-xs"
                   />
                 </div>
 
@@ -329,7 +329,7 @@ OUTPUT RULES:
                   <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1.5">
                     Instant math appearance:
                   </label>
-                  <div className="min-h-[42px] px-4 py-2.5 rounded-full bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 flex items-center text-sm text-zinc-900 dark:text-white overflow-x-auto shadow-xs">
+                  <div className="min-h-[42px] px-4 py-2.5 rounded-full bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 flex items-center text-sm text-zinc-900 dark:text-white overflow-x-auto shadow-xs">
                     <MathRenderer content={`\\[ ${formulaInput} \\]`} />
                   </div>
                 </div>
@@ -367,7 +367,7 @@ OUTPUT RULES:
       </div>
 
       {/* Bottom Practice Action Banner */}
-      <div className="relative p-5 sm:p-6 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden">
+      <div className="relative p-5 sm:p-6 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[000000]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden">
         <div className="relative z-10">
           <h3 className="text-sm sm:text-base font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
             Ready to start practicing?

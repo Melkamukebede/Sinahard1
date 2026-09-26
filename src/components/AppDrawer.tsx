@@ -190,7 +190,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 <div className="p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
+                      <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-zinc-800 flex items-center justify-center font-bold shadow-2xs">
                         <School className="w-4 h-4 text-black dark:text-white" />
                       </div>
                       <div>
@@ -230,7 +230,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-zinc-800 flex items-center justify-center font-bold shadow-2xs">
                       <Crown className="w-4 h-4 stroke-[2]" />
                     </div>
                     <div>
@@ -261,7 +261,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-zinc-800 flex items-center justify-center font-bold shadow-2xs">
                       <ShieldCheck className="w-4 h-4 text-black dark:text-white" />
                     </div>
                     <div>
@@ -292,7 +292,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-zinc-800 flex items-center justify-center font-bold shadow-2xs">
                       <CloudUpload className="w-4 h-4 text-black dark:text-white" />
                     </div>
                     <div>
@@ -321,7 +321,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="relative w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center shadow-2xs">
+                  <div className="relative w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-zinc-800 flex items-center justify-center shadow-2xs">
                     <Bell className="w-4 h-4" />
                     {unreadAlertsCount > 0 && (
                       <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-zinc-900 dark:bg-white" />

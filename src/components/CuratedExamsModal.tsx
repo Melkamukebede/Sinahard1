@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
   CloudDownload,
-  Check,
   Search,
   BookOpen,
   Clock,
@@ -13,11 +12,12 @@ import {
   ChevronUp,
   Sparkles,
   GraduationCap,
-  SlidersHorizontal,
   CheckCircle2,
   Edit3,
   Filter,
   Layers,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import { Exam, AppUser } from '../types';
 import { CURATED_EXAMS_CATALOG } from '../data/curatedCatalog';
@@ -50,7 +50,6 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
   const isRegistered = Boolean(user?.isRegistered || localStorage.getItem('student_is_registered') === 'true');
 
   // "only display exams based on grades registered by user"
-  // Strictly default to true
   const [onlyShowRegisteredGrade, setOnlyShowRegisteredGrade] = useState<boolean>(true);
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>(registeredGrade);
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>('All');
@@ -143,34 +142,37 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 15 }}
-        className="relative w-full max-w-4xl bg-white/95 dark:bg-[#0c182b] border border-white/80 dark:border-white/10 rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] backdrop-blur-2xl"
+        className="relative w-full max-w-4xl bg-black text-white border border-zinc-800 rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] backdrop-blur-2xl"
       >
+        {/* Top Accent Line */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-zinc-700" />
+
         {/* Header */}
-        <div className="px-6 py-5 border-b border-zinc-100 dark:border-white/10 flex items-start justify-between bg-white/60 dark:bg-white/[0.02]">
+        <div className="px-6 py-4 sm:py-5 border-b border-zinc-800 flex items-center justify-between bg-black">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white flex items-center justify-center shadow-2xs border border-white/80 dark:border-white/10">
-              <CloudDownload className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-2xl bg-white text-black flex items-center justify-center shadow-xs border-2 border-black">
+              <CloudDownload className="w-5 h-5 text-black stroke-[2.5]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white tracking-tight">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base sm:text-lg font-bold font-['Outfit',sans-serif] text-white tracking-tight">
                   Download Official Exams
                 </h2>
-                <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                  Curated Catalog
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-zinc-900 text-white border border-zinc-700">
+                  {catalogExams.length} Available
                 </span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-950 dark:bg-white animate-pulse" />
-                  Live Firestore Synced
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white text-black border border-black shadow-2xs">
+                  <RefreshCw className="w-3 h-3 text-black stroke-[2.5] animate-spin" />
+                  <span>Live Cloud Sync</span>
                 </span>
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Verified curriculum exams ({catalogExams.length} available) with KaTeX math steps and instant real-time synchronization.
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Verified curriculum exams with KaTeX math steps and instant local save.
               </p>
             </div>
           </div>
@@ -178,31 +180,29 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+            className="w-8 h-8 rounded-full bg-white text-black hover:bg-zinc-100 flex items-center justify-center transition cursor-pointer border border-black"
+            aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 text-black stroke-[2.5]" />
           </button>
         </div>
 
         {/* Student Registered Grade Banner & Control */}
-        <div className="px-6 py-3 bg-zinc-50/70 dark:bg-white/[0.02] border-b border-zinc-100 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="px-6 py-3 bg-zinc-950 border-b border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-700">
-              <GraduationCap className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-white text-black flex items-center justify-center shrink-0 border border-black shadow-xs">
+              <GraduationCap className="w-4 h-4 text-black stroke-[2.5]" />
             </div>
             <div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-zinc-900 dark:text-white">
-                <span>Filtering for Registered Level:</span>
-                <span className="px-2 py-0.5 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-semibold text-[11px]">
-                  {registeredGrade === 'Freshman' ? 'University Freshman' : `Grade ${registeredGrade}`}
+              <div className="flex items-center gap-2 text-xs font-semibold text-white flex-wrap">
+                <span>Active Target:</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-white text-black font-bold text-[11px] shadow-xs">
+                  {registeredGrade === 'Freshman' ? 'Univ Freshman' : `Grade ${registeredGrade}`}
                 </span>
-                <span className="text-zinc-500 dark:text-zinc-400 font-normal">
-                  ({registeredStream})
+                <span className="text-[11px] font-medium text-zinc-400">
+                  • {registeredStream} {user?.region ? `(${user.region})` : ''}
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                {user?.schoolName ? `${user.schoolName} • ${user.region}` : isRegistered ? 'Registered Student Profile' : 'Only official exams for your grade are shown'}
-              </p>
             </div>
           </div>
 
@@ -211,38 +211,41 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
             <button
               type="button"
               onClick={() => setOnlyShowRegisteredGrade(!onlyShowRegisteredGrade)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-xs ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-xs border ${
                 onlyShowRegisteredGrade
-                  ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950'
-                  : 'bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-white/60 dark:border-white/10'
+                  ? 'bg-white text-black border-black shadow-xs'
+                  : 'bg-zinc-900 text-zinc-300 border-zinc-700'
               }`}
-              title="Toggle to strictly show only exams for your registered grade or explore all"
             >
-              <Filter className="w-3.5 h-3.5" />
-              <span>{onlyShowRegisteredGrade ? `Only ${registeredGrade === 'Freshman' ? 'Freshman' : `Grade ${registeredGrade}`} (Active)` : 'All Grades View'}</span>
+              <Filter className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+              <span>{onlyShowRegisteredGrade ? `Grade ${registeredGrade} Only` : 'All Grades View'}</span>
             </button>
 
             {/* Change Grade / Register Button */}
             <button
               type="button"
               onClick={openRegistrationModal}
-              className="px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-zinc-800 hover:bg-white dark:hover:bg-zinc-700 border border-white/60 dark:border-white/10 text-zinc-800 dark:text-zinc-200 text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+              className="px-3.5 py-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-xs"
             >
-              <Edit3 className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-              <span>{isRegistered ? 'Edit Grade / Profile' : 'Register Profile'}</span>
+              <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                <Edit3 className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+              </span>
+              <span>{isRegistered ? 'Edit Grade' : 'Register'}</span>
             </button>
           </div>
         </div>
 
         {/* Grade Matching & Quick Filters Bar */}
-        <div className="px-6 py-3.5 bg-zinc-100/60 dark:bg-zinc-800/40 border-b border-zinc-200/80 dark:border-zinc-800 space-y-3">
+        <div className="px-6 py-3 bg-zinc-950 border-b border-zinc-800 space-y-2.5">
           {/* Grade selection row when not restricted to single grade */}
           {!onlyShowRegisteredGrade && (
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                <GraduationCap className="w-4 h-4 text-black dark:text-white" />
-                <span>Select Grade to Browse:</span>
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-zinc-300">
+                <span className="p-1 rounded bg-white text-black flex items-center justify-center">
+                  <GraduationCap className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+                </span>
+                <span>Grade:</span>
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {availableGrades.map((g) => {
                     const isActive = selectedGradeFilter === g;
                     const isStudentPrimary = registeredGrade === g && g !== 'All';
@@ -251,16 +254,16 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                         key={g}
                         type="button"
                         onClick={() => handleGradeFilterClick(g)}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer border ${
                           isActive
-                            ? 'bg-black dark:bg-white text-white dark:text-black shadow-xs'
-                            : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500'
+                            ? 'bg-white text-black border-black shadow-xs'
+                            : 'bg-zinc-900 text-zinc-300 border-zinc-700 hover:border-white'
                         }`}
                       >
                         {g === 'All' ? 'All Grades' : g === 'Freshman' ? 'Freshman' : g === 'Senior University' ? 'Univ Senior' : `Grade ${g}`}
                         {isStudentPrimary && (
-                          <span className="ml-1.5 text-[9px] px-1 py-0.2 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-extrabold">
-                            Registered
+                          <span className="ml-1.5 text-[9px] px-1 py-0.2 rounded-full bg-black text-white font-extrabold border border-zinc-600">
+                            Active
                           </span>
                         )}
                       </button>
@@ -269,8 +272,8 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                 </div>
               </div>
 
-              <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
-                Showing <strong className="text-zinc-800 dark:text-zinc-200">{filteredExams.length}</strong> official exams
+              <div className="text-[11px] text-zinc-400 font-medium">
+                <strong className="text-white">{filteredExams.length}</strong> official exams
               </div>
             </div>
           )}
@@ -278,13 +281,15 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
           {/* Search + Subject chips */}
           <div className="flex flex-col sm:flex-row items-center gap-2.5">
             <div className="relative w-full sm:w-64">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <span className="p-0.5 rounded bg-white text-black absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                <Search className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+              </span>
               <input
                 type="text"
-                placeholder="Search subject or unit..."
+                placeholder="Search subject, unit, exam..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-500 text-zinc-900 dark:text-white placeholder:text-zinc-400"
+                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-zinc-950 border border-zinc-700 focus:outline-none focus:border-white text-white placeholder:text-zinc-500 font-medium"
               />
             </div>
 
@@ -297,10 +302,10 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                     key={sub}
                     type="button"
                     onClick={() => setSelectedSubjectFilter(sub)}
-                    className={`whitespace-nowrap px-2.5 py-1 text-[11px] font-medium rounded-lg transition cursor-pointer ${
+                    className={`whitespace-nowrap px-2.5 py-1 text-[11px] rounded-lg transition cursor-pointer border ${
                       isSelected
-                        ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold'
-                        : 'bg-white/80 dark:bg-zinc-900/80 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/80 hover:bg-zinc-200/50'
+                        ? 'bg-white text-black font-bold border-black shadow-xs'
+                        : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:bg-zinc-800 font-medium'
                     }`}
                   >
                     {sub}
@@ -312,30 +317,32 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
         </div>
 
         {/* Catalog Exams Scrollable List */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3.5 bg-black">
           {filteredExams.length === 0 ? (
             <div className="text-center py-12">
-              <BookOpen className="w-10 h-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                No official exams found for Grade {registeredGrade}
+              <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center mx-auto mb-3 border border-black">
+                <BookOpen className="w-6 h-6 text-black stroke-[2.5]" />
+              </div>
+              <p className="text-sm font-bold text-white">
+                No exams found for Grade {registeredGrade}
               </p>
-              <p className="text-xs text-zinc-500 mt-1">
-                You can browse all grades or update your student grade in registration.
+              <p className="text-xs text-zinc-400 mt-1">
+                Explore all grades or update your student grade profile.
               </p>
-              <div className="mt-3 flex items-center justify-center gap-2">
+              <div className="mt-3.5 flex items-center justify-center gap-2">
                 <button
                   type="button"
                   onClick={() => setOnlyShowRegisteredGrade(false)}
-                  className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 cursor-pointer"
+                  className="px-4 py-1.5 text-xs font-bold rounded-xl bg-zinc-900 text-white hover:bg-zinc-800 cursor-pointer border border-zinc-700"
                 >
-                  Browse All Grades
+                  All Grades
                 </button>
                 <button
                   type="button"
                   onClick={openRegistrationModal}
-                  className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 cursor-pointer font-bold"
+                  className="px-4 py-1.5 text-xs font-bold rounded-xl bg-white text-black hover:bg-zinc-100 cursor-pointer shadow-xs border border-black"
                 >
-                  Change Registered Grade
+                  Change Grade
                 </button>
               </div>
             </div>
@@ -349,75 +356,85 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
               return (
                 <div
                   key={exam.id}
-                  className="rounded-[24px] border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] p-4 sm:p-5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-xs"
+                  className="rounded-[22px] border border-zinc-800 bg-zinc-950 p-4 sm:p-5 hover:border-zinc-600 transition-all shadow-xs"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div className="space-y-1.5 flex-1">
                       {/* Tags */}
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white border border-zinc-200/80 dark:border-white/10">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-black border border-black">
                           {exam.subject}
                         </span>
                         {exam.grade && (
-                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-black dark:bg-white text-white dark:text-black">
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-zinc-900 text-white border border-zinc-700">
                             {exam.grade === 'Senior University' ? 'Univ Senior' : exam.grade === 'Freshman' ? 'Freshman' : `Grade ${exam.grade}`}
                           </span>
                         )}
                         {matchesStream && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30">
-                            Matches {registeredStream}
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-900 text-white border border-zinc-700">
+                            {registeredStream}
                           </span>
                         )}
                         {exam.difficulty && (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-900 text-white border border-zinc-700">
                             {exam.difficulty}
                           </span>
                         )}
                         {exam.isUploadedToCloud && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white border border-zinc-200/80 dark:border-white/10">
-                            <span className="w-1.5 h-1.5 rounded-full bg-zinc-900 dark:bg-white animate-pulse" />
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-black border border-black">
+                            <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
                             Official Cloud
                           </span>
                         )}
                         {exam.adminTag && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-900 text-white border border-zinc-700">
                             {exam.adminTag}
                           </span>
                         )}
                         {exam.rating && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-amber-500 ml-1">
-                            <Star className="w-3 h-3 fill-current" />
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-white ml-1">
+                            <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                              <Star className="w-2.5 h-2.5 text-black stroke-[2.5] fill-black" />
+                            </span>
                             {exam.rating.toFixed(1)}
                           </span>
                         )}
                       </div>
 
                       {/* Title */}
-                      <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white leading-snug">
+                      <h3 className="text-sm sm:text-base font-bold text-white leading-snug">
                         {exam.title}
                       </h3>
 
-                      {/* Topic or focus area */}
+                      {/* Topic */}
                       {(exam.topic || (exam.metadata && (exam.metadata as any).topic)) && (
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                          <Layers className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                        <p className="text-xs text-zinc-300 flex items-center gap-1.5 font-medium">
+                          <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                            <Layers className="w-3 h-3 text-black stroke-[2.5] shrink-0" />
+                          </span>
                           <span>{exam.topic || (exam.metadata && (exam.metadata as any).topic)}</span>
                         </p>
                       )}
 
                       {/* Meta stats */}
-                      <div className="flex items-center gap-4 text-xs text-zinc-500 pt-1">
-                        <span className="flex items-center gap-1">
-                          <HelpCircle className="w-3.5 h-3.5 text-zinc-400" />
+                      <div className="flex items-center gap-4 text-xs text-zinc-400 pt-0.5">
+                        <span className="flex items-center gap-1.5">
+                          <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                            <HelpCircle className="w-3 h-3 text-black stroke-[2.5]" />
+                          </span>
                           {exam.questions.length} Questions
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                        <span className="flex items-center gap-1.5">
+                          <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                            <Clock className="w-3 h-3 text-black stroke-[2.5]" />
+                          </span>
                           {exam.timeLimit} Mins
                         </span>
                         {exam.stream && (
-                          <span className="flex items-center gap-1">
-                            <Layers className="w-3.5 h-3.5 text-zinc-400" />
+                          <span className="flex items-center gap-1.5">
+                            <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                              <Layers className="w-3 h-3 text-black stroke-[2.5]" />
+                            </span>
                             {exam.stream}
                           </span>
                         )}
@@ -425,10 +442,12 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                     </div>
 
                     {/* Download & Preview Actions */}
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800">
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-800 shrink-0">
                       {isDownloaded ? (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white text-xs font-semibold border border-zinc-200/80 dark:border-white/10">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 text-white text-xs font-bold border border-zinc-700 shadow-2xs">
+                          <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+                          </span>
                           <span>In Your Exams</span>
                         </div>
                       ) : (
@@ -436,16 +455,16 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                           type="button"
                           disabled={isDownloading}
                           onClick={() => handleDownloadClick(exam)}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold shadow-xs transition cursor-pointer active:scale-98 disabled:opacity-50"
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black hover:bg-zinc-100 text-xs font-extrabold shadow-[0_3px_0_#000000] border-2 border-black transition cursor-pointer active:scale-98 disabled:opacity-50"
                         >
                           {isDownloading ? (
                             <>
-                              <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              <Loader2 className="w-4 h-4 text-black animate-spin stroke-[2.5]" />
                               <span>Saving...</span>
                             </>
                           ) : (
                             <>
-                              <CloudDownload className="w-3.5 h-3.5" />
+                              <CloudDownload className="w-3.5 h-3.5 text-black stroke-[2.5]" />
                               <span>Download Exam</span>
                             </>
                           )}
@@ -456,10 +475,12 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setPreviewExamId(isPreviewing ? null : exam.id)}
-                        className="text-[11px] text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 cursor-pointer transition"
+                        className="text-[11px] font-bold text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer transition"
                       >
-                        <span>{isPreviewing ? 'Hide sample' : 'Inspect sample Q'}</span>
-                        {isPreviewing ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        <span>{isPreviewing ? 'Hide Sample' : 'Sample Q'}</span>
+                        <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                          {isPreviewing ? <ChevronUp className="w-3 h-3 text-black stroke-[2.5]" /> : <ChevronDown className="w-3 h-3 text-black stroke-[2.5]" />}
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -471,22 +492,24 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="mt-3.5 pt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2 overflow-hidden"
+                        className="mt-3 pt-3 border-t border-zinc-800 space-y-2 overflow-hidden"
                       >
-                        <div className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-black dark:text-white" />
-                          Sample Question Preview (Q1 of {exam.questions.length})
+                        <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                            <Sparkles className="w-3 h-3 text-black stroke-[2.5]" />
+                          </span>
+                          Sample Preview (Q1 of {exam.questions.length})
                         </div>
-                        <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-zinc-700/80 text-xs">
-                          <MathRenderer text={exam.questions[0].text} className="font-medium text-zinc-900 dark:text-zinc-100" />
+                        <div className="p-3 rounded-xl bg-black border border-zinc-800 text-xs">
+                          <MathRenderer text={exam.questions[0].text} className="font-semibold text-white" />
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
                             {exam.questions[0].options.map((opt, optIdx) => (
                               <div
                                 key={optIdx}
-                                className={`px-2.5 py-1 rounded-lg text-[11px] border ${
+                                className={`px-2.5 py-1 rounded-lg text-[11px] border font-medium ${
                                   optIdx === exam.questions[0].correct
-                                    ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
-                                    : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'
+                                    ? 'bg-white text-black border-black font-bold'
+                                    : 'bg-zinc-900 border-zinc-800 text-zinc-300'
                                 }`}
                               >
                                 <MathRenderer text={opt} />
@@ -494,8 +517,8 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
                             ))}
                           </div>
                           {exam.questions[0].explanation && (
-                            <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 italic">
-                              <strong>Step-by-step: </strong>
+                            <div className="mt-2 text-[11px] text-zinc-400 italic">
+                              <strong className="text-white">Step-by-step: </strong>
                               <MathRenderer text={exam.questions[0].explanation} />
                             </div>
                           )}
@@ -510,12 +533,12 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/80 flex items-center justify-between text-xs text-zinc-500">
-          <span>Downloaded exams remain available offline in your local repository.</span>
+        <div className="px-6 py-3.5 border-t border-zinc-800 bg-black flex items-center justify-between text-xs text-zinc-400">
+          <span className="font-medium">Offline ready. Saved exams sync to your local repository.</span>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-bold text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
+            className="px-4 py-1.5 rounded-xl bg-white text-black hover:bg-zinc-100 font-bold transition cursor-pointer border border-black shadow-[0_2px_0_#000000]"
           >
             Close
           </button>
@@ -524,3 +547,4 @@ export const CuratedExamsModal: React.FC<CuratedExamsModalProps> = ({
     </div>
   );
 };
+
