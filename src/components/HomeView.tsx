@@ -35,6 +35,7 @@ import { PageTab } from './Navbar';
 import { isUserSubscriptionActive, isUserTeacher } from '../services/db';
 import { UserTierStatus } from '../services/subscriptionLimits';
 import { SinahardLogo } from './SinahardLogo';
+import { prefetchCreateWizard, prefetchPracticeModal } from '../services/prefetch';
 
 export interface HomeViewProps {
   exams: Exam[];
@@ -351,6 +352,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   </button>
                   <button
                     type="button"
+                    onMouseEnter={prefetchCreateWizard}
+                    onTouchStart={prefetchCreateWizard}
                     onClick={() => onNavigate('create')}
                     className="px-5 py-2.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-xs font-bold transition cursor-pointer flex items-center gap-2"
                   >
@@ -374,6 +377,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   <button
                     id="teacher-create-class-exam-btn"
                     type="button"
+                    onMouseEnter={prefetchCreateWizard}
+                    onTouchStart={prefetchCreateWizard}
                     onClick={() => onNavigate('create')}
                     className="px-5 py-2.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-xs font-bold transition cursor-pointer flex items-center gap-2 shadow-xs active:scale-98"
                   >
@@ -582,6 +587,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </p>
                 <button
                   type="button"
+                  onMouseEnter={prefetchCreateWizard}
+                  onTouchStart={prefetchCreateWizard}
                   onClick={() => onNavigate('create')}
                   className="px-6 py-2.5 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-xs font-bold cursor-pointer inline-flex items-center gap-2 shadow-xs transition active:scale-98"
                 >
@@ -662,6 +669,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                           {/* Test Run Practice Button */}
                           <button
                             type="button"
+                            onMouseEnter={prefetchPracticeModal}
+                            onTouchStart={prefetchPracticeModal}
                             onClick={() => onStartPractice(exam)}
                             className="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5 active:scale-95"
                             title="Test-run this exam"

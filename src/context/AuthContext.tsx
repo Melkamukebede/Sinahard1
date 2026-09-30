@@ -325,6 +325,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     setPopupBlocked(false);
 
+    const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
+
+    if (isInIframe) {
+      // Running inside embedded iframe preview:
+      // Browsers block cross-origin postMessage between 3rd-party authDomain and iframes.
+      // We open a same-origin top-level bridge window (?auth_popup=1).
+      // The bridge window is top-level, so Google Auth succeeds cleanly, then notifies us and closes itself.
+      return new Promise<boolean>((resolve) => {
+        let channel: BroadcastChannel | null = null;
+        try {
+          channel = new BroadcastChannel('sinahard_auth_channel');
+        } catch {
+          // ignore
+        }
+
+        const width = 500;
+        const height = 650;
+        const left = window.screenX + Math.max(0, (window.outerWidth - width) / 2);
+        const top = window.screenY + Math.max(0, (window.outerHeight - height) / 2);
+        const bridgeUrl = `${window.location.origin}${window.location.pathname}?auth_popup=1`;
+
+        let authWindow: Window | null = null;
+        try {
+          authWindow = window.open(
+            bridgeUrl,
+            'SinahardGoogleAuth',
+            `width=${width},height=${height},left=${left},top=${top},status=no,menubar=no,toolbar=no`
+          );
+        } catch {
+          authWindow = null;
+        }
+
+        if (!authWindow || authWindow.closed || typeof authWindow.closed === 'undefined') {
+          setPopupBlocked(true);
+          isSigningInRef.current = false;
+          setIsSigningIn(false);
+          resolve(false);
+          return;
+        }
+
+        let resolved = false;
+        const finish = (success: boolean) => {
+          if (resolved) return;
+          resolved = true;
+          clearInterval(checkClosedInterval);
+          window.removeEventListener('message', messageListener);
+          if (channel) channel.close();
+          isSigningInRef.current = false;
+          setIsSigningIn(false);
+          setPopupBlocked(false);
+          resolve(success);
+        };
+
+        const messageListener = (event: MessageEvent) => {
+          if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
+            finish(true);
+          }
+        };
+        window.addEventListener('message', messageListener);
+
+        if (channel) {
+          channel.onmessage = (event) => {
+            if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
+              finish(true);
+            }
+          };
+        }
+
+        const checkClosedInterval = setInterval(() => {
+          if (authWindow && authWindow.closed) {
+            setTimeout(() => {
+              if (auth.currentUser) {
+                finish(true);
+              } else {
+                finish(false);
+              }
+            }, 300);
+          }
+        }, 500);
+      });
+    }
+
+    // Top-level tab: standard direct signInWithPopup
     try {
       await signInWithPopup(auth, googleProvider);
       return true;

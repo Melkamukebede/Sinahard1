@@ -36,6 +36,7 @@ import { MathRenderer } from './MathRenderer';
 import { UserTierStatus } from '../services/subscriptionLimits';
 import { SinahardLogo } from './SinahardLogo';
 import { isAppOffline, subscribeToNetworkState, OFFLINE_FREE_GUEST_LIMITS } from '../firebase';
+import { prefetchProfessorModal } from '../services/prefetch';
 
 interface CreateExamWizardProps {
   initialExam?: Exam | null;
@@ -1011,10 +1012,12 @@ Time Limit: 25 minutes
               </div>
               <button
                 type="button"
+                onMouseEnter={prefetchProfessorModal}
+                onTouchStart={prefetchProfessorModal}
                 onClick={onOpenProfessorModal}
-                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white hover:bg-zinc-50 text-black font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer shrink-0 border-2 border-black shadow-[0_3px_0_#000000] hover:shadow-[0_4px_0_#000000] active:translate-y-[2px] active:shadow-none"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shrink-0 shadow-xs active:scale-98"
               >
-                <Sparkles className="w-4 h-4 text-black stroke-[2.5]" />
+                <Sparkles className="w-4 h-4 stroke-[2.5]" />
                 <span>Prompts Page</span>
               </button>
             </div>

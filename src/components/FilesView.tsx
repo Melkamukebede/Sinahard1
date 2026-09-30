@@ -31,6 +31,7 @@ import {
 import { Exam, AppUser } from '../types';
 import { ShareExamModal } from './ShareExamModal';
 import { isUserTeacher } from '../services/db';
+import { prefetchPracticeModal, prefetchCreateWizard } from '../services/prefetch';
 
 interface FilesViewProps {
   exams: Exam[];
@@ -964,6 +965,8 @@ export const FilesView: React.FC<FilesViewProps> = ({
                           {/* Practice Button */}
                           <button
                             type="button"
+                            onMouseEnter={prefetchPracticeModal}
+                            onTouchStart={prefetchPracticeModal}
                             onClick={(e) => {
                               e.stopPropagation();
                               onStartPractice(exam);
@@ -1128,6 +1131,8 @@ export const FilesView: React.FC<FilesViewProps> = ({
                           {/* Button 1: Practice */}
                           <button
                             type="button"
+                            onMouseEnter={prefetchPracticeModal}
+                            onTouchStart={prefetchPracticeModal}
                             onClick={() => onStartPractice(exam)}
                             className="py-1 px-2.5 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-semibold text-[11px] inline-flex items-center justify-center gap-1 transition hover:opacity-90 active:scale-95 cursor-pointer shadow-xs"
                             title="Start Timed Practice"

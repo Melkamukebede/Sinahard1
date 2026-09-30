@@ -10,6 +10,7 @@ import { PageTab } from './Navbar';
 import { useNotifications } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { isUserTeacher } from '../services/db';
+import { prefetchCreateWizard } from '../services/prefetch';
 
 interface MobileNavProps {
   activeTab: PageTab;
@@ -111,6 +112,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         {/* Create */}
         <button
           type="button"
+          onMouseEnter={prefetchCreateWizard}
+          onTouchStart={prefetchCreateWizard}
           onClick={() => onTabChange('create')}
           className={`flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-2 rounded-2xl transition-all cursor-pointer active:scale-95 touch-manipulation ${
             activeTab === 'create'

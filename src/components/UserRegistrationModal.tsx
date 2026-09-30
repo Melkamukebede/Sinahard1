@@ -24,6 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import { AppUser, UserRole } from '../types';
 import { AppCoin } from './AppCoin';
 import { getUserCoins } from '../services/coinService';
+import { auth } from '../firebase';
 
 export interface UserRegistrationModalProps {
   isOpen: boolean;
@@ -308,18 +309,24 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
 
   const handleGoogleConnect = async () => {
     const success = await signInWithGoogle();
-    if (success && firebaseUser) {
-      if (firebaseUser.displayName && !displayName) {
-        setDisplayName(firebaseUser.displayName);
-      }
-      if (firebaseUser.displayName && !teacherName) {
-        setTeacherName(firebaseUser.displayName);
+    if (success) {
+      const currentUser = auth.currentUser;
+      if (currentUser?.displayName) {
+        if (!displayName || displayName === 'Student') {
+          setDisplayName(currentUser.displayName);
+        }
+        if (!teacherName || teacherName === 'Teacher') {
+          setTeacherName(currentUser.displayName);
+        }
       }
     }
     return success;
   };
 
-  const isGoogleLinked = Boolean(firebaseUser && user?.uid !== 'guest' && !user?.isAnonymous);
+  const isGoogleLinked = Boolean(
+    (firebaseUser && user?.uid !== 'guest' && !user?.isAnonymous) ||
+    (auth.currentUser && !auth.currentUser.isAnonymous)
+  );
 
   const executeSave = async (profileData: Partial<AppUser>) => {
     setIsSubmitting(true);
@@ -386,16 +393,6 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
       isRegistered: true,
       registeredAt: user?.registeredAt || new Date().toISOString(),
     };
-
-    // If not signed in and not forcing local guest save, prompt sign in first
-    if (!isGoogleLinked && !forceLocal) {
-      setIsSubmitting(true);
-      const signedIn = await handleGoogleConnect();
-      if (!signedIn) {
-        setIsSubmitting(false);
-        return;
-      }
-    }
 
     await executeSave(profileData);
   };
@@ -543,14 +540,14 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
           )}
 
           {popupBlocked && (
-            <div className="px-3.5 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between gap-2">
-              <span>Google popup was blocked by browser.</span>
+            <div className="px-3.5 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 flex items-center justify-between gap-2">
+              <span>Popups restricted by browser. You can complete profile directly below or open in tab.</span>
               <button
                 type="button"
                 onClick={() => window.open(window.location.href, '_blank')}
-                className="font-bold underline flex items-center gap-1 cursor-pointer"
+                className="font-bold underline flex items-center gap-1 cursor-pointer text-zinc-900 dark:text-white shrink-0"
               >
-                Open in tab <ExternalLink className="w-3 h-3 text-black dark:text-white" />
+                Open tab <ExternalLink className="w-3 h-3 text-zinc-900 dark:text-white" />
               </button>
             </div>
           )}

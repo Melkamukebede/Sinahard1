@@ -1,11 +1,8 @@
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { Navbar, PageTab } from './components/Navbar';
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
-
-// Dynamically import your views
-const HomeView = lazy(() => import('./components/HomeView').then(module => ({ default: module.HomeView })));
-const FilesView = lazy(() => import('./components/FilesView').then(module => ({ default: module.FilesView })));
-const ResultsView = lazy(() => import('./components/ResultsView').then(module => ({ default: module.ResultsView })));
+import { Navbar, PageTab } from './components/Navbar';
+import { HomeView } from './components/HomeView';
+import { FilesView } from './components/FilesView';
+import { ResultsView } from './components/ResultsView';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { AppDrawer } from './components/AppDrawer';
 import { MobileNav } from './components/MobileNav';
@@ -52,6 +49,14 @@ import {
   enforceOfflineExamPractice,
   enforceOfflineQuestionImport,
 } from './firebase';
+import {
+  warmUpAppModules,
+  prefetchCreateWizard,
+  prefetchPracticeModal,
+  prefetchPasteModal,
+  prefetchProfessorModal,
+  prefetchCuratedModal,
+} from './services/prefetch';
 
 // Code-split heavy modals and secondary views for fast initial load
 const CreateExamWizard = React.lazy(() =>
@@ -89,6 +94,51 @@ const UserRegistrationModal = React.lazy(() =>
 );
 import { TeacherPendingVerificationView } from './components/TeacherPendingVerificationView';
 import { AppSplashScreen } from './components/AppSplashScreen';
+import { AuthPopupBridge } from './components/AuthPopupBridge';
+
+// Instant Skeleton UI for CreateExamWizard while dynamic module is hydrating
+const CreateExamSkeleton: React.FC = () => (
+  <div className="max-w-4xl mx-auto space-y-6 p-4 sm:p-6 animate-pulse">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="space-y-2">
+        <div className="h-7 w-48 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+        <div className="h-4 w-64 bg-zinc-100 dark:bg-zinc-800/60 rounded-lg" />
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-9 w-20 bg-zinc-100 dark:bg-zinc-800 rounded-xl" />
+        <div className="h-9 w-28 bg-zinc-200 dark:bg-zinc-700 rounded-xl" />
+      </div>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="h-28 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200/60 dark:border-zinc-800" />
+      <div className="h-28 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200/60 dark:border-zinc-800" />
+    </div>
+    <div className="h-64 bg-zinc-100 dark:bg-zinc-800/40 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 flex flex-col items-center justify-center gap-3">
+      <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+      <span className="text-xs font-medium text-zinc-500">Preparing Create Exam Studio...</span>
+    </div>
+  </div>
+);
+
+// Instant Modal Backdrop and Shell for PracticeModal so user sees immediate feedback
+const PracticeModalLoadingFallback: React.FC<{ examName?: string }> = ({ examName }) => (
+  <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center">
+      <div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4 text-zinc-900 dark:text-white">
+        <Loader2 className="w-7 h-7 animate-spin" />
+      </div>
+      <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-1">
+        Launching Practice Session
+      </h3>
+      <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1 mb-3 font-medium">
+        {examName || 'Loading questions...'}
+      </p>
+      <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+        <div className="bg-zinc-900 dark:bg-white h-full w-2/3 rounded-full animate-pulse" />
+      </div>
+    </div>
+  </div>
+);
 
 function MainApp() {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
@@ -140,6 +190,11 @@ function MainApp() {
     return subscribeToNetworkState((offline) => {
       setIsOffline(offline);
     });
+  }, []);
+
+  // Warm up dynamic chunks in the background so clicks to Create, Practice, and modals are 0ms instant
+  useEffect(() => {
+    warmUpAppModules();
   }, []);
 
   // Modals
@@ -601,67 +656,61 @@ function MainApp() {
     {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-24 md:pb-8">
         {activeTab === 'home' && (
-          <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
-            <HomeView
-              exams={exams}
-              results={results}
-              onNavigate={(tab) => {
-                if (tab !== 'create') {
-                  setEditingExam(null);
-                  setCreateExamInitialMode('select');
-                }
-                setActiveTab(tab);
-              }}
-              onStartPractice={handleStartPractice}
-              onOpenPasteModal={handleOpenQuestionTextEditor}
-              onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
-              onOpenSubscriptionModal={isTeacher ? undefined : () => setIsSubscriptionModalOpen(true)}
-              onOpenCuratedModal={() => setIsCuratedModalOpen(true)}
-              onOpenRegistrationModal={openRegistrationModal}
-              activeSubscription={activeSubscription}
-              userTier={userTier}
-              user={user}
-              isAdmin={isAdmin}
-              onOpenDatabaseUpload={(isAdmin || isTeacher) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
-              onEditExam={handleEditExam}
-              onDeleteExam={(id) => setExamToDelete(id)}
-            />
-          </Suspense>
+          <HomeView
+            exams={exams}
+            results={results}
+            onNavigate={(tab) => {
+              if (tab !== 'create') {
+                setEditingExam(null);
+                setCreateExamInitialMode('select');
+              }
+              setActiveTab(tab);
+            }}
+            onStartPractice={handleStartPractice}
+            onOpenPasteModal={handleOpenQuestionTextEditor}
+            onOpenProfessorModal={() => setIsProfessorModalOpen(true)}
+            onOpenSubscriptionModal={isTeacher ? undefined : () => setIsSubscriptionModalOpen(true)}
+            onOpenCuratedModal={() => setIsCuratedModalOpen(true)}
+            onOpenRegistrationModal={openRegistrationModal}
+            activeSubscription={activeSubscription}
+            userTier={userTier}
+            user={user}
+            isAdmin={isAdmin}
+            onOpenDatabaseUpload={(isAdmin || isTeacher) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
+            onEditExam={handleEditExam}
+            onDeleteExam={(id) => setExamToDelete(id)}
+          />
         )}
 
         {activeTab === 'files' && (
-          <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
-            <FilesView
-              exams={exams}
-              onStartPractice={handleStartPractice}
-              onEditExam={handleEditExam}
-              onDeleteExam={(id) => setExamToDelete(id)}
-              onCreateNew={() => {
-                setEditingExam(null);
-                setCreateExamInitialMode('select');
-                setActiveTab('create');
-              }}
-              onOpenCuratedCatalogModal={() => setIsCuratedModalOpen(true)}
-              onOpenDatabaseUpload={(isAdmin || isTeacher) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
-              isAdmin={isAdmin}
-              user={user}
-            />
-          </Suspense>
+          <FilesView
+            exams={exams}
+            onStartPractice={handleStartPractice}
+            onEditExam={handleEditExam}
+            onDeleteExam={(id) => setExamToDelete(id)}
+            onCreateNew={() => {
+              setEditingExam(null);
+              setCreateExamInitialMode('select');
+              setActiveTab('create');
+            }}
+            onOpenCuratedCatalogModal={() => setIsCuratedModalOpen(true)}
+            onOpenDatabaseUpload={(isAdmin || isTeacher) ? (exam) => setExamForDatabaseUpload(exam) : undefined}
+            isAdmin={isAdmin}
+            user={user}
+          />
         )}
 
         {activeTab === 'results' && !isTeacher && (
-          <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
-            <ResultsView
-              results={results}
-              onDeleteResult={handleDeleteResult}
-              onClearAllResults={handleClearAllResults}
-              onNavigateToFiles={() => setActiveTab('files')}
-            />
-          </Suspense>
+          <ResultsView
+            results={results}
+            onDeleteResult={handleDeleteResult}
+            onClearAllResults={handleClearAllResults}
+            onNavigateToFiles={() => setActiveTab('files')}
+          />
         )}
 
         {activeTab === 'create' && (
-          <Suspense fallback={null}>
+          <Suspense fallback={<CreateExamSkeleton />}>
             <CreateExamWizard
               key={editingExam ? `edit_${editingExam.id}` : `new_${createExamInitialMode}`}
               initialExam={editingExam}
@@ -770,12 +819,14 @@ function MainApp() {
       <Suspense fallback={null}>
         {/* Practice Modal */}
         {activePracticeExam && (
-          <PracticeModal
-            exam={activePracticeExam}
-            isOpen={activePracticeExam !== null}
-            onClose={() => setActivePracticeExam(null)}
-            onSubmitResult={handleSubmitResult}
-          />
+          <Suspense fallback={<PracticeModalLoadingFallback examName={activePracticeExam.name} />}>
+            <PracticeModal
+              exam={activePracticeExam}
+              isOpen={activePracticeExam !== null}
+              onClose={() => setActivePracticeExam(null)}
+              onSubmitResult={handleSubmitResult}
+            />
+          </Suspense>
         )}
 
         {/* Paste JSON / Plain Text Modal */}
@@ -817,6 +868,7 @@ function MainApp() {
             user={user}
             officialExams={officialExams}
             onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+            onStartPractice={handleStartPractice}
           />
         )}
 
@@ -947,6 +999,12 @@ function MainApp() {
 }
 
 export default function App() {
+  const isAuthPopup = typeof window !== 'undefined' && window.location.search.includes('auth_popup=1');
+
+  if (isAuthPopup) {
+    return <AuthPopupBridge />;
+  }
+
   return (
     <ThemeProvider>
       <AuthProvider>

@@ -30,6 +30,7 @@ import { SinahardLogo } from './SinahardLogo';
 import { AppCoin } from './AppCoin';
 import { getUserCoins } from '../services/coinService';
 import { isAppOffline, subscribeToNetworkState } from '../firebase';
+import { prefetchCreateWizard } from '../services/prefetch';
 
 export type PageTab = 'home' | 'files' | 'results' | 'create' | 'manual' | 'admin-subs';
 
@@ -213,6 +214,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             id="nav-tab-create"
             type="button"
+            onMouseEnter={prefetchCreateWizard}
+            onTouchStart={prefetchCreateWizard}
             onClick={() => onTabChange('create')}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold transition cursor-pointer active:scale-98 ${
               activeTab === 'create'
