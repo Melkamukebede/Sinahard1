@@ -6,6 +6,7 @@ import { ResultsView } from './components/ResultsView';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { AppDrawer } from './components/AppDrawer';
 import { MobileNav } from './components/MobileNav';
+import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { CURATED_EXAMS_CATALOG } from './data/curatedCatalog';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -669,6 +670,7 @@ function MainApp() {
 
     {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-24 md:pb-8">
+        <PWAInstallBanner />
         {activeTab === 'home' && (
           <HomeView
             exams={exams}

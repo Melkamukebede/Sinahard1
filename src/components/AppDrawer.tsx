@@ -19,9 +19,12 @@ import {
   School,
   CheckCircle2,
   Clock,
+  Smartphone,
+  Download,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 import { UserSubscription } from '../types';
 import { isUserAdmin, isUserTeacher } from '../services/db';
 import { SinahardLogo } from './SinahardLogo';
@@ -50,6 +53,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
 }) => {
   const { user, signOut } = useAuth();
   const { unreadAlertsCount, completedToday, dailyGoal, studyStreakDays } = useNotifications();
+  const { isInstalled, installApp } = usePWAInstall();
   const [copiedPhone, setCopiedPhone] = React.useState(false);
 
   const handleCopyPhone = (e: React.MouseEvent) => {
@@ -341,6 +345,37 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 </div>
                 <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-transform" />
               </button>
+
+              {/* Install Mobile App (PWA) Button */}
+              {!isInstalled && (
+                <button
+                  id="drawer-install-app-btn"
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    installApp();
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-gradient-to-r from-sky-500/10 via-blue-600/10 to-emerald-500/10 hover:from-sky-500/15 hover:to-emerald-500/15 border border-sky-500/30 text-left shadow-xs active:scale-98 transition cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold shadow-2xs">
+                      <Smartphone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                        <span>Install Mobile App</span>
+                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-700 dark:text-sky-300">
+                          Offline App
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                        Add to Home Screen for fullscreen & offline exams
+                      </div>
+                    </div>
+                  </div>
+                  <Download className="w-4 h-4 text-sky-600 dark:text-sky-400 group-hover:translate-y-0.5 transition-transform" />
+                </button>
+              )}
             </div>
 
             {/* Contact Us & Community Support */}
