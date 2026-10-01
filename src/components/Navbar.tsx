@@ -135,7 +135,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     e.stopPropagation();
                     openRegistrationModal();
                   }}
-                  className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 ml-1.5 cursor-pointer hover:border-zinc-400 transition"
+                  className="hidden sm:inline-flex text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 ml-1.5 cursor-pointer hover:border-zinc-400 transition"
                   title="Guest Mode (0 Coins) - Register to get 1 Free Coin"
                 >
                   Guest
@@ -146,7 +146,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     e.stopPropagation();
                     onOpenSubscriptionModal?.();
                   }}
-                  className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 ml-1.5 flex items-center gap-1 cursor-pointer hover:bg-amber-500/25 transition shadow-2xs"
+                  className="hidden sm:inline-flex text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 ml-1.5 items-center gap-1 cursor-pointer hover:bg-amber-500/25 transition shadow-2xs"
                   title="Pro Scholar Plan Active"
                 >
                   <Sparkles className="w-2.5 h-2.5 text-amber-500" />
@@ -158,7 +158,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     e.stopPropagation();
                     onOpenSubscriptionModal?.();
                   }}
-                  className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 ml-1.5 cursor-pointer hover:bg-sky-500/25 transition shadow-2xs"
+                  className="hidden sm:inline-flex text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 ml-1.5 cursor-pointer hover:bg-sky-500/25 transition shadow-2xs"
                   title="Free Registered Tier"
                 >
                   Free
@@ -246,40 +246,40 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Right side controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Light / Dark Mode Toggle Button */}
           <button
             id="theme-toggle-btn"
             type="button"
             onClick={toggleTheme}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-100 border border-white/80 dark:border-white/10 transition cursor-pointer shadow-xs active:scale-98"
+            className="flex items-center justify-center w-8 h-8 sm:w-auto sm:px-3 sm:py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-100 border border-white/80 dark:border-white/10 transition cursor-pointer shadow-xs active:scale-98 shrink-0"
             title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             aria-label="Toggle theme"
           >
             {isDark ? (
               <>
                 <Sun className="w-3.5 h-3.5 text-zinc-200" />
-                <span className="hidden sm:inline">Light</span>
+                <span className="hidden sm:inline ml-1.5">Light</span>
               </>
             ) : (
               <>
                 <Moon className="w-3.5 h-3.5 text-zinc-700" />
-                <span className="hidden sm:inline">Dark</span>
+                <span className="hidden sm:inline ml-1.5">Dark</span>
               </>
             )}
           </button>
 
-          {/* Drawer Menu Button */}
+          {/* Drawer Menu Button (Desktop Only: Mobile uses bottom navigation bar) */}
           <button
             id="drawer-toggle-btn"
             type="button"
             onClick={onOpenDrawer}
-            className="relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-100 border border-white/80 dark:border-white/10 transition cursor-pointer shadow-xs active:scale-98"
+            className="hidden md:flex relative items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] text-zinc-800 dark:text-zinc-100 border border-white/80 dark:border-white/10 transition cursor-pointer shadow-xs active:scale-98 shrink-0"
             title="Open Utilities & Tools Drawer"
             aria-label="Open Drawer Menu"
           >
             <Menu className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
-            <span className="hidden sm:inline">Menu</span>
+            <span>Menu</span>
             {unreadAlertsCount > 0 && (
               <span className="w-2 h-2 rounded-full bg-zinc-900 dark:bg-white animate-pulse" />
             )}
@@ -288,12 +288,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Offline indicator badge */}
           {isOffline && (
             <div
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/25 shrink-0"
+              className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 rounded-full text-[10px] font-bold bg-amber-500/10 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/25 shrink-0"
               title="Network unavailable: Free/Guest 20-question limit enforced for creation and practice."
             >
               <CloudOff className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-              <span className="hidden sm:inline">Offline (Free Cap)</span>
-              <span className="sm:hidden">Offline</span>
+              <span className="hidden sm:inline">Offline</span>
             </div>
           )}
 
@@ -302,7 +301,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             id="navbar-coin-pill-btn"
             type="button"
             onClick={isGuest ? openRegistrationModal : (onOpenSubscriptionModal || openRegistrationModal)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer shadow-xs active:scale-98 border ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer shadow-xs active:scale-98 border shrink-0 ${
               isPro
                 ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 border-amber-500/35'
                 : !isGuest
@@ -317,7 +316,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 : 'Guest Mode • 0 Coins. Tap to register and claim 1 Free Coin!'
             }
           >
-            <span className="text-[10px] font-extrabold uppercase tracking-wide">
+            <span className="hidden sm:inline text-[10px] font-extrabold uppercase tracking-wide">
               {isPro ? 'Pro' : isGuest ? 'Guest' : 'Free'}
             </span>
             <AppCoin size="xs" />
@@ -330,11 +329,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {authLoading && !user ? (
             <div className="w-8 h-8 rounded-full border-2 border-zinc-400/30 border-t-zinc-900 dark:border-t-white animate-spin" />
           ) : user && isCloudSynced ? (
-            <div className="relative">
+            <div className="relative shrink-0">
               <button
                 type="button"
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
+                className="flex items-center gap-1.5 sm:gap-2 p-1 sm:pl-2 sm:pr-3 sm:py-1.5 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98 shrink-0"
               >
                 {user.photoURL && !avatarImgError ? (
                   <img
@@ -350,7 +349,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {userMonogram}
                   </div>
                 )}
-                <span className="text-xs font-bold max-w-[100px] truncate text-zinc-900 dark:text-white">
+                <span className="hidden sm:inline text-xs font-bold max-w-[100px] truncate text-zinc-900 dark:text-white">
                   {user.displayName || user.email?.split('@')[0] || (user.role === 'teacher' ? 'Teacher' : 'Student')}
                 </span>
                 {isAdmin ? (
@@ -366,7 +365,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     G-{user.grade}
                   </span>
                 ) : null}
-                <Cloud className="w-4 h-4 text-black dark:text-white" />
+                <Cloud className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300 shrink-0" />
               </button>
 
               {showUserMenu && (
@@ -465,37 +464,37 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               )}
             </div>
-          ) : user && !isCloudSynced ? (
-            <div className="relative flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 pl-2.5 pr-3 py-1.5 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98"
-                title="Guest Mode active (Local Storage)"
-              >
-                <div className="w-5 h-5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-[10px] flex items-center justify-center">
-                  {user.displayName?.charAt(0) || 'G'}
-                </div>
-                <span className="text-xs font-bold max-w-[80px] truncate text-zinc-900 dark:text-white">
-                  {user.displayName}
-                </span>
-                <span className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
-                  {user.role === 'teacher' ? 'Teacher' : `G-${user.grade || '12'}`}
-                </span>
-              </button>
+          ) : (
+            <div className="relative flex items-center gap-1.5 shrink-0">
+              {user && !isCloudSynced && (
+                <button
+                  type="button"
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="hidden sm:flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] transition cursor-pointer shadow-xs active:scale-98 shrink-0"
+                  title="Guest Mode Profile"
+                >
+                  <div className="w-5 h-5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-[10px] flex items-center justify-center shrink-0">
+                    {user.displayName?.charAt(0) || 'G'}
+                  </div>
+                  <span className="text-xs font-bold max-w-[70px] truncate text-zinc-900 dark:text-white">
+                    {user.displayName}
+                  </span>
+                </button>
+              )}
 
+              {/* Prominent, clean Register Button: fully visible and NEVER cut off or hidden on mobile */}
               <button
-                id="register-btn-guest"
+                id="register-btn-main"
                 type="button"
                 onClick={openRegistrationModal}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 transition cursor-pointer shadow-xs active:scale-98"
-                title="Register Role (Student or Teacher)"
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-100 transition cursor-pointer shadow-xs active:scale-98 shrink-0 whitespace-nowrap"
+                title="Register your profile (Student or Teacher) & Claim 1 Free Coin"
               >
-                <UserPlus className="w-4 h-4 text-white dark:text-zinc-950" />
+                <UserPlus className="w-3.5 h-3.5 text-white dark:text-zinc-950 shrink-0" />
                 <span>Register</span>
               </button>
 
-              {showUserMenu && (
+              {showUserMenu && user && !isCloudSynced && (
                 <div className="absolute right-0 top-11 mt-1 w-72 rounded-[28px] bg-white dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 shadow-2xl p-4 z-50 text-sm space-y-3">
                   <div className="pb-3 border-b border-zinc-100 dark:border-white/10 space-y-1">
                     <p className="font-bold text-zinc-950 dark:text-white truncate">
@@ -531,17 +530,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               )}
             </div>
-          ) : (
-            <button
-              id="register-btn-main"
-              type="button"
-              onClick={openRegistrationModal}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 transition cursor-pointer shadow-xs active:scale-98"
-              title="Register your student profile with Google Account to tailor exams"
-            >
-              <UserPlus className="w-3.5 h-3.5 stroke-[2.2]" />
-              <span>Register</span>
-            </button>
           )}
         </div>
       </div>
