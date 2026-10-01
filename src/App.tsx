@@ -58,38 +58,53 @@ import {
   prefetchCuratedModal,
 } from './services/prefetch';
 
-// Code-split heavy modals and secondary views for fast initial load
-const CreateExamWizard = React.lazy(() =>
+// Robust dynamic import with automatic retry on network/chunk hiccups
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+): React.LazyExoticComponent<T> {
+  return React.lazy(async () => {
+    try {
+      return await factory();
+    } catch (err) {
+      console.warn('Dynamic chunk import error, retrying...', err);
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      return await factory();
+    }
+  });
+}
+
+// Code-split heavy modals and secondary views with automatic retry for resilience
+const CreateExamWizard = lazyWithRetry(() =>
   import('./components/CreateExamWizard').then((m) => ({ default: m.CreateExamWizard }))
 );
-const PracticeModal = React.lazy(() =>
+const PracticeModal = lazyWithRetry(() =>
   import('./components/PracticeModal').then((m) => ({ default: m.PracticeModal }))
 );
-const PasteJsonModal = React.lazy(() =>
+const PasteJsonModal = lazyWithRetry(() =>
   import('./components/PasteJsonModal').then((m) => ({ default: m.PasteJsonModal }))
 );
-const ProfessorModal = React.lazy(() =>
+const ProfessorModal = lazyWithRetry(() =>
   import('./components/ProfessorModal').then((m) => ({ default: m.ProfessorModal }))
 );
-const NotificationSettingsModal = React.lazy(() =>
+const NotificationSettingsModal = lazyWithRetry(() =>
   import('./components/NotificationSettingsModal').then((m) => ({ default: m.NotificationSettingsModal }))
 );
-const ManualView = React.lazy(() =>
+const ManualView = lazyWithRetry(() =>
   import('./components/ManualView').then((m) => ({ default: m.ManualView }))
 );
-const SubscriptionModal = React.lazy(() =>
-  import('./components/SubscriptionModal').then((m) => ({ default: m.SubscriptionModal }))
+const SubscriptionModal = lazyWithRetry(() =>
+  import('./components/SubscriptionModal').then((m) => ({ default: m.SubscriptionModal || m.default }))
 );
-const AdminSubscriptionsView = React.lazy(() =>
+const AdminSubscriptionsView = lazyWithRetry(() =>
   import('./components/AdminSubscriptionsView').then((m) => ({ default: m.AdminSubscriptionsView }))
 );
-const CuratedExamsModal = React.lazy(() =>
+const CuratedExamsModal = lazyWithRetry(() =>
   import('./components/CuratedExamsModal').then((m) => ({ default: m.CuratedExamsModal }))
 );
-const DatabaseUploadModal = React.lazy(() =>
+const DatabaseUploadModal = lazyWithRetry(() =>
   import('./components/DatabaseUploadModal').then((m) => ({ default: m.DatabaseUploadModal }))
 );
-const UserRegistrationModal = React.lazy(() =>
+const UserRegistrationModal = lazyWithRetry(() =>
   import('./components/UserRegistrationModal').then((m) => ({ default: m.UserRegistrationModal }))
 );
 import { TeacherPendingVerificationView } from './components/TeacherPendingVerificationView';

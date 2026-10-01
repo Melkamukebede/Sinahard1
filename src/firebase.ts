@@ -1,14 +1,33 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  doc,
+  getDoc,
+} from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 export const app = initializeApp(firebaseConfig);
 
-// Support both standard (default) Firestore and named databases
-export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
+// Initialize Firestore with robust multi-tab IndexedDB cache and long-polling auto-detection for proxies/firewalls
+const firestoreDbId =
+  firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
+    ? firebaseConfig.firestoreDatabaseId
+    : undefined;
+
+export const db = initializeFirestore(
+  app,
+  {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+    }),
+    experimentalAutoDetectLongPolling: true,
+  },
+  firestoreDbId
+);
+
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
@@ -64,27 +83,38 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 
 import { setFirebaseReachable } from './services/firebaseOfflineService';
 
-// Test initial connection as required by firebase skill
+// Test initial connection with graceful offline detection
 export async function testConnection(): Promise<boolean> {
-  try {
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Connection check timed out')), 3000)
-    );
-    await Promise.race([getDocFromServer(doc(db, 'test', 'connection')), timeoutPromise]);
-    setFirebaseReachable(true);
-    return true;
-  } catch (error) {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
     setFirebaseReachable(false);
-    if (error instanceof Error) {
-      if (error.message.includes('the client is offline') || error.message.includes('timed out') || error.message.includes('Backend didn\'t respond')) {
-        console.info('Firebase offline cache mode active.');
-        return false;
-      }
-    }
     return false;
   }
+  try {
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Connection check timed out')), 2500)
+    );
+    await Promise.race([getDoc(doc(db, 'exams', '_health_check_')), timeoutPromise]);
+    setFirebaseReachable(true);
+    return true;
+  } catch {
+    const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+    setFirebaseReachable(isOnline);
+    return isOnline;
+  }
 }
-testConnection().catch(() => {});
+
+// Background idle connection test (non-blocking)
+if (typeof window !== 'undefined') {
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(() => {
+      testConnection().catch(() => {});
+    });
+  } else {
+    setTimeout(() => {
+      testConnection().catch(() => {});
+    }, 1500);
+  }
+}
 
 // Re-export Offline & Free/Guest Enforcement Utilities in Firebase Logic
 export {

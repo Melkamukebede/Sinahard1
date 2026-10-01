@@ -9,6 +9,7 @@ let _practiceModalPromise: Promise<unknown> | null = null;
 let _pasteModalPromise: Promise<unknown> | null = null;
 let _professorModalPromise: Promise<unknown> | null = null;
 let _curatedModalPromise: Promise<unknown> | null = null;
+let _subscriptionModalPromise: Promise<unknown> | null = null;
 
 export function prefetchCreateWizard(): Promise<unknown> {
   if (!_createWizardPromise && typeof window !== 'undefined') {
@@ -57,6 +58,15 @@ export function prefetchCuratedModal(): Promise<unknown> {
   return _curatedModalPromise || Promise.resolve();
 }
 
+export function prefetchSubscriptionModal(): Promise<unknown> {
+  if (!_subscriptionModalPromise && typeof window !== 'undefined') {
+    _subscriptionModalPromise = import('../components/SubscriptionModal').catch((err) => {
+      _subscriptionModalPromise = null;
+    });
+  }
+  return _subscriptionModalPromise || Promise.resolve();
+}
+
 /**
  * Eagerly warm up critical modules during idle browser cycles immediately upon app startup.
  */
@@ -69,6 +79,7 @@ export function warmUpAppModules(): void {
       prefetchPasteModal();
       prefetchProfessorModal();
       prefetchCuratedModal();
+      prefetchSubscriptionModal();
     }, 300);
   };
 

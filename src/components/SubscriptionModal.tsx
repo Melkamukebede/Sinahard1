@@ -1211,3 +1211,5 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     </div>
   );
 };
+
+export default SubscriptionModal;
