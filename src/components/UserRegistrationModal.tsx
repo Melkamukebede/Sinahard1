@@ -233,6 +233,8 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
     isSigningIn,
     popupBlocked,
     updateStudentProfile,
+    error: authError,
+    clearError,
   } = useAuth();
 
   const isUserEmailAdmin = Boolean(
@@ -548,6 +550,19 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
                 className="font-bold underline flex items-center gap-1 cursor-pointer text-zinc-900 dark:text-white shrink-0"
               >
                 Open tab <ExternalLink className="w-3 h-3 text-zinc-900 dark:text-white" />
+              </button>
+            </div>
+          )}
+
+          {authError && !popupBlocked && (
+            <div className="px-3.5 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-700 dark:text-rose-300 flex items-center justify-between gap-2">
+              <span>{authError}</span>
+              <button
+                type="button"
+                onClick={clearError}
+                className="font-bold underline cursor-pointer text-rose-900 dark:text-rose-100 shrink-0"
+              >
+                Dismiss
               </button>
             </div>
           )}

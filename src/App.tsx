@@ -94,7 +94,6 @@ const UserRegistrationModal = React.lazy(() =>
 );
 import { TeacherPendingVerificationView } from './components/TeacherPendingVerificationView';
 import { AppSplashScreen } from './components/AppSplashScreen';
-import { AuthPopupBridge } from './components/AuthPopupBridge';
 
 // Instant Skeleton UI for CreateExamWizard while dynamic module is hydrating
 const CreateExamSkeleton: React.FC = () => (
@@ -999,12 +998,6 @@ function MainApp() {
 }
 
 export default function App() {
-  const isAuthPopup = typeof window !== 'undefined' && window.location.search.includes('auth_popup=1');
-
-  if (isAuthPopup) {
-    return <AuthPopupBridge />;
-  }
-
   return (
     <ThemeProvider>
       <AuthProvider>
