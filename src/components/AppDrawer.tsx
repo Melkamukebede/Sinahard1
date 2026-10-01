@@ -363,13 +363,13 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                     </div>
                     <div>
                       <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                        <span>Install Mobile App</span>
+                        <span>Install App (PC & Mobile)</span>
                         <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-700 dark:text-sky-300">
                           Offline App
                         </span>
                       </div>
                       <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        Add to Home Screen for fullscreen & offline exams
+                        Install on Windows, Mac, Android or iPhone
                       </div>
                     </div>
                   </div>

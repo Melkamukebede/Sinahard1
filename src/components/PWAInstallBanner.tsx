@@ -98,13 +98,13 @@ export const PWAInstallBanner: React.FC = () => {
           </div>
           <div className="min-w-0">
             <p className="text-xs font-bold text-zinc-950 dark:text-white truncate flex items-center gap-1.5">
-              <span>Install Sinahard App</span>
+              <span>Install Sinahard (PC & Mobile)</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-sky-500/20 text-sky-700 dark:text-sky-300 font-extrabold uppercase">
                 Offline
               </span>
             </p>
             <p className="text-[11px] text-zinc-600 dark:text-zinc-400 truncate">
-              Fullscreen practice, 0ms load time, and home screen icon
+              Standalone app for Windows, Mac, Android & iPhone with offline exams
             </p>
           </div>
         </div>
