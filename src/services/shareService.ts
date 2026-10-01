@@ -10,10 +10,10 @@ export const getShareBaseUrl = (): string => {
   if (typeof window !== 'undefined' && window.location.origin) {
     return window.location.origin;
   }
-  return 'https://sinahard.pages.dev';
+  return 'https://sinahard.com.et';
 };
 
-export const SHARE_BASE_URL = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://sinahard.pages.dev';
+export const SHARE_BASE_URL = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://sinahard.com.et';
 
 /**
  * Extracts the target exam identifier from any URL parameter, hash, or path.
