@@ -15,10 +15,13 @@ import {
   Lightbulb,
   Eye,
   Filter,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { ExamResult } from '../types';
 import { MathRenderer } from './MathRenderer';
 import { ConfirmationDialog } from './ConfirmationDialog';
+import { copyLatexToClipboard } from '../services/latexClipboardService';
 
 interface ResultsViewProps {
   results: ExamResult[];
@@ -63,6 +66,21 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const [onlyMistakesMap, setOnlyMistakesMap] = useState<Record<number, boolean>>({});
   const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
   const [resultToDelete, setResultToDelete] = useState<string | number | null>(null);
+  const [copiedItemKey, setCopiedItemKey] = useState<string | null>(null);
+
+  const handleCopyReviewQuestion = async (ans: any, key: string) => {
+    let text = `Question:\n${ans.text}\n\n`;
+    text += `Your Answer: ${ans.userAnswer}\n`;
+    text += `Correct Answer: ${ans.correctAnswer}\n`;
+    if (ans.explanation) {
+      text += `\nStep-by-step Solution:\n${ans.explanation}\n`;
+    }
+    const success = await copyLatexToClipboard(text, 'raw');
+    if (success) {
+      setCopiedItemKey(key);
+      setTimeout(() => setCopiedItemKey(null), 2000);
+    }
+  };
 
   const totalExams = results.length;
   const recentCount = Math.min(totalExams, RECENT_LIMIT);
@@ -385,20 +403,36 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                           key={aIdx}
                           className="p-3.5 rounded-xl bg-white dark:bg-[#0c182b] border border-zinc-200/70 dark:border-white/10 space-y-2 text-xs shadow-2xs"
                         >
-                          <div className="flex items-start gap-2.5">
-                            <div
-                              className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold ${
-                                ans.isCorrect
-                                  ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
-                                  : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
-                              }`}
-                            >
-                              {ans.isCorrect ? '✓' : '✕'}
+                          <div className="flex items-start justify-between gap-2.5">
+                            <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                              <div
+                                className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold ${
+                                  ans.isCorrect
+                                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
+                                    : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                                }`}
+                              >
+                                {ans.isCorrect ? '✓' : '✕'}
+                              </div>
+
+                              <div className="flex-1 font-medium text-zinc-900 dark:text-zinc-100 leading-relaxed">
+                                <MathRenderer content={ans.text} />
+                              </div>
                             </div>
 
-                            <div className="flex-1 font-medium text-zinc-900 dark:text-zinc-100 leading-relaxed">
-                              <MathRenderer content={ans.text} />
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyReviewQuestion(ans, `r-${originalIdx}-a-${aIdx}`)}
+                              className="shrink-0 p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors"
+                              title="Copy question, answers & solution as LaTeX"
+                              aria-label="Copy question"
+                            >
+                              {copiedItemKey === `r-${originalIdx}-a-${aIdx}` ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
                           </div>
 
                           <div className="pl-7 space-y-1">

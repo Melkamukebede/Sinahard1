@@ -101,3 +101,34 @@
 .animate-shimmer {
   animation: shimmer 1.8s infinite linear;
 }
+
+/* Mobile & Web KaTeX Copy Optimization (Option 1 & 2) */
+.katex-display-wrapper {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.katex {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.katex-html {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.katex-copy-btn {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@media (max-width: 640px) {
+  .katex-display-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .katex-display-wrapper .katex-copy-btn {
+    align-self: flex-end;
+  }
+}

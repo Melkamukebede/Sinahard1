@@ -241,6 +241,20 @@ function MainApp() {
     }, 3000);
   };
 
+  // Listen for LaTeX copy events across mobile and desktop
+  useEffect(() => {
+    const handleLatexCopied = (e: Event) => {
+      const custom = e as CustomEvent<{ text: string; format: string }>;
+      if (custom.detail?.text) {
+        const text = custom.detail.text.trim();
+        const preview = text.length > 36 ? text.slice(0, 33) + '...' : text;
+        showToast(`📋 Copied LaTeX: ${preview}`);
+      }
+    };
+    window.addEventListener('latex-copied', handleLatexCopied);
+    return () => window.removeEventListener('latex-copied', handleLatexCopied);
+  }, []);
+
   const handleOpenQuestionTextEditor = () => {
     setIsProfessorModalOpen(false);
     setIsPasteModalOpen(false);

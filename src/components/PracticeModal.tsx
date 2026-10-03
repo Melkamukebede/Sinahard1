@@ -18,6 +18,7 @@ import {
   Minimize2,
   Maximize2,
   CloudOff,
+  Copy,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Exam, ExamAnswerRecord, ExamResult, Question } from '../types';
@@ -25,6 +26,7 @@ import { MathRenderer } from './MathRenderer';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { useNotifications } from '../context/NotificationContext';
 import { isAppOffline } from '../firebase';
+import { copyLatexToClipboard } from '../services/latexClipboardService';
 
 interface PracticeModalProps {
   exam: Exam | null;
@@ -64,6 +66,24 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
   // Submit confirmation dialog
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+
+  // Copied question state
+  const [copiedQuestionIdx, setCopiedQuestionIdx] = useState<number | null>(null);
+
+  const handleCopyQuestion = async (question: Question, idx: number) => {
+    let fullText = `Question ${idx + 1}:\n${question.text}\n\n`;
+    if (question.options && question.options.length > 0) {
+      question.options.forEach((opt, oIdx) => {
+        const letter = String.fromCharCode(65 + oIdx);
+        fullText += `${letter}) ${opt}\n`;
+      });
+    }
+    const success = await copyLatexToClipboard(fullText, 'raw');
+    if (success) {
+      setCopiedQuestionIdx(idx);
+      setTimeout(() => setCopiedQuestionIdx(null), 2000);
+    }
+  };
 
   // Scroll ref to top of question container when page/question changes
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -336,6 +356,25 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               Question {qIndex + 1} of {exam.questions.length}
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => handleCopyQuestion(q, qIndex)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10 text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white border border-zinc-200/80 dark:border-white/10 transition-all active:scale-95 cursor-pointer"
+            title="Copy question and formulas as clean LaTeX"
+            aria-label="Copy question"
+          >
+            {copiedQuestionIdx === qIndex ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy Question</span>
+              </>
+            )}
+          </button>
         </div>
 
         {/* Question Statement */}

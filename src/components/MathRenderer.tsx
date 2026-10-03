@@ -20,15 +20,42 @@ function getCachedKatex(math: string, displayMode: boolean): string {
   }
 
   let html = '';
+  const encodedMath = encodeURIComponent(math);
   try {
-    const rendered = katex.renderToString(math, { displayMode, throwOnError: false });
-    html = displayMode
-      ? `<div class="katex-display-wrapper my-2 overflow-x-auto">${rendered}</div>`
-      : rendered;
+    let rendered = katex.renderToString(math, { displayMode, throwOnError: false });
+
+    // Inject data-latex attribute into KaTeX element for Option 1: automatic clipboard interceptor
+    if (!rendered.includes('data-latex=')) {
+      rendered = rendered.replace('<span class="katex">', `<span class="katex" data-latex="${encodedMath}">`);
+    }
+
+    if (displayMode) {
+      // Option 2: Dedicated 1-Tap Quick-Copy Button on display equation container
+      html = `<div class="katex-display-wrapper group relative my-3 px-3.5 py-2.5 rounded-2xl bg-zinc-50/90 dark:bg-[#0c182b]/80 border border-zinc-200/80 dark:border-white/10 shadow-2xs overflow-x-auto flex items-center justify-between gap-3" data-latex="${encodedMath}" data-display="true">
+        <div class="katex-display-content overflow-x-auto py-1 flex-1 text-center font-normal">
+          ${rendered}
+        </div>
+        <button
+          type="button"
+          class="katex-copy-btn shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#0f1d33] hover:bg-zinc-100 dark:hover:bg-[#162742] text-zinc-700 dark:text-zinc-200 border border-zinc-200/90 dark:border-white/10 text-xs font-semibold shadow-2xs transition-all cursor-pointer select-none active:scale-95"
+          data-copy-latex="${encodedMath}"
+          title="Copy LaTeX formula"
+          aria-label="Copy LaTeX formula"
+        >
+          <svg class="copy-icon w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+          </svg>
+          <span class="copy-label hidden xs:inline text-[11px] font-bold">Copy LaTeX</span>
+        </button>
+      </div>`;
+    } else {
+      html = rendered;
+    }
   } catch {
     html = displayMode
-      ? `<pre class="text-xs text-amber-500 font-mono">${math}</pre>`
-      : `<span>${math}</span>`;
+      ? `<div class="katex-display-wrapper my-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400 font-mono" data-latex="${encodedMath}"><pre class="overflow-x-auto">${math}</pre></div>`
+      : `<span data-latex="${encodedMath}">${math}</span>`;
   }
 
   if (katexFormulaCache.size >= MAX_CACHE_SIZE) {
@@ -39,17 +66,18 @@ function getCachedKatex(math: string, displayMode: boolean): string {
   return html;
 }
 
-function processMathContent(content: string): string {
+function processMathContent(content: string, isInlineOnly = false): string {
   if (!content) return '';
 
+  const cacheKey = `${isInlineOnly ? 'INLINE:' : 'BLOCK:'}${content}`;
   // Check full string cache
-  const cached = fullHtmlCache.get(content);
+  const cached = fullHtmlCache.get(cacheKey);
   if (cached !== undefined) {
     return cached;
   }
 
-  // Fast-path: if text has no math markers ($ or \), no markdown (* or `) and no tags, return fast
-  const hasMath = content.includes('$') || content.includes('\\');
+  // Fast-path: if text has no math markers ($ or \ or [), no markdown (* or `) and no tags, return fast
+  const hasMath = content.includes('$') || content.includes('\\') || (content.includes('[') && content.includes(']'));
   const hasMarkdown = content.includes('*') || content.includes('`') || content.includes('<') || content.includes('>');
   const hasNewlines = content.includes('\n');
 
@@ -58,7 +86,7 @@ function processMathContent(content: string): string {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
-    fullHtmlCache.set(content, safeText);
+    fullHtmlCache.set(cacheKey, safeText);
     return safeText;
   }
 
@@ -66,22 +94,24 @@ function processMathContent(content: string): string {
   const mathTokens: { token: string; html: string }[] = [];
   let counter = 0;
 
+  let text = content;
+
   // Replace standard display blocks \[ ... \] or $$ ... $$
-  let text = content.replace(/\\\[([\s\S]*?)\\\]|\$\$([\s\S]*?)\$\$/g, (_, m1, m2) => {
+  text = text.replace(/\\\[([\s\S]*?)\\\]|\$\$([\s\S]*?)\$\$/g, (_, m1, m2) => {
     const math = (m1 || m2 || '').trim();
     const token = `__MATH_BLOCK_${counter++}__`;
-    const html = getCachedKatex(math, true);
+    const html = getCachedKatex(math, !isInlineOnly);
     mathTokens.push({ token, html });
     return token;
   });
 
   // Replace bare bracket display blocks [ ... ] (commonly copied without backslash on phones/ChatGPT)
-  // Ensures it contains LaTeX commands or mathematical operators so normal [Note] or [A] are preserved
-  text = text.replace(/(?:^|\n|\s)\[\s*([a-zA-Z0-9_\s\+\-\*\/\=\^\(\)\,\.\{\}\\]*?\\(?:frac|sqrt|sum|int|cdot|vec|times|alpha|beta|theta|pi|pm|approx|left|right|text|lim|over|partial|Delta|Omega|lambda)[a-zA-Z0-9_\s\+\-\*\/\=\^\(\)\,\.\{\}\\]*?)\s*\](?:\s|\n|$)/g, (_, math) => {
+  // Uses lookbehind / lookahead so consecutive equations [ Eq1 ] [ Eq2 ] or [ Eq1 ]\n[ Eq2 ] match without skipping
+  text = text.replace(/(?:^|(?<=[\s\n]))\[\s*([a-zA-Z0-9_\s\+\-\*\/\=\^\(\)\,\.\{\}\\]*?\\(?:frac|sqrt|sum|int|cdot|vec|times|alpha|beta|theta|pi|pm|approx|left|right|text|lim|over|partial|Delta|Omega|lambda)[a-zA-Z0-9_\s\+\-\*\/\=\^\(\)\,\.\{\}\\]*?)\s*\](?=[\s\n]|$)/g, (_, math) => {
     const token = `__MATH_BLOCK_${counter++}__`;
-    const html = getCachedKatex(math.trim(), true);
+    const html = getCachedKatex(math.trim(), !isInlineOnly);
     mathTokens.push({ token, html });
-    return `\n${token}\n`;
+    return token;
   });
 
   // Replace inline \( ... \)
@@ -104,7 +134,7 @@ function processMathContent(content: string): string {
   text = text.replace(/(?:^|\n)\s*([a-zA-Z0-9\(\)\s\+\-\*\/\=\,\.]*\\(?:frac|sqrt|sum|int|cdot|vec|times|alpha|beta|theta|pi|pm|approx|lim|partial|Delta|Omega|lambda|text)\{[^\}\n]+\}[^\n]*)(?=\n|$)/g, (fullMatch, math) => {
     if (math.includes('__MATH_')) return fullMatch;
     const token = `__MATH_BLOCK_${counter++}__`;
-    const html = getCachedKatex(math.trim(), true);
+    const html = getCachedKatex(math.trim(), !isInlineOnly);
     mathTokens.push({ token, html });
     return `\n${token}\n`;
   });
@@ -140,7 +170,7 @@ function processMathContent(content: string): string {
     const firstKey = fullHtmlCache.keys().next().value;
     if (firstKey) fullHtmlCache.delete(firstKey);
   }
-  fullHtmlCache.set(content, html);
+  fullHtmlCache.set(cacheKey, html);
 
   return html;
 }
@@ -150,7 +180,7 @@ const MathRendererComponent: React.FC<MathRendererProps> = ({
   className = '',
   inline = false,
 }) => {
-  const renderedHtml = processMathContent(content);
+  const renderedHtml = processMathContent(content, inline);
 
   if (inline) {
     return (
@@ -170,4 +200,3 @@ const MathRendererComponent: React.FC<MathRendererProps> = ({
 };
 
 export const MathRenderer = React.memo(MathRendererComponent);
-
