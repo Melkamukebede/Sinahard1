@@ -135,7 +135,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     e.stopPropagation();
                     openRegistrationModal();
                   }}
-                  className="hidden sm:inline-flex text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 ml-1.5 cursor-pointer hover:border-zinc-400 transition"
+                  className="hidden sm:inline-flex text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-white/10 ml-1.5 cursor-pointer hover:border-zinc-400 dark:hover:border-white/20 transition"
                   title="Guest Mode (0 Coins) - Register to get 1 Free Coin"
                 >
                   Guest
@@ -306,7 +306,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 border-amber-500/35'
                 : !isGuest
                 ? 'bg-sky-500/10 hover:bg-sky-500/20 text-sky-900 dark:text-sky-200 border-sky-500/30'
-                : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
+                : 'bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-white/10'
             }`}
             title={
               isPro
@@ -361,7 +361,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     Teacher
                   </span>
                 ) : user.grade ? (
-                  <span className="hidden sm:inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
+                  <span className="hidden sm:inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/10">
                     G-{user.grade}
                   </span>
                 ) : null}
@@ -406,11 +406,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </span>
                       ) : (
                         <>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/10">
                             Grade {user.grade || '12'}
                           </span>
                           {user.stream && (
-                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/10">
                               {user.stream}
                             </span>
                           )}

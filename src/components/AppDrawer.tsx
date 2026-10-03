@@ -194,22 +194,22 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 <div className="p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-zinc-800 flex items-center justify-center font-bold shadow-2xs">
-                        <School className="w-4 h-4 text-black dark:text-white" />
+                      <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
+                        <School className="w-4 h-4 text-zinc-950 dark:text-white" />
                       </div>
                       <div>
                         <div className="text-xs font-bold text-zinc-900 dark:text-white">
                           {user?.school || user?.schoolName || 'Ethiopian School'}
                         </div>
-                        <div className="text-[11px] text-zinc-500">
+                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
                           {user?.teachingSubject ? `${user.teachingSubject} Teacher` : 'Teacher Account'}
                         </div>
                       </div>
                     </div>
 
                     {user?.isVerifiedTeacher ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700">
-                        <CheckCircle2 className="w-3 h-3 text-black dark:text-white" />
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-zinc-300 dark:border-white/10">
+                        <CheckCircle2 className="w-3 h-3 text-zinc-950 dark:text-white" />
                         <span>Verified</span>
                       </span>
                     ) : (
@@ -234,13 +234,13 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-zinc-800 flex items-center justify-center font-bold shadow-2xs">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
                       <Crown className="w-4 h-4 stroke-[2]" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                         <span>Premium Subscription</span>
-                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/10">
                           ETB
                         </span>
                       </div>
@@ -265,13 +265,13 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-zinc-800 flex items-center justify-center font-bold shadow-2xs">
-                      <ShieldCheck className="w-4 h-4 text-black dark:text-white" />
+                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
+                      <ShieldCheck className="w-4 h-4 text-zinc-950 dark:text-white" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                         <span>Admin Check Panel</span>
-                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/10">
                           Admin
                         </span>
                       </div>
@@ -296,13 +296,13 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-zinc-800 flex items-center justify-center font-bold shadow-2xs">
-                      <CloudUpload className="w-4 h-4 text-black dark:text-white" />
+                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
+                      <CloudUpload className="w-4 h-4 text-zinc-950 dark:text-white" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                         <span>Push to Cloud Firestore</span>
-                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/10">
                           {isUserAdmin(user) ? 'Admin' : 'Teacher'}
                         </span>
                       </div>
@@ -325,7 +325,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="relative w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-zinc-800 flex items-center justify-center shadow-2xs">
+                  <div className="relative w-8 h-8 rounded-xl bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center shadow-2xs">
                     <Bell className="w-4 h-4" />
                     {unreadAlertsCount > 0 && (
                       <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-zinc-900 dark:bg-white" />
@@ -421,13 +421,13 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                 className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold shadow-2xs">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
                     <Bot className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       <span>Support Bot</span>
-                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700">
+                      <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/10">
                         @Frm2026_bot
                       </span>
                     </div>
@@ -469,7 +469,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                     <button
                       type="button"
                       onClick={handleCopyPhone}
-                      className="px-2.5 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                      className="px-2.5 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
                       title="Copy phone number"
                     >
                       {copiedPhone ? (

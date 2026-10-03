@@ -452,14 +452,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     >
       <div
         ref={modalContentRef}
-        className="relative w-full max-w-2xl my-2 sm:my-4 rounded-[32px] bg-white/95 dark:bg-[000000]/95 border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-2xl my-2 sm:my-4 rounded-[32px] bg-white/95 dark:bg-[#070e1a] border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200"
       >
         {/* Subtle Atmospheric Ambient Glow */}
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-zinc-500/5 dark:bg-white/[0.02] rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-zinc-600/5 dark:bg-white/[0.01] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-zinc-500/5 dark:bg-sky-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-zinc-600/5 dark:bg-blue-600/[0.02] rounded-full blur-3xl pointer-events-none" />
 
         {/* Modal Header - Sticky so it is always accessible at the upmost position */}
-        <div className="sticky top-0 z-30 px-6 pt-5 pb-4 bg-white/95 dark:bg-[000000]/95 border-b border-zinc-200/80 dark:border-white/10 flex items-start justify-between backdrop-blur-xl">
+        <div className="sticky top-0 z-30 px-6 pt-5 pb-4 bg-white/95 dark:bg-[#070e1a]/95 border-b border-zinc-200/80 dark:border-white/10 flex items-start justify-between backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <SinahardLogo size="lg" idSuffix="sub-modal" />
             <div>
@@ -467,7 +467,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <h2 className="text-xl font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
                   Sinahard Premium
                 </h2>
-                <span className="text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                <span className="text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/10">
                   Ethiopian Birr (ETB)
                 </span>
               </div>
@@ -482,7 +482,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               id="payment-cancel-btn-top"
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 rounded-full text-xs font-bold text-zinc-700 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 transition cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-98"
+              className="px-4 py-1.5 rounded-full text-xs font-bold text-zinc-700 dark:text-zinc-200 hover:text-zinc-950 dark:hover:text-white bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 transition cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-98"
               title="Cancel payment"
             >
               <X className="w-3.5 h-3.5" />
@@ -522,7 +522,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
         {/* Current Active Status Alert */}
         {isActive && activeSubscription && (
-          <div className="mx-6 mt-3 p-3.5 rounded-[22px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
+          <div className="mx-6 mt-3 p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-5 h-5 text-zinc-950 dark:text-white shrink-0" />
               <div>
@@ -565,14 +565,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     className={`relative p-3.5 rounded-[22px] text-left border transition cursor-pointer flex flex-col justify-between shadow-xs active:scale-98 ${
                       isSelected
                         ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent ring-2 ring-amber-400/50'
-                        : 'bg-white dark:bg-[000000] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
+                        : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-white/20 hover:dark:bg-[#0f1d33]'
                     }`}
                   >
                     {plan.badge && (
                       <span className={`absolute -top-2.5 right-2 text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-xs ${
                         isSelected
                           ? 'bg-amber-400 text-zinc-950'
-                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
+                          : 'bg-zinc-100 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/10'
                       }`}>
                         {plan.badge}
                       </span>
@@ -581,7 +581,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       <span className={`text-xs font-bold block ${isSelected ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}`}>
                         {plan.name}
                       </span>
-                      <span className={`text-[11px] block mt-0.5 ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500'}`}>
+                      <span className={`text-[11px] block mt-0.5 ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500 dark:text-zinc-400'}`}>
                         {plan.durationLabel}
                       </span>
                       <div className="flex items-center gap-1.5 mt-2 py-1 px-2 rounded-lg bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 w-fit">
@@ -591,9 +591,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                         </span>
                       </div>
                     </div>
-                    <div className={`mt-3 pt-2 border-t ${isSelected ? 'border-white/20 dark:border-zinc-300' : 'border-zinc-100 dark:border-zinc-800/60'}`}>
+                    <div className={`mt-3 pt-2 border-t ${isSelected ? 'border-white/20 dark:border-zinc-200/80' : 'border-zinc-100 dark:border-white/10'}`}>
                       <span className={`text-base font-extrabold font-['Outfit',sans-serif] ${isSelected ? 'text-white dark:text-zinc-950' : 'text-zinc-900 dark:text-white'}`}>
-                        {plan.priceETB} <span className={`text-[11px] font-semibold ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500'}`}>ETB</span>
+                        {plan.priceETB} <span className={`text-[11px] font-semibold ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500 dark:text-zinc-400'}`}>ETB</span>
                       </span>
                     </div>
                   </button>
@@ -629,14 +629,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     className={`p-3 rounded-[22px] text-left border transition cursor-pointer flex items-center gap-2.5 shadow-xs active:scale-98 relative overflow-hidden ${
                       isSelected
                         ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 border-transparent'
-                        : 'bg-white dark:bg-[000000] border-white/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
+                        : 'bg-white dark:bg-[#0c182b] border-white/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-white/20 hover:dark:bg-[#0f1d33]'
                     }`}
                   >
                     <div
                       className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
                         isSelected
-                          ? 'bg-white/20 dark:bg-zinc-900/20 text-white dark:text-zinc-950 font-bold'
-                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
+                          ? 'bg-white/20 dark:bg-zinc-900/10 text-white dark:text-zinc-950 font-bold'
+                          : 'bg-zinc-100 dark:bg-[#0f1d33] text-zinc-600 dark:text-zinc-300'
                       }`}
                     >
                       <Icon className="w-4 h-4" />
@@ -654,7 +654,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                           </span>
                         )}
                       </div>
-                      <span className={`text-[10px] block truncate ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500'}`}>{m.desc}</span>
+                      <span className={`text-[10px] block truncate ${isSelected ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-500 dark:text-zinc-400'}`}>{m.desc}</span>
                     </div>
                   </button>
                 );
@@ -663,11 +663,11 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </div>
 
           {/* Payment Account Details Box - Porcelain Container */}
-          <div className="p-4 rounded-[24px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs space-y-3">
+          <div className="p-4 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs space-y-3">
             {paymentMethod === 'telebirr' && (
               <div className="space-y-3">
                 {/* Telebirr Mode Switcher with Coming Soon for API */}
-                <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-full border border-white/60 dark:border-white/10">
+                <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-[#0f1d33] rounded-full border border-white/60 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => {
@@ -699,14 +699,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   >
                     <Clock className="w-3.5 h-3.5 text-zinc-500" />
                     <span>Telebirr Direct API</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 ml-0.5">
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-zinc-200 dark:bg-[#132238] text-zinc-700 dark:text-zinc-300 ml-0.5">
                       Pending
                     </span>
                   </button>
                 </div>
 
                 {telebirrMode === 'gateway' ? (
-                  <div className="space-y-3 p-3.5 rounded-[20px] bg-white/70 dark:bg-zinc-900/50 border border-white/60 dark:border-white/10">
+                  <div className="space-y-3 p-3.5 rounded-[20px] bg-white/70 dark:bg-[#0f1d33]/60 border border-white/60 dark:border-white/10">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-zinc-500 shrink-0" />
@@ -714,7 +714,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                           Telebirr Direct API Gateway — Pending Activation
                         </span>
                       </div>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#132238] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-white/10">
                         Pending TIN Approval
                       </span>
                     </div>
@@ -723,7 +723,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       Direct automated Telebirr checkout integration is currently waiting for merchant Tax Identification Number (TIN) &amp; Ethio Telecom enterprise verification.
                     </p>
 
-                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800 space-y-1.5">
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 space-y-1.5">
                       <div className="text-[11px] font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-zinc-700 dark:text-zinc-300" />
                         <span>Recommended Instant Alternative:</span>
@@ -748,39 +748,39 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       </button>
 
                       {showTelebirrConfig && (
-                        <div className="mt-2 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800 space-y-2 text-xs">
-                          <p className="text-[10px] text-zinc-500">
+                        <div className="mt-2 p-3 rounded-2xl bg-zinc-50 dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 space-y-2 text-xs">
+                          <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
                             You can test the Telebirr payment simulation flow before your official TIN is activated:
                           </p>
                           <div>
-                            <span className="text-[10px] text-zinc-500 block mb-0.5">Test Customer Phone:</span>
+                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mb-0.5">Test Customer Phone:</span>
                             <input
                               type="tel"
                               value={phoneNumber}
                               onChange={(e) => setPhoneNumber(e.target.value)}
                               placeholder="0918049806"
-                              className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 font-mono text-[11px]"
+                              className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c182b] font-mono text-[11px] text-zinc-900 dark:text-white"
                             />
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div>
-                              <span className="text-[10px] text-zinc-500 block mb-0.5">App ID (Once issued):</span>
+                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mb-0.5">App ID (Once issued):</span>
                               <input
                                 type="text"
                                 value={telebirrAppId}
                                 onChange={(e) => setTelebirrAppId(e.target.value)}
                                 placeholder="telebirr-app-id"
-                                className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 font-mono text-[11px]"
+                                className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c182b] font-mono text-[11px] text-zinc-900 dark:text-white"
                               />
                             </div>
                             <div>
-                              <span className="text-[10px] text-zinc-500 block mb-0.5">Short Code (Till):</span>
+                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mb-0.5">Short Code (Till):</span>
                               <input
                                 type="text"
                                 value={telebirrShortCode}
                                 onChange={(e) => setTelebirrShortCode(e.target.value)}
                                 placeholder="100234"
-                                className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 font-mono text-[11px]"
+                                className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0c182b] font-mono text-[11px] text-zinc-900 dark:text-white"
                               />
                             </div>
                           </div>
@@ -799,14 +799,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleCopy('0918049806', 'telebirr')}
-                          className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                          className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
                         >
                           <Copy className="w-3.5 h-3.5" />
                           <span>{copiedAccount === 'telebirr' ? 'Copied!' : 'Copy'}</span>
                         </button>
                       </div>
                     </div>
-                    <p className="text-[11px] text-zinc-500 mt-1.5">
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5">
                       Send <strong>{selectedPlan.priceETB} ETB</strong> via Telebirr app or *127#, then paste the SMS transaction number below.
                     </p>
                   </div>
@@ -825,14 +825,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCopy('1000442803769', 'cbe')}
-                      className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                      className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span>{copiedAccount === 'cbe' ? 'Copied!' : 'Copy'}</span>
                     </button>
                   </div>
                 </div>
-                <p className="text-[11px] text-zinc-500 mt-1.5">
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5">
                   Pay <strong>{selectedPlan.priceETB} ETB</strong> to Commercial Bank of Ethiopia (CBE Birr or Mobile Banking).
                 </p>
               </div>
@@ -863,7 +863,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('cbe')}
-                    className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer border border-zinc-200 dark:border-zinc-700"
+                    className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-[#132238] transition cursor-pointer border border-zinc-200 dark:border-white/10"
                   >
                     Pay with CBE Birr
                   </button>
@@ -882,14 +882,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCopy('244028993', 'boa')}
-                      className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                      className="px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 text-zinc-800 dark:text-zinc-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
                     >
                       <Copy className="w-3.5 h-3.5" />
                       <span>{copiedAccount === 'boa' ? 'Copied!' : 'Copy'}</span>
                     </button>
                   </div>
                 </div>
-                <p className="text-[11px] text-zinc-500 mt-1.5">
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5">
                   Transfer <strong>{selectedPlan.priceETB} ETB</strong> via BoA mobile banking or branch.
                 </p>
               </div>
@@ -907,9 +907,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 value={transactionRef}
                 onChange={(e) => setTransactionRef(e.target.value)}
                 placeholder="e.g. FT260915... or Telebirr SMS code"
-                className="w-full px-4 py-2.5 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-mono text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 shadow-2xs"
+                className="w-full px-4 py-2.5 rounded-full bg-white dark:bg-[#0f1d33] border border-zinc-200 dark:border-white/10 text-xs font-mono text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-950/10 dark:focus:ring-white/10 shadow-2xs"
               />
-              <p className="text-[10px] text-zinc-500 mt-1">
+              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
                 Enter the receipt number from your mobile banking notification to verify your access.
               </p>
             </div>
@@ -924,7 +924,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           )}
 
           {successNotice && (
-            <div className="p-3.5 rounded-[20px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs flex items-center gap-2">
+            <div className="p-3.5 rounded-[20px] bg-zinc-100 dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-zinc-950 dark:text-white" />
               <span>{successNotice}</span>
             </div>
@@ -932,7 +932,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
           {/* Guest account notice */}
           {(!user || user.uid === 'guest') && (
-            <div className="p-3.5 rounded-[22px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <AlertCircle className="w-4 h-4 text-zinc-400 shrink-0" />
                 <span className="text-xs text-zinc-600 dark:text-zinc-300">
@@ -953,7 +953,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
           {/* Active Checkout Portal Card (for both Telebirr and Chapa) */}
           {checkoutUrl && (
-            <div className="p-4 rounded-[24px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 space-y-3.5 shadow-sm">
+            <div className="p-4 rounded-[24px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 space-y-3.5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-zinc-900 dark:bg-white animate-ping" />
@@ -961,7 +961,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     {paymentMethod === 'telebirr' ? 'Telebirr Payment Ready' : 'Chapa Payment Ready'}
                   </span>
                 </div>
-                <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/10">
                   Ref: {activeTxRef}
                 </span>
               </div>
@@ -987,7 +987,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => { window.location.href = checkoutUrl; }}
-                  className="px-3.5 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1 transition cursor-pointer"
+                  className="px-3.5 py-2 rounded-full bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1 transition cursor-pointer"
                   title="Directly redirect in this tab"
                 >
                   <span>Open in this Tab</span>
@@ -997,7 +997,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <button
                   type="button"
                   onClick={handleCopyCheckoutLink}
-                  className="px-3 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                  className="px-3 py-2 rounded-full bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 text-zinc-800 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
                   title="Copy payment link"
                 >
                   {copiedLink ? <Check className="w-3.5 h-3.5 text-zinc-950 dark:text-white" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1009,7 +1009,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   type="button"
                   disabled={isVerifying}
                   onClick={handleVerifyStatus}
-                  className="px-4 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition cursor-pointer disabled:opacity-50 shadow-xs"
+                  className="px-4 py-2 rounded-full border border-zinc-300 dark:border-white/10 bg-white dark:bg-[#0f1d33] text-zinc-900 dark:text-white font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-[#132238] transition cursor-pointer disabled:opacity-50 shadow-xs"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>{isVerifying ? 'Checking...' : 'Check Payment Status'}</span>
@@ -1033,8 +1033,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </div>
 
               {/* Direct clickable URL fallback */}
-              <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 text-[11px] text-zinc-600 dark:text-zinc-400 flex items-center justify-between gap-2">
-                <span className="shrink-0 text-zinc-500">Direct URL:</span>
+              <div className="pt-2 border-t border-zinc-100 dark:border-white/10 text-[11px] text-zinc-600 dark:text-zinc-400 flex items-center justify-between gap-2">
+                <span className="shrink-0 text-zinc-500 dark:text-zinc-400">Direct URL:</span>
                 <a
                   href={checkoutUrl}
                   target="_blank"
@@ -1048,7 +1048,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           )}
 
           {/* Collapsible Tier Comparison: Guest vs Logged-in vs Premium */}
-          <div className="rounded-[24px] border border-white/80 dark:border-white/10 bg-white/60 dark:bg-white/[0.03] backdrop-blur-xl overflow-hidden">
+          <div className="rounded-[24px] border border-white/80 dark:border-white/10 bg-white/60 dark:bg-[#0c182b]/80 backdrop-blur-xl overflow-hidden">
             <button
               type="button"
               onClick={() => setShowComparison(!showComparison)}
@@ -1065,7 +1065,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   </span>
                 </div>
               </div>
-              <div className="p-1 rounded-full bg-zinc-200/80 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+              <div className="p-1 rounded-full bg-zinc-200/80 dark:bg-[#0f1d33] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-white/10">
                 {showComparison ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>
             </button>
@@ -1073,13 +1073,13 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             {showComparison && (
               <div className="p-4 pt-1 border-t border-white/60 dark:border-white/10 space-y-3 text-xs animate-in fade-in duration-200">
                 {/* Guest Mode */}
-                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs">
+                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5 text-zinc-500" />
                       Guest Mode (No Account / Local Storage)
                     </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/10">
                       Free / Instant
                     </span>
                   </div>
@@ -1092,13 +1092,13 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </div>
 
                 {/* Logged-In User */}
-                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs">
+                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       <Globe className="w-3.5 h-3.5 text-zinc-500" />
                       Logged-In (Free Google Account)
                     </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/10">
                       🎁 3-Day Trial Included
                     </span>
                   </div>
@@ -1111,7 +1111,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </div>
 
                 {/* Premium Scholar */}
-                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs">
+                <div className="p-3.5 rounded-[20px] bg-white dark:bg-[#0c182b] border border-white/80 dark:border-white/10 shadow-xs">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
                       <Crown className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
@@ -1135,7 +1135,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           {/* Action Button Row */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-zinc-200/80 dark:border-white/10">
             <div>
-              <span className="text-xs text-zinc-500 block">Total Due:</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 block">Total Due:</span>
               <span className="text-lg font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
                 {selectedPlan.priceETB} ETB
               </span>
@@ -1150,7 +1150,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
-                className="p-2.5 rounded-full text-zinc-500 hover:text-zinc-950 dark:hover:text-white bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer border border-zinc-200 dark:border-zinc-700 shadow-2xs active:scale-98"
+                className="p-2.5 rounded-full text-zinc-500 hover:text-zinc-950 dark:hover:text-white bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] transition cursor-pointer border border-zinc-200 dark:border-white/10 shadow-2xs active:scale-98"
                 title="Scroll to upmost top"
               >
                 <ChevronUp className="w-4 h-4" />
@@ -1161,7 +1161,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 id="payment-cancel-btn-bottom"
                 type="button"
                 onClick={onClose}
-                className="flex-1 sm:flex-initial px-5 py-2.5 rounded-full font-semibold text-xs flex items-center justify-center gap-1.5 transition shadow-2xs active:scale-98 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 cursor-pointer"
+                className="flex-1 sm:flex-initial px-5 py-2.5 rounded-full font-semibold text-xs flex items-center justify-center gap-1.5 transition shadow-2xs active:scale-98 bg-zinc-100 hover:bg-zinc-200 dark:bg-[#0f1d33] dark:hover:bg-[#132238] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/10 cursor-pointer"
                 title="Cancel and close payment dialog"
               >
                 <X className="w-4 h-4" />

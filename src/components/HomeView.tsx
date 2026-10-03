@@ -29,6 +29,7 @@ import {
   Trash2,
   FileDown,
   Layers,
+  Flame,
 } from 'lucide-react';
 import { Exam, ExamResult, UserSubscription, AppUser } from '../types';
 import { PageTab } from './Navbar';
@@ -36,6 +37,7 @@ import { isUserSubscriptionActive, isUserTeacher } from '../services/db';
 import { UserTierStatus } from '../services/subscriptionLimits';
 import { SinahardLogo } from './SinahardLogo';
 import { prefetchCreateWizard, prefetchPracticeModal } from '../services/prefetch';
+import { useNotifications } from '../context/NotificationContext';
 
 export interface HomeViewProps {
   exams: Exam[];
@@ -47,6 +49,7 @@ export interface HomeViewProps {
   onOpenSubscriptionModal?: () => void;
   onOpenCuratedModal?: () => void;
   onOpenRegistrationModal?: () => void;
+  onOpenNotificationsModal?: () => void;
   onOpenDatabaseUpload?: (exam: Exam) => void;
   onEditExam?: (exam: Exam) => void;
   onDeleteExam?: (examId: string) => void;
@@ -84,6 +87,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenSubscriptionModal,
   onOpenCuratedModal,
   onOpenRegistrationModal,
+  onOpenNotificationsModal,
   onOpenDatabaseUpload,
   onEditExam,
   onDeleteExam,
@@ -94,6 +98,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 }) => {
   const isTeacher = Boolean(user && isUserTeacher(user));
   const isPremiumActive = isUserSubscriptionActive(activeSubscription || null);
+  const { studyStreakDays, completedToday, dailyGoal } = useNotifications();
 
   // Student Metrics (only used when student/admin)
   const totalQuestions = exams.reduce((acc, e) => acc + (e.questions?.length || 0), 0);
@@ -246,12 +251,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {(isTeacher || isAdmin) && (
         <motion.div
           variants={itemVariants}
-          className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm overflow-hidden"
+          className="rounded-[32px] sm:rounded-[36px] bg-white/70 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 p-6 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] overflow-hidden"
         >
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold border border-zinc-200 dark:border-zinc-700">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white text-xs font-bold border border-zinc-200 dark:border-white/10">
                   {isAdmin ? (
                     <>
                       <ShieldCheck className="w-3.5 h-3.5 text-black dark:text-white" />
@@ -299,7 +304,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
               {/* Short & Brief Direction to use app for Verified Teacher */}
               {isTeacher ? (
-                <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-2 mt-2">
+                <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 space-y-2 mt-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-zinc-950 dark:text-white uppercase tracking-wider">
                     <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" />
                     <span>Quick Teacher Guide</span>
@@ -345,7 +350,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   <button
                     type="button"
                     onClick={() => onNavigate('admin-subs')}
-                    className="px-5 py-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer flex items-center gap-2"
+                    className="px-5 py-2.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-bold transition cursor-pointer flex items-center gap-2"
                   >
                     <Award className="w-4 h-4 text-black dark:text-white" />
                     <span>Subscriptions & Teachers</span>
@@ -368,7 +373,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     id="teacher-my-school-btn"
                     type="button"
                     onClick={() => onNavigate('files')}
-                    className="px-5 py-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer flex items-center gap-2 active:scale-98"
+                    className="px-5 py-2.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-bold transition cursor-pointer flex items-center gap-2 active:scale-98"
                   >
                     <School className="w-4 h-4 text-black dark:text-white" />
                     <span>My School</span>
@@ -393,11 +398,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          TEACHER-SPECIFIC DASHBOARD:
-          Per user request:
-          - "hide bridging the gap from reading to active practice shower banner and any banners below it"
-          - "don't put also and requer payments and hide payments page, results page"
-          - "and simplify exams for him to display he created exams which pushed and in local storage"
+          TEACHER-SPECIFIC DASHBOARD
       ───────────────────────────────────────────────────────────── */}
       {isTeacher ? (
         <>
@@ -417,7 +418,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* Teacher Metrics Bento */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm"
+            className="rounded-[32px] sm:rounded-[36px] bg-white/70 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 p-6 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)]"
           >
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               {/* Total Authored */}
@@ -425,15 +426,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 onClick={() => setTeacherExamFilter('all')}
                 className={`p-5 sm:p-6 rounded-2xl transition cursor-pointer border ${
                   teacherExamFilter === 'all'
-                    ? 'bg-zinc-100 dark:bg-zinc-800/80 border-zinc-400 dark:border-zinc-600'
-                    : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-400'
+                    ? 'bg-zinc-100 dark:bg-[#0f1d33] border-zinc-400 dark:border-white/30'
+                    : 'bg-zinc-50 dark:bg-[#0c182b] border-zinc-200/80 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20'
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                     Created Exams
                   </span>
-                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#0f1d33] text-black dark:text-white border border-zinc-200 dark:border-white/10 flex items-center justify-center shadow-xs">
                     <BookOpen className="w-4 h-4 text-black dark:text-white" />
                   </div>
                 </div>
@@ -448,15 +449,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 onClick={() => setTeacherExamFilter('pushed')}
                 className={`p-5 sm:p-6 rounded-2xl transition cursor-pointer border ${
                   teacherExamFilter === 'pushed'
-                    ? 'bg-zinc-100 dark:bg-zinc-800/80 border-zinc-400 dark:border-zinc-600'
-                    : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-400'
+                    ? 'bg-zinc-100 dark:bg-[#0f1d33] border-zinc-400 dark:border-white/30'
+                    : 'bg-zinc-50 dark:bg-[#0c182b] border-zinc-200/80 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20'
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                     Cloud Firestore
                   </span>
-                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#0f1d33] text-black dark:text-white border border-zinc-200 dark:border-white/10 flex items-center justify-center shadow-xs">
                     <CloudUpload className="w-4 h-4 text-black dark:text-white" />
                   </div>
                 </div>
@@ -471,15 +472,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 onClick={() => setTeacherExamFilter('local')}
                 className={`p-5 sm:p-6 rounded-2xl transition cursor-pointer border ${
                   teacherExamFilter === 'local'
-                    ? 'bg-zinc-100 dark:bg-zinc-800/80 border-zinc-400 dark:border-zinc-600'
-                    : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-400'
+                    ? 'bg-zinc-100 dark:bg-[#0f1d33] border-zinc-400 dark:border-white/30'
+                    : 'bg-zinc-50 dark:bg-[#0c182b] border-zinc-200/80 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20'
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                     Local Storage
                   </span>
-                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#0f1d33] text-black dark:text-white border border-zinc-200 dark:border-white/10 flex items-center justify-center shadow-xs">
                     <HardDrive className="w-4 h-4 text-black dark:text-white" />
                   </div>
                 </div>
@@ -492,13 +493,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
               {/* School Affiliation */}
               <div
                 onClick={() => onNavigate('files')}
-                className="p-5 sm:p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition cursor-pointer"
+                className="p-5 sm:p-6 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20 transition cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                     School
                   </span>
-                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#0f1d33] text-black dark:text-white border border-zinc-200 dark:border-white/10 flex items-center justify-center shadow-xs">
                     <School className="w-4 h-4 text-black dark:text-white" />
                   </div>
                 </div>
@@ -513,10 +514,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* SIMPLIFIED EXAMS DISPLAY FOR TEACHER: PUSHED TO CLOUD & LOCAL STORAGE */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm space-y-6"
+            className="rounded-[32px] sm:rounded-[36px] bg-white/70 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 p-6 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-6"
           >
             {/* Header & Filter Controls */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-zinc-100 dark:border-white/10">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-black dark:text-white" />
@@ -530,7 +531,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </div>
 
               {/* Filter Tabs */}
-              <div className="flex items-center p-1 rounded-full bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold">
+              <div className="flex items-center p-1 rounded-full bg-zinc-100 dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => setTeacherExamFilter('all')}
@@ -571,8 +572,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             {/* Exams List */}
             {filteredTeacherExams.length === 0 ? (
-              <div className="text-center py-12 px-6 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/30 space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 mx-auto flex items-center justify-center">
+              <div className="text-center py-12 px-6 border border-dashed border-zinc-200 dark:border-white/10 rounded-3xl bg-zinc-50/50 dark:bg-[#0c182b]/50 space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-[#0f1d33] border border-zinc-200 dark:border-white/10 mx-auto flex items-center justify-center">
                   <BookOpen className="w-6 h-6 text-black dark:text-white opacity-70" />
                 </div>
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-white font-['Outfit',sans-serif]">
@@ -604,7 +605,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   return (
                     <div
                       key={exam.id}
-                      className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition flex flex-col justify-between space-y-4 shadow-2xs"
+                      className="p-5 rounded-2xl bg-white dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20 transition flex flex-col justify-between space-y-4 shadow-2xs"
                     >
                       <div className="space-y-2">
                         {/* Status Badges */}
@@ -613,7 +614,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${
                               isPushed
                                 ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-500/20'
-                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-zinc-700'
+                                : 'bg-zinc-100 dark:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-white/10'
                             }`}
                           >
                             {isPushed ? (
@@ -647,7 +648,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       </div>
 
                       {/* Action Button Bar with Black Icons */}
-                      <div className="pt-3 border-t border-zinc-200/60 dark:border-zinc-800 flex items-center justify-between gap-2 flex-wrap">
+                      <div className="pt-3 border-t border-zinc-200/60 dark:border-white/10 flex items-center justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-1.5">
                           {/* Push to Cloud Button */}
                           {onOpenDatabaseUpload && (
@@ -656,7 +657,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                               onClick={() => onOpenDatabaseUpload(exam)}
                               className={`px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1.5 active:scale-95 ${
                                 isPushed
-                                  ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                  ? 'bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10'
                                   : 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-xs'
                               }`}
                               title={isPushed ? 'Update Cloud Firestore record' : 'Publish to Cloud Firestore'}
@@ -672,7 +673,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                             onMouseEnter={prefetchPracticeModal}
                             onTouchStart={prefetchPracticeModal}
                             onClick={() => onStartPractice(exam)}
-                            className="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                            className="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5 active:scale-95"
                             title="Test-run this exam"
                           >
                             <Play className="w-3.5 h-3.5 text-black dark:text-white" />
@@ -686,7 +687,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                             <button
                               type="button"
                               onClick={() => onEditExam(exam)}
-                              className="p-1.5 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
+                              className="p-1.5 rounded-xl hover:bg-zinc-200 dark:hover:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
                               title="Edit exam questions"
                             >
                               <Edit className="w-4 h-4 text-black dark:text-white" />
@@ -695,7 +696,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleExportExamAsTxt(exam)}
-                            className="p-1.5 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
+                            className="p-1.5 rounded-xl hover:bg-zinc-200 dark:hover:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
                             title="Export as plain text"
                           >
                             <FileDown className="w-4 h-4 text-black dark:text-white" />
@@ -728,15 +729,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* 2. WELCOME & 4 CORE POINTS OF SINAHARD */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm overflow-hidden"
+            className="rounded-[32px] sm:rounded-[36px] bg-white/80 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 p-6 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] overflow-hidden"
           >
             <div className="space-y-6">
-              <div className="border-b border-zinc-100 dark:border-zinc-800/80 pb-6">
+              <div className="border-b border-zinc-100 dark:border-white/10 pb-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                   <SinahardLogo size="xl" idSuffix="welcome-hero" className="shrink-0" />
                   <div className="space-y-2 max-w-3xl">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-900 dark:text-white">
-                      <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" />
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 text-xs font-bold text-zinc-900 dark:text-white">
+                      <Sparkles className="w-3.5 h-3.5 text-zinc-950 dark:text-white" />
                       <span>Welcome to Sinahard Ethiopian Exam System</span>
                     </div>
                     <h3 className="text-xl sm:text-2xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-950 dark:text-white leading-tight">
@@ -760,28 +761,28 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.18 }}
-                    className="w-full p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition text-left cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                    className="w-full p-4 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20 transition text-left cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
                         4 Core Capabilities:
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-900 dark:text-white">
-                        <Play className="w-3 h-3 text-black dark:text-white" /> Active Testing
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 text-xs font-semibold text-zinc-900 dark:text-white">
+                        <Play className="w-3 h-3 text-zinc-950 dark:text-white" /> Active Testing
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-900 dark:text-white">
-                        <GraduationCap className="w-3 h-3 text-black dark:text-white" /> Curated Catalog
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 text-xs font-semibold text-zinc-900 dark:text-white">
+                        <GraduationCap className="w-3 h-3 text-zinc-950 dark:text-white" /> Curated Catalog
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-900 dark:text-white">
-                        <Download className="w-3 h-3 text-black dark:text-white" /> Quick Bulk Import
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 text-xs font-semibold text-zinc-900 dark:text-white">
+                        <Download className="w-3 h-3 text-zinc-950 dark:text-white" /> Quick Bulk Import
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-900 dark:text-white">
-                        <Share2 className="w-3 h-3 text-black dark:text-white" /> Offline Sharing
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 text-xs font-semibold text-zinc-900 dark:text-white">
+                        <Share2 className="w-3 h-3 text-zinc-950 dark:text-white" /> Offline Sharing
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-900 dark:text-white group-hover:underline shrink-0">
                       <span>Show Details</span>
-                      <ChevronDown className="w-4 h-4 text-black dark:text-white" />
+                      <ChevronDown className="w-4 h-4 text-zinc-950 dark:text-white" />
                     </div>
                   </motion.button>
                 ) : (
@@ -808,10 +809,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* Point 1 */}
-                      <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between space-y-3">
+                      <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 flex flex-col justify-between space-y-3">
                         <div className="space-y-2">
-                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center">
-                            <Play className="w-5 h-5 text-black dark:text-white" />
+                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 flex items-center justify-center shadow-xs">
+                            <Play className="w-5 h-5 text-zinc-950 dark:text-white" />
                           </div>
                           <h4 className="font-bold text-sm text-zinc-950 dark:text-white">
                             1. Active Testing
@@ -823,10 +824,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       </div>
 
                       {/* Point 2 */}
-                      <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between space-y-3">
+                      <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 flex flex-col justify-between space-y-3">
                         <div className="space-y-2">
-                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center">
-                            <GraduationCap className="w-5 h-5 text-black dark:text-white" />
+                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 flex items-center justify-center shadow-xs">
+                            <GraduationCap className="w-5 h-5 text-zinc-950 dark:text-white" />
                           </div>
                           <h4 className="font-bold text-sm text-zinc-950 dark:text-white">
                             2. Ethiopian Curriculum
@@ -838,10 +839,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       </div>
 
                       {/* Point 3 */}
-                      <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between space-y-3">
+                      <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 flex flex-col justify-between space-y-3">
                         <div className="space-y-2">
-                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center">
-                            <Download className="w-5 h-5 text-black dark:text-white" />
+                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 flex items-center justify-center shadow-xs">
+                            <Download className="w-5 h-5 text-zinc-950 dark:text-white" />
                           </div>
                           <h4 className="font-bold text-sm text-zinc-950 dark:text-white">
                             3. Bulk Import & AI
@@ -853,10 +854,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       </div>
 
                       {/* Point 4 */}
-                      <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between space-y-3">
+                      <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 flex flex-col justify-between space-y-3">
                         <div className="space-y-2">
-                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center">
-                            <Share2 className="w-5 h-5 text-black dark:text-white" />
+                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 flex items-center justify-center shadow-xs">
+                            <Share2 className="w-5 h-5 text-zinc-950 dark:text-white" />
                           </div>
                           <h4 className="font-bold text-sm text-zinc-950 dark:text-white">
                             4. Peer Sharing & Export
@@ -873,23 +874,66 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </motion.div>
 
-          {/* 3. METRIC CARDS BENTO - STUDENT */}
+          {/* 3. METRIC CARDS BENTO & DAILY STREAK SPOTLIGHT - STUDENT */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm"
+            className="rounded-[32px] sm:rounded-[36px] bg-white/80 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 p-6 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-6"
           >
+            {/* Daily Streak & Practice Consistency Card */}
+            <div
+              onClick={onOpenNotificationsModal}
+              className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-zinc-50 dark:from-amber-500/15 dark:via-[#0c182b] dark:to-[#0c182b] border border-amber-500/25 dark:border-amber-500/35 hover:border-amber-500/45 dark:hover:border-amber-500/55 transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs group"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/25 dark:border-amber-500/35 group-hover:scale-105 transition-transform shadow-xs">
+                  <Flame className="w-7 h-7 text-amber-500 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700/90 dark:text-amber-400">
+                      Daily Study Streak
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 dark:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                      🔥 {studyStreakDays} Day{studyStreakDays === 1 ? '' : 's'} Active
+                    </span>
+                  </div>
+                  <h4 className="text-base sm:text-lg font-bold font-['Outfit',sans-serif] text-zinc-950 dark:text-white mt-0.5">
+                    {completedToday >= dailyGoal
+                      ? `Daily Goal Completed! (${completedToday}/${dailyGoal} Exams)`
+                      : `${dailyGoal - completedToday} more exam${dailyGoal - completedToday === 1 ? '' : 's'} to hit today's target (${completedToday}/${dailyGoal})`}
+                  </h4>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    Keep your daily streak alive. Tap to view consistency history, target goals & alerts.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="hidden sm:flex flex-col items-end text-right">
+                  <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                    {Math.min(100, Math.round((completedToday / Math.max(dailyGoal, 1)) * 100))}%
+                  </span>
+                  <span className="text-[10px] text-zinc-400">Today's Target</span>
+                </div>
+                <div className="px-4 py-2 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 text-xs font-bold flex items-center gap-1.5 shadow-xs group-hover:shadow-md transition">
+                  <span>Daily Streak & Target</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            </div>
+
+            {/* Metric Bento Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               {/* Total Modules */}
               <div
                 onClick={() => onNavigate('files')}
-                className="p-5 sm:p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition cursor-pointer"
+                className="p-5 sm:p-6 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20 transition cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                     Total Modules
                   </span>
-                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shadow-xs">
-                    <BookOpen className="w-4 h-4 text-black dark:text-white" />
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-zinc-200/80 dark:border-white/10 flex items-center justify-center shadow-xs">
+                    <BookOpen className="w-4 h-4 text-zinc-950 dark:text-white" />
                   </div>
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold font-['Outfit',sans-serif] text-zinc-950 dark:text-white">
@@ -901,14 +945,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
               {/* Question Bank */}
               <div
                 onClick={() => onNavigate('files')}
-                className="p-5 sm:p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition cursor-pointer"
+                className="p-5 sm:p-6 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20 transition cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                     Question Bank
                   </span>
-                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shadow-xs">
-                    <HelpCircle className="w-4 h-4 text-black dark:text-white" />
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-zinc-200/80 dark:border-white/10 flex items-center justify-center shadow-xs">
+                    <HelpCircle className="w-4 h-4 text-zinc-950 dark:text-white" />
                   </div>
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold font-['Outfit',sans-serif] text-zinc-950 dark:text-white">
@@ -920,14 +964,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
               {/* Avg Score */}
               <div
                 onClick={() => onNavigate('results')}
-                className="p-5 sm:p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition cursor-pointer"
+                className="p-5 sm:p-6 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20 transition cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                     Avg Mastery
                   </span>
-                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shadow-xs">
-                    <TrendingUp className="w-4 h-4 text-black dark:text-white" />
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-zinc-200/80 dark:border-white/10 flex items-center justify-center shadow-xs">
+                    <TrendingUp className="w-4 h-4 text-zinc-950 dark:text-white" />
                   </div>
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold font-['Outfit',sans-serif] text-zinc-950 dark:text-white">
@@ -939,14 +983,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
               {/* Completed Sessions */}
               <div
                 onClick={() => onNavigate('results')}
-                className="p-5 sm:p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition cursor-pointer"
+                className="p-5 sm:p-6 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/20 transition cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                     Completed
                   </span>
-                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shadow-xs">
-                    <Award className="w-4 h-4 text-black dark:text-white" />
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-zinc-200/80 dark:border-white/10 flex items-center justify-center shadow-xs">
+                    <Award className="w-4 h-4 text-zinc-950 dark:text-white" />
                   </div>
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold font-['Outfit',sans-serif] text-zinc-950 dark:text-white">
@@ -960,14 +1004,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* 4. RECENT PRACTICE HISTORY - STUDENT */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm"
+            className="rounded-[32px] sm:rounded-[36px] bg-white/80 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 p-6 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)]"
           >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <h3 className="font-['Outfit',sans-serif] font-bold text-base sm:text-lg text-zinc-950 dark:text-white">
                   Recent Practice History
                 </h3>
-                <span className="text-xs px-3 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold border border-zinc-200 dark:border-zinc-700">
+                <span className="text-xs px-3 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 font-bold border border-zinc-200/80 dark:border-white/10">
                   {results.length} sessions
                 </span>
               </div>
@@ -977,14 +1021,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 className="text-xs text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white font-bold flex items-center gap-1.5 cursor-pointer transition"
               >
                 <span>View All</span>
-                <ArrowRight className="w-4 h-4 text-black dark:text-white" />
+                <ArrowRight className="w-4 h-4 text-zinc-950 dark:text-white" />
               </button>
             </div>
 
             <div>
               {recentResults.length === 0 ? (
-                <div className="text-center py-10 px-6 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/30">
-                  <AlertCircle className="w-8 h-8 text-black dark:text-white mx-auto mb-2 opacity-50" />
+                <div className="text-center py-10 px-6 border border-dashed border-zinc-200 dark:border-white/10 rounded-2xl bg-zinc-50/50 dark:bg-[#0c182b]/50">
+                  <AlertCircle className="w-8 h-8 text-zinc-400 dark:text-zinc-500 mx-auto mb-2 opacity-60" />
                   <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
                     No completed practice sessions yet
                   </p>
@@ -993,7 +1037,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                <div className="divide-y divide-zinc-100 dark:divide-white/10">
                   {recentResults.map((r, index) => {
                     const isPassed = (r.percentage || 0) >= 70;
                     const diffMs = Date.now() - new Date(r.date).getTime();
@@ -1005,7 +1049,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     return (
                       <div
                         key={index}
-                        className="py-4 flex items-center justify-between gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 px-3 rounded-2xl transition"
+                        className="py-4 flex items-center justify-between gap-4 hover:bg-zinc-50 dark:hover:bg-[#0c182b]/80 px-3 rounded-2xl transition"
                       >
                         <div className="min-w-0 flex-1">
                           <h4 className="font-bold text-xs sm:text-sm text-zinc-950 dark:text-white truncate">
@@ -1039,7 +1083,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* 5. ETHIOPIAN BIRR SUBSCRIPTION FOOTER BANNER - STUDENT ONLY */}
           <motion.div
             variants={itemVariants}
-            className="rounded-[32px] sm:rounded-[36px] bg-white dark:bg-[000000]/95 border border-zinc-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-5"
+            className="rounded-[32px] sm:rounded-[36px] bg-white/80 dark:bg-[#070e1a]/95 backdrop-blur-2xl border border-white/80 dark:border-white/10 p-6 sm:p-8 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] flex flex-col sm:flex-row sm:items-center justify-between gap-5"
           >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold shadow-xs shrink-0">

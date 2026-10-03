@@ -36,7 +36,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-xs font-semibold rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 hover:bg-white dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition cursor-pointer shadow-xs"
+            className="px-4 py-2 text-xs font-semibold rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-[#0f1d33] hover:bg-white dark:hover:bg-[#132238] text-zinc-700 dark:text-zinc-300 transition cursor-pointer shadow-xs"
           >
             {cancelText}
           </button>

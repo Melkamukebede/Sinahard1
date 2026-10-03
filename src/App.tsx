@@ -688,6 +688,7 @@ function MainApp() {
             onOpenSubscriptionModal={isTeacher ? undefined : () => setIsSubscriptionModalOpen(true)}
             onOpenCuratedModal={() => setIsCuratedModalOpen(true)}
             onOpenRegistrationModal={openRegistrationModal}
+            onOpenNotificationsModal={() => setIsNotificationsModalOpen(true)}
             activeSubscription={activeSubscription}
             userTier={userTier}
             user={user}

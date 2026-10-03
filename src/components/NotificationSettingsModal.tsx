@@ -56,22 +56,22 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-[32px] bg-white/95 dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
+      <div className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-[32px] bg-white/95 dark:bg-[#070e1a] border border-white/80 dark:border-white/10 shadow-2xl overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-white/[0.02]">
+        <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between bg-white/60 dark:bg-[#0c182b]/80">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center shadow-2xs">
-              <Target className="w-4 h-4 text-zinc-900 dark:text-white" />
+            <div className="w-9 h-9 rounded-2xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 dark:border-amber-500/30 flex items-center justify-center shadow-2xs">
+              <Flame className="w-5 h-5 text-amber-500 animate-pulse" />
             </div>
             <div>
-              <h3 className="font-bold text-base font-['Outfit',sans-serif]">Study Targets & Alerts</h3>
-              <p className="text-xs text-zinc-500">Track daily practice goal, study streak, and exam results</p>
+              <h3 className="font-bold text-base font-['Outfit',sans-serif]">Daily Streak & Study Targets</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Track daily practice goal, study streak consistency, and milestone achievements</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+            className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#0f1d33] transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -82,52 +82,93 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
           {/* Daily Goal & Streak Hero Banner */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Streak Card */}
-            <div className="p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white flex items-center justify-center shrink-0">
-                <Flame className="w-6 h-6" />
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-zinc-50 dark:from-amber-500/15 dark:via-[#0c182b] dark:to-[#0c182b] border border-amber-500/20 dark:border-amber-500/30 flex flex-col justify-between gap-3 shadow-2xs">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20 dark:border-amber-500/30 shadow-xs">
+                  <Flame className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700/80 dark:text-amber-400">
+                    Study Consistency
+                  </div>
+                  <div className="text-lg font-black text-zinc-900 dark:text-white flex items-center gap-1.5">
+                    <span>{studyStreakDays} Day Streak</span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 dark:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                      Active 🔥
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Practicing regularly boosts exam retention</p>
+                </div>
               </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Study Consistency
+
+              {/* 7-Day Consistency Week Indicator */}
+              <div className="pt-2 border-t border-amber-500/15 dark:border-white/5 flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">Past 7 Days:</span>
+                <div className="flex items-center gap-1.5">
+                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => {
+                    const isPassedDay = idx < Math.min(studyStreakDays, 7);
+                    return (
+                      <div
+                        key={idx}
+                        className={`w-6 h-6 rounded-lg text-[10px] font-bold flex items-center justify-center transition-all ${
+                          isPassedDay
+                            ? 'bg-amber-500 text-zinc-950 font-black shadow-2xs'
+                            : 'bg-zinc-200/70 dark:bg-[#0f1d33] text-zinc-400 dark:text-zinc-500 border border-transparent dark:border-white/5'
+                        }`}
+                        title={`${day}: ${isPassedDay ? 'Practice completed' : 'Upcoming'}`}
+                      >
+                        {day}
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="text-lg font-black text-zinc-900 dark:text-white flex items-center gap-1.5">
-                  <span>{studyStreakDays} Day Streak</span>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">
-                    Active
-                  </span>
-                </div>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Practicing regularly boosts retention</p>
               </div>
             </div>
 
             {/* Daily Target Card */}
-            <div className="p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-6 h-6" />
+            <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 flex flex-col justify-between gap-3 shadow-2xs">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-sky-500/10 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 border border-sky-500/20 dark:border-sky-500/30">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    Today's Progress
+                  </div>
+                  <div className="text-lg font-black text-zinc-900 dark:text-white">
+                    {completedToday} / {dailyGoal} Exams
+                  </div>
+                  <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    {completedToday >= dailyGoal ? 'Goal completed! 🌟' : `${dailyGoal - completedToday} more to reach target`}
+                  </div>
+                </div>
               </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Today's Progress
+
+              {/* Progress Bar */}
+              <div className="pt-2 border-t border-zinc-200/60 dark:border-white/5 space-y-1">
+                <div className="flex items-center justify-between text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">
+                  <span>Target Fulfillment</span>
+                  <span>{Math.min(100, Math.round((completedToday / Math.max(dailyGoal, 1)) * 100))}%</span>
                 </div>
-                <div className="text-lg font-black text-zinc-900 dark:text-white">
-                  {completedToday} / {dailyGoal} Exams
-                </div>
-                <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  {completedToday >= dailyGoal ? 'Goal completed! 🌟' : `${dailyGoal - completedToday} more to reach target`}
+                <div className="w-full bg-zinc-200 dark:bg-[#0f1d33] h-2 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(100, Math.round((completedToday / Math.max(dailyGoal, 1)) * 100))}%` }}
+                  />
                 </div>
               </div>
             </div>
           </div>
 
           {/* Goal Selector */}
-          <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-3">
+          <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 space-y-3 shadow-xs">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-sm text-zinc-900 dark:text-white flex items-center gap-2">
                   <Target className="w-4 h-4 text-zinc-900 dark:text-white" />
                   Daily Exam Goal
                 </h4>
-                <p className="text-xs text-zinc-500 mt-0.5">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                   Set how many practice exams or quizzes you want to complete each day
                 </p>
               </div>
@@ -142,7 +183,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                   className={`py-2 px-3 rounded-xl font-bold text-xs cursor-pointer border transition flex flex-col items-center gap-0.5 ${
                     dailyGoal === target
                       ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
-                      : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                      : 'bg-white dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-white/10 hover:bg-zinc-100 dark:hover:bg-[#132238]'
                   }`}
                 >
                   <span className="text-sm font-black">{target}</span>
@@ -153,14 +194,14 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
           </div>
 
           {/* Daily Schedule Prompt */}
-          <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 space-y-4">
+          <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 space-y-4 shadow-xs">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-sm text-zinc-900 dark:text-white flex items-center gap-2">
                   <Clock className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
                   Preferred Study Time
                 </h4>
-                <p className="text-xs text-zinc-500 mt-0.5">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                   Designate your peak study hour for consistent focus
                 </p>
               </div>
@@ -173,18 +214,18 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                   onChange={(e) => setReminderEnabled(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-zinc-900 dark:peer-checked:bg-white" />
+                <div className="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-[#0f1d33] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-zinc-900 dark:peer-checked:bg-white" />
               </label>
             </div>
 
             {reminderEnabled && (
               <div className="flex items-center gap-3 pt-2">
-                <label className="text-xs font-semibold text-zinc-500">Study Hour:</label>
+                <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Study Hour:</label>
                 <input
                   type="time"
                   value={reminderTime}
                   onChange={(e) => setReminderTime(e.target.value)}
-                  className="px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-mono"
+                  className="px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-[#0f1d33] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white font-mono"
                 />
                 <button
                   type="button"
@@ -196,12 +237,12 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
               </div>
             )}
 
-            <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-              <span className="text-xs text-zinc-500">Test in-app alert banner:</span>
+            <div className="pt-2 border-t border-zinc-200 dark:border-white/10 flex items-center justify-between">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">Test in-app alert banner:</span>
               <button
                 type="button"
                 onClick={handleSendTest}
-                className="px-3.5 py-1.5 rounded-full border border-white/60 dark:border-white/10 bg-white/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                className="px-3.5 py-1.5 rounded-full border border-zinc-200 dark:border-white/10 bg-white/80 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition"
               >
                 {testSent ? <Check className="w-3.5 h-3.5 text-zinc-950 dark:text-white" /> : <Send className="w-3.5 h-3.5 text-zinc-500" />}
                 {testSent ? 'Alert Sent!' : 'Preview In-App Alert'}
@@ -212,7 +253,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
           {/* In-App Notification Center */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-500">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                 Recent Alerts & Milestones ({alerts.length})
               </h4>
               {alerts.length > 0 && (
@@ -237,8 +278,8 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                     onClick={() => markAlertAsRead(alert.id)}
                     className={`p-3 rounded-xl border transition cursor-pointer text-xs space-y-1 ${
                       alert.read
-                        ? 'bg-zinc-50/50 dark:bg-zinc-900/40 border-zinc-200/50 dark:border-zinc-800/50 opacity-70'
-                        : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 font-medium'
+                        ? 'bg-zinc-50/50 dark:bg-[#0c182b]/60 border-zinc-200/50 dark:border-white/5 opacity-70'
+                        : 'bg-zinc-50 dark:bg-[#0c182b] border-zinc-200 dark:border-white/10 font-medium'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -259,7 +300,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-zinc-100 dark:border-white/10 bg-white/60 dark:bg-white/[0.02] flex justify-end">
+        <div className="px-6 py-4 border-t border-zinc-100 dark:border-white/10 bg-white/60 dark:bg-[#0c182b]/80 flex justify-end">
           <button
             type="button"
             onClick={onClose}

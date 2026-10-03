@@ -66,13 +66,22 @@ function processMathContent(content: string): string {
   const mathTokens: { token: string; html: string }[] = [];
   let counter = 0;
 
-  // Replace display blocks \[ ... \] or $$ ... $$
+  // Replace standard display blocks \[ ... \] or $$ ... $$
   let text = content.replace(/\\\[([\s\S]*?)\\\]|\$\$([\s\S]*?)\$\$/g, (_, m1, m2) => {
     const math = (m1 || m2 || '').trim();
     const token = `__MATH_BLOCK_${counter++}__`;
     const html = getCachedKatex(math, true);
     mathTokens.push({ token, html });
     return token;
+  });
+
+  // Replace bare bracket display blocks [ ... ] (commonly copied without backslash on phones/ChatGPT)
+  // Ensures it contains LaTeX commands or mathematical operators so normal [Note] or [A] are preserved
+  text = text.replace(/(?:^|\n|\s)\[\s*([a-zA-Z0-9_\s\+\-\*\/\=\^\(\)\,\.\{\}\\]*?\\(?:frac|sqrt|sum|int|cdot|vec|times|alpha|beta|theta|pi|pm|approx|left|right|text|lim|over|partial|Delta|Omega|lambda)[a-zA-Z0-9_\s\+\-\*\/\=\^\(\)\,\.\{\}\\]*?)\s*\](?:\s|\n|$)/g, (_, math) => {
+    const token = `__MATH_BLOCK_${counter++}__`;
+    const html = getCachedKatex(math.trim(), true);
+    mathTokens.push({ token, html });
+    return `\n${token}\n`;
   });
 
   // Replace inline \( ... \)
@@ -83,8 +92,26 @@ function processMathContent(content: string): string {
     return token;
   });
 
-  // Also support single $...$ if present and not followed by numbers
+  // Support single $...$ if present and not followed by numbers
   text = text.replace(/(?<!\\)\$([^\$\n]+?)\$/g, (_, math) => {
+    const token = `__MATH_INLINE_${counter++}__`;
+    const html = getCachedKatex(math.trim(), false);
+    mathTokens.push({ token, html });
+    return token;
+  });
+
+  // Auto-detect standalone lines containing naked LaTeX (equations with \frac, \sqrt, etc. that lost delimiters on phone)
+  text = text.replace(/(?:^|\n)\s*([a-zA-Z0-9\(\)\s\+\-\*\/\=\,\.]*\\(?:frac|sqrt|sum|int|cdot|vec|times|alpha|beta|theta|pi|pm|approx|lim|partial|Delta|Omega|lambda|text)\{[^\}\n]+\}[^\n]*)(?=\n|$)/g, (fullMatch, math) => {
+    if (math.includes('__MATH_')) return fullMatch;
+    const token = `__MATH_BLOCK_${counter++}__`;
+    const html = getCachedKatex(math.trim(), true);
+    mathTokens.push({ token, html });
+    return `\n${token}\n`;
+  });
+
+  // Auto-detect inline naked LaTeX formulas like \frac{1}{2} or \sqrt{3} that lost inline $ delimiters
+  text = text.replace(/(?<![\$\w\\])(?:\\(?:frac\{[^\}\n]+\}\{[^\}\n]+\}|sqrt(?:\[[^\]\n]+\])?\{[^\}\n]+\}))/g, (math) => {
+    if (math.includes('__MATH_')) return math;
     const token = `__MATH_INLINE_${counter++}__`;
     const html = getCachedKatex(math.trim(), false);
     mathTokens.push({ token, html });
