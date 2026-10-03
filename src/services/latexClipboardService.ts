@@ -260,6 +260,23 @@ function replaceKatexWithTex(fragment: DocumentFragment): void {
   });
 }
 
+/**
+ * Prompt directive for AI models (ChatGPT, Claude, Gemini, DeepSeek)
+ * to output LaTeX math that is 100% resilient to mobile touch copy-pasting.
+ */
+export function getPhoneSafeLatexPromptDirective(): string {
+  return `MOBILE-SAFE LATEX COMPLIANCE DIRECTIVE (ANTI-PHONE-COPY ELIMINATION):
+1. DEDICATED STANDALONE LINES: Place every main formula or calculation step on its own dedicated line wrapped in bracket format:
+   [ equation ]
+   Example:
+   [ a = \\frac{v - u}{t} ]
+   [ s = ut + \\frac{1}{2}at^2 ]
+2. BLANK LINE PADDING: Always insert a blank line before and after every equation line. Mobile touch selection handles drop fractions and backslashes if equations touch surrounding text.
+3. INLINE MATH IN CHOICES: For inline variables or values inside multiple-choice options, wrap in \\( ... \\) or [ ... ].
+4. STRICT BACKSLASH RETENTION: Retain all standard LaTeX backslashes (\\frac, \\sqrt, \\times, \\cdot, \\pm, ^2). Never substitute plain ASCII like 'v - u / t' or '1/2'.
+5. NO NUMBERED STEPS IN EXPLANATIONS: Use bold thematic labels (**Formula:**, **Calculation:**, **Answer:**) instead of "1. Formula", "2. Calculation".`;
+}
+
 let isClipboardInterceptorInitialized = false;
 
 /**

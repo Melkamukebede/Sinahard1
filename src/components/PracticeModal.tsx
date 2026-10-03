@@ -344,29 +344,29 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
       <div
         key={q.id || qIndex}
         id={`practice-question-${qIndex}`}
-        className="p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 shadow-xs space-y-4 transition-all"
+        className="p-5 sm:p-6 rounded-[28px] bg-[#0c182b] border border-white/10 shadow-lg space-y-4 transition-all text-white"
       >
         {/* Card Header: Question Number */}
-        <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-white/10">
           <div className="flex items-center gap-2.5">
-            <span className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-bold text-xs flex items-center justify-center border border-zinc-200/60 dark:border-white/5">
+            <span className="w-7 h-7 rounded-xl bg-[#0f1d33] text-white font-bold text-xs flex items-center justify-center border border-white/10">
               {qIndex + 1}
             </span>
-            <span className="text-xs font-bold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
+            <span className="text-xs font-bold tracking-wider uppercase text-zinc-400">
               Question {qIndex + 1} of {exam.questions.length}
             </span>
           </div>
           <button
             type="button"
             onClick={() => handleCopyQuestion(q, qIndex)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10 text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white border border-zinc-200/80 dark:border-white/10 transition-all active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#0f1d33] hover:bg-[#132238] text-zinc-300 hover:text-white border border-white/10 transition-all active:scale-95 cursor-pointer shadow-xs"
             title="Copy question and formulas as clean LaTeX"
             aria-label="Copy question"
           >
             {copiedQuestionIdx === qIndex ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">Copied!</span>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-emerald-400 font-bold">Copied!</span>
               </>
             ) : (
               <>
@@ -378,7 +378,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
         </div>
 
         {/* Question Statement */}
-        <div className="text-base sm:text-lg font-medium text-zinc-900 dark:text-zinc-100 leading-relaxed pt-1">
+        <div className="text-base sm:text-lg font-medium text-white leading-relaxed pt-1">
           <MathRenderer content={q.text} />
         </div>
 
@@ -389,22 +389,22 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             const letter = String.fromCharCode(65 + optIdx);
             const isCorrectOption = q.correct === optIdx;
 
-            // Visual Styling based on selection and explanation state
+            // Visual Styling based on selection and explanation state using signature App Dark Palette
             let optionCardClasses = '';
             if (isExplRevealed) {
               if (isCorrectOption) {
-                optionCardClasses = 'bg-zinc-100 dark:bg-zinc-800 border-zinc-900 dark:border-white text-zinc-950 dark:text-white shadow-2xs font-medium';
+                optionCardClasses = 'bg-emerald-500/15 border-emerald-500 text-white shadow-xs font-medium';
               } else if (isSelected && !isCorrectOption) {
-                optionCardClasses = 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500 text-zinc-950 dark:text-white shadow-2xs';
+                optionCardClasses = 'bg-rose-500/15 border-rose-500 text-white shadow-xs';
               } else {
-                optionCardClasses = 'bg-zinc-50/50 dark:bg-white/[0.02] border-zinc-200 dark:border-white/5 opacity-60 text-zinc-500 dark:text-zinc-400';
+                optionCardClasses = 'bg-[#091322]/40 border-white/5 opacity-50 text-zinc-400';
               }
             } else if (isSelected) {
-              optionCardClasses = 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs';
+              optionCardClasses = 'bg-white text-zinc-950 border-white shadow-md font-bold';
             } else {
               optionCardClasses = isDisabled
-                ? 'bg-zinc-50/60 dark:bg-white/[0.02] border-zinc-200/80 dark:border-white/10 text-zinc-600 dark:text-zinc-400 opacity-60 cursor-not-allowed'
-                : 'bg-white dark:bg-[000000] border-white/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[18181b] cursor-pointer shadow-2xs';
+                ? 'bg-[#091322]/40 border-white/5 text-zinc-500 opacity-60 cursor-not-allowed'
+                : 'bg-[#0f1d33] border-white/10 text-zinc-200 hover:bg-[#132238] hover:text-white cursor-pointer shadow-2xs';
             }
 
             return (
@@ -422,12 +422,12 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
                     isExplRevealed && isCorrectOption
-                      ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-2xs'
+                      ? 'bg-emerald-500 text-white shadow-xs'
                       : isExplRevealed && isSelected && !isCorrectOption
-                      ? 'bg-rose-500 text-white shadow-2xs'
+                      ? 'bg-rose-500 text-white shadow-xs'
                       : isSelected
-                      ? 'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white shadow-2xs'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                      ? 'bg-zinc-950 text-white shadow-xs'
+                      : 'bg-[#0c182b] text-zinc-300 border border-white/10'
                   }`}
                 >
                   {letter}
@@ -437,10 +437,10 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 </div>
                 {/* Visual Icon Check / Indicator */}
                 {isExplRevealed && isCorrectOption && (
-                  <CheckCircle2 className="w-5 h-5 text-zinc-900 dark:text-white shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                 )}
                 {isExplRevealed && isSelected && !isCorrectOption && (
-                  <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
+                  <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
                 )}
               </div>
             );
@@ -448,24 +448,24 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
         </div>
 
         {/* Bottom Question Actions: Explanation Button at the bottom of every question */}
-        <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t border-zinc-100 dark:border-zinc-800/80">
+        <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t border-white/10">
           <button
             type="button"
             onClick={() => handleToggleExplanation(qIndex)}
             className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 cursor-pointer transition border shadow-2xs active:scale-98 ${
               isExplRevealed
-                ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-700'
-                : 'bg-white dark:bg-[000000] text-zinc-700 dark:text-zinc-300 border-white/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[18181b]'
+                ? 'bg-[#162742] text-white border-white/20'
+                : 'bg-[#0f1d33] text-zinc-300 border-white/10 hover:bg-[#132238] hover:text-white'
             }`}
           >
             {isExplRevealed ? (
               <>
-                <EyeOff className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
+                <EyeOff className="w-3.5 h-3.5 text-white" />
                 <span>Hide Explanation</span>
               </>
             ) : (
               <>
-                <Eye className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                <Eye className="w-3.5 h-3.5 text-zinc-400" />
                 <span>View Explanation</span>
               </>
             )}
@@ -474,18 +474,18 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
         {/* Correct Answer Shower & Step-by-Step Explanation Banner */}
         {isExplRevealed && (
-          <div className="p-4 sm:p-5 rounded-[24px] bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white space-y-3 animate-in fade-in duration-200">
+          <div className="p-4 sm:p-5 rounded-[24px] bg-[#070e1a] border border-emerald-500/30 text-white space-y-3 animate-in fade-in duration-200">
             {/* Banner Header: Correct Answer Shower */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-zinc-200 dark:border-zinc-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-white/10">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                <div className="w-8 h-8 rounded-full bg-white text-zinc-950 flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
                   {String.fromCharCode(65 + q.correct)}
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 block">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 block">
                     Correct Answer
                   </span>
-                  <div className="text-sm sm:text-base font-bold text-zinc-950 dark:text-white">
+                  <div className="text-sm sm:text-base font-bold text-white">
                     Option {String.fromCharCode(65 + q.correct)}: <MathRenderer content={q.options[q.correct]} inline />
                   </div>
                 </div>
@@ -494,18 +494,18 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               {/* Status Comparison Badge */}
               <div className="shrink-0">
                 {selectedOpt === q.correct ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#0f1d33] text-white border border-white/10">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                     Your Choice: Correct ✓
                   </span>
                 ) : selectedOpt !== null && selectedOpt !== undefined ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
-                    <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                    <XCircle className="w-3.5 h-3.5 text-rose-400" />
                     Your Choice: Option {String.fromCharCode(65 + selectedOpt)} (Incorrect)
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
                     No answer selected
                   </span>
                 )}
@@ -514,8 +514,8 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
             {/* Step-by-Step Solution & LaTeX formulas */}
             {q.explanation && (
-              <div className="pt-1 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 space-y-1.5">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
+              <div className="pt-1 text-xs sm:text-sm text-zinc-200 space-y-1.5">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
                   <span>Step-by-step Solution:</span>
                 </div>
                 <div className="leading-relaxed">
@@ -531,17 +531,17 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-        <div className="w-full max-w-4xl h-[94vh] max-h-[880px] bg-white/95 dark:bg-[000000] border border-white/80 dark:border-white/10 rounded-[32px] shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="w-full max-w-4xl h-[94vh] max-h-[880px] bg-[#070e1a] border border-white/10 rounded-[32px] shadow-2xl flex flex-col overflow-hidden text-white backdrop-blur-2xl">
           {/* Header Bar using App Color Design */}
-          <div className="px-5 sm:px-6 py-3.5 border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between gap-3 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md flex-wrap">
+          <div className="px-5 sm:px-6 py-3.5 border-b border-white/10 flex items-center justify-between gap-3 bg-[#0c182b]/95 backdrop-blur-md flex-wrap text-white">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-zinc-900 dark:bg-white animate-pulse shrink-0" />
-              <h2 className="font-['Outfit',sans-serif] font-bold text-sm sm:text-base text-zinc-900 dark:text-white truncate">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <h2 className="font-['Outfit',sans-serif] font-bold text-sm sm:text-base text-white truncate">
                 {exam.name}
               </h2>
               {Boolean(isAppOffline() || exam.metadata?.offlineCapped) && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-center gap-1 shrink-0" title="Offline Free/Guest 20-question cap active">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 flex items-center gap-1 shrink-0" title="Offline Free/Guest 20-question cap active">
                   <CloudOff className="w-2.5 h-2.5" />
                   <span>Offline (Max 20)</span>
                 </span>
@@ -550,7 +550,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
             {/* Center Controls: Mode Toggle (1 to 1 vs 6 to 1) & Compact Mode Toggle */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="flex items-center p-1 rounded-full bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-white/10 text-xs">
+              <div className="flex items-center p-1 rounded-full bg-[#091322] border border-white/10 text-xs">
                 <button
                   type="button"
                   onClick={() => {
@@ -559,8 +559,8 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                   }}
                   className={`px-2.5 sm:px-3 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
                     viewMode === '1-to-1'
-                      ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                      ? 'bg-white text-zinc-950 font-bold shadow-xs'
+                      : 'text-zinc-400 hover:text-white'
                   }`}
                   title="Single question focus mode"
                 >
@@ -576,8 +576,8 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                   }}
                   className={`px-2 sm:px-2.5 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
                     viewMode === '6-to-1'
-                      ? 'bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-xs'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                      ? 'bg-white text-zinc-950 font-bold shadow-xs'
+                      : 'text-zinc-400 hover:text-white'
                   }`}
                   title="6 questions per page vertically"
                 >
@@ -592,8 +592,8 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 onClick={() => setDensityMode((prev) => (prev === 'full' ? 'minimalist' : 'full'))}
                 className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 border shadow-2xs active:scale-95 ${
                   densityMode === 'minimalist'
-                    ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
-                    : 'bg-white dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-zinc-700'
+                    ? 'bg-white text-zinc-950 font-bold border-white shadow-xs'
+                    : 'bg-[#0f1d33] text-zinc-300 border-white/10 hover:bg-[#132238] hover:text-white'
                 }`}
                 title={
                   densityMode === 'minimalist'
@@ -603,9 +603,9 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               >
                 {densityMode === 'minimalist' ? (
                   <>
-                    <Maximize2 className="w-3 h-3 text-zinc-300 dark:text-zinc-700" />
+                    <Maximize2 className="w-3 h-3 text-zinc-800" />
                     <span className="font-bold">Minimalist</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20 dark:bg-zinc-900/20 font-mono">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-900 text-white font-mono">
                       Q{currentIndex + 1}/{exam.questions.length}
                     </span>
                   </>
@@ -627,20 +627,20 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 title="Click or press Space to pause/resume"
                 className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer border select-none shadow-xs ${
                   isPaused
-                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 animate-pulse'
+                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 animate-pulse'
                     : timeLeft <= 60
-                    ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 animate-pulse'
-                    : 'bg-white dark:bg-[000000] text-zinc-700 dark:text-zinc-200 border-white/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[18181b]'
+                    ? 'bg-rose-500/15 text-rose-400 border-rose-500/40 animate-pulse'
+                    : 'bg-[#0f1d33] text-zinc-200 border-white/10 hover:bg-[#132238] hover:text-white'
                 }`}
               >
                 {isPaused ? (
                   <>
-                    <Play className="w-3.5 h-3.5 fill-current text-amber-600" />
+                    <Play className="w-3.5 h-3.5 fill-current text-amber-400" />
                     <span>PAUSED</span>
                   </>
                 ) : (
                   <>
-                    <Clock className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
                     <span>{formatTimer(timeLeft)}</span>
                     <Pause className="w-3 h-3 opacity-60 ml-0.5" />
                   </>
@@ -651,7 +651,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                className="p-1.5 rounded-full text-zinc-400 hover:text-white hover:bg-[#0f1d33] transition cursor-pointer"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
@@ -660,9 +660,9 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full h-1 bg-zinc-100 dark:bg-zinc-800/60">
+          <div className="w-full h-1 bg-[#0f1d33]">
             <div
-              className="h-full bg-zinc-900 dark:bg-white transition-all duration-300 ease-out"
+              className="h-full bg-white transition-all duration-300 ease-out"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -670,14 +670,14 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
           {/* Subheader Tracker & Question Navigation Ribbon (Hidden in Minimalist View to maximize workspace) */}
           {densityMode === 'full' && (
             <>
-              <div className="px-5 sm:px-6 py-2 bg-zinc-50/70 dark:bg-white/[0.02] border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between gap-3 text-xs text-zinc-500">
+              <div className="px-5 sm:px-6 py-2 bg-[#0c182b]/90 border-b border-white/10 flex items-center justify-between gap-3 text-xs text-zinc-400">
                 <div className="flex items-center gap-2 truncate">
                   {viewMode === '1-to-1' ? (
-                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                    <span className="font-semibold text-zinc-200">
                       Question {currentIndex + 1} of {exam.questions.length}
                     </span>
                   ) : (
-                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                    <span className="font-semibold text-zinc-200">
                       Batch {batchPage + 1} of {totalBatchPages} (Questions {batchStartIdx + 1}–{batchEndIdx})
                     </span>
                   )}
@@ -686,14 +686,14 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 {/* Answered Counter */}
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="text-xs">
-                    Answered: <strong className="text-zinc-900 dark:text-white">{answeredCount}</strong> / {exam.questions.length}
+                    Answered: <strong className="text-white">{answeredCount}</strong> / {exam.questions.length}
                   </span>
                 </div>
               </div>
 
               {/* Quick Question Jump Ribbon (Scrollable pills) */}
-              <div className="px-5 sm:px-6 py-1.5 bg-white/40 dark:bg-white/[0.01] border-b border-zinc-100 dark:border-zinc-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mr-1 shrink-0">
+              <div className="px-5 sm:px-6 py-1.5 bg-[#070e1a]/90 border-b border-white/10 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mr-1 shrink-0">
                   Jump:
                 </span>
                 {exam.questions.map((_, idx) => {
@@ -703,13 +703,13 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
                   let pillClass = '';
                   if (isCurrent) {
-                    pillClass = 'ring-2 ring-zinc-950 dark:ring-white font-bold bg-zinc-950 text-white dark:bg-white dark:text-zinc-950';
+                    pillClass = 'ring-2 ring-white font-bold bg-white text-zinc-950';
                   } else if (isAns) {
-                    pillClass = 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700 font-semibold';
+                    pillClass = 'bg-[#162742] text-white border border-white/20 font-semibold';
                   } else if (isExpl) {
-                    pillClass = 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30';
+                    pillClass = 'bg-amber-500/15 text-amber-300 border border-amber-500/30';
                   } else {
-                    pillClass = 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700';
+                    pillClass = 'bg-[#0f1d33] text-zinc-300 border border-white/10 hover:bg-[#132238]';
                   }
 
                   return (
@@ -728,7 +728,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
           )}
 
           {/* Main Questions View Area (Supports Blur when Time is Paused) */}
-          <div className="flex-1 relative overflow-hidden flex flex-col">
+          <div className="flex-1 relative overflow-hidden flex flex-col bg-[#070e1a]">
             {/* Scrollable Questions Container */}
             <div
               ref={scrollContainerRef}
@@ -752,33 +752,33 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
             {/* Anti-Peek Paused Overlay (Active only when paused) */}
             {isPaused && (
-              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/40 dark:bg-black/40 backdrop-blur-xs p-6 animate-in fade-in duration-200">
-                <div className="max-w-md w-full p-8 rounded-[28px] bg-white/90 dark:bg-[000000]/90 border border-white/80 dark:border-white/10 shadow-2xl text-center backdrop-blur-xl">
-                  <div className="w-16 h-16 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/75 backdrop-blur-xs p-6 animate-in fade-in duration-200">
+                <div className="max-w-md w-full p-8 rounded-[28px] bg-[#070e1a]/95 border border-white/10 shadow-2xl text-center backdrop-blur-xl text-white">
+                  <div className="w-16 h-16 rounded-full bg-amber-500/15 text-amber-400 flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
                     <Pause className="w-8 h-8 fill-current" />
                   </div>
-                  <h3 className="text-xl font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
+                  <h3 className="text-xl font-bold font-['Outfit',sans-serif] text-white">
                     Exam Paused
                   </h3>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto mt-1.5 mb-6 leading-relaxed">
+                  <p className="text-xs text-zinc-400 max-w-xs mx-auto mt-1.5 mb-6 leading-relaxed">
                     Questions, equations, and answers are blurred to preserve testing integrity while the clock is stopped.
                   </p>
                   <button
                     type="button"
                     onClick={togglePause}
-                    className="w-full py-3 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98 transition"
+                    className="w-full py-3 rounded-full bg-white text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98 transition hover:bg-zinc-100"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
                     <span>Resume Exam</span>
                   </button>
-                  <p className="text-[11px] text-zinc-400 mt-2.5">or press Spacebar to resume</p>
+                  <p className="text-[11px] text-zinc-500 mt-2.5">or press Spacebar to resume</p>
                 </div>
               </div>
             )}
           </div>
 
           {/* Footer Navigation Controls */}
-          <div className="px-5 sm:px-6 py-3.5 border-t border-zinc-100 dark:border-zinc-800/80 bg-white/60 dark:bg-white/[0.02] backdrop-blur-md flex items-center justify-between gap-2">
+          <div className="px-5 sm:px-6 py-3.5 border-t border-white/10 bg-[#0c182b]/95 backdrop-blur-md flex items-center justify-between gap-2 text-white">
             {viewMode === '1-to-1' ? (
               // 1-to-1 Mode Footer
               <>
@@ -786,7 +786,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                   type="button"
                   disabled={currentIndex === 0}
                   onClick={handlePrev1to1}
-                  className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[000000] text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-[18181b] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
+                  className="px-4 py-2 rounded-full border border-white/10 bg-[#0f1d33] text-zinc-200 font-semibold text-xs flex items-center gap-1.5 hover:bg-[#132238] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Previous</span>
@@ -796,7 +796,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                   <button
                     type="button"
                     onClick={handleNext1to1}
-                    className="px-5 py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
+                    className="px-5 py-2.5 rounded-full bg-white text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98 hover:bg-zinc-100"
                   >
                     {currentIndex === exam.questions.length - 1 ? (
                       <>
@@ -819,13 +819,13 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                   type="button"
                   disabled={batchPage === 0}
                   onClick={handlePrevBatch}
-                  className="px-4 py-2 rounded-full border border-white/80 dark:border-white/10 bg-white dark:bg-[000000] text-zinc-700 dark:text-zinc-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-[18181b] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
+                  className="px-4 py-2 rounded-full border border-white/10 bg-[#0f1d33] text-zinc-200 font-semibold text-xs flex items-center gap-1.5 hover:bg-[#132238] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Prev<span className="hidden sm:inline">ious 6 Questions</span></span>
                 </button>
 
-                <div className="hidden sm:flex items-center text-xs text-zinc-500">
+                <div className="hidden sm:flex items-center text-xs text-zinc-400">
                   Page {batchPage + 1} of {totalBatchPages}
                 </div>
 
@@ -833,7 +833,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                   <button
                     type="button"
                     onClick={handleNextBatch}
-                    className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98 hover:bg-zinc-100"
                   >
                     {batchPage === totalBatchPages - 1 ? (
                       <>

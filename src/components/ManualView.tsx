@@ -45,29 +45,38 @@ export const ManualView: React.FC<ManualViewProps> = ({
 FORMAT SPECIFICATION:
 Grade: 10
 Subject: Physics
-Topic: Classical Mechanics
+Topic: Classical Mechanics & Kinematics
 Time Limit: 20 minutes
 ================================================================
 
-1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
-   A) \\( 240,000 \\text{ J} \\)
-   B) \\( 120,000 \\text{ J} \\)
-   C) \\( 480,000 \\text{ J} \\)
-   D) \\( 24,000 \\text{ J} \\)
+1. An object accelerates uniformly from rest to final velocity \\( v = 20 \\text{ m/s} \\) in time \\( t = 4 \\text{ s} \\). What is its acceleration?
+   A) \\( 5 \\text{ m/s}^2 \\)
+   B) \\( 80 \\text{ m/s}^2 \\)
+   C) \\( 2.5 \\text{ m/s}^2 \\)
+   D) \\( 10 \\text{ m/s}^2 \\)
    Answer: A
    Explanation: **Formula:**
-\\[ E_k = \\frac{1}{2} m v^2 \\]
+[ a = \\frac{v - u}{t} ]
+
 **Calculation:**
-\\[ E_k = \\frac{1}{2} (1200)(20^2) = 600 \\times 400 = 240,000 \\text{ J} = 240 \\text{ kJ} \\]
-**Answer:** \\( 240,000 \\text{ J} \\)
+[ s = ut + \\frac{1}{2}at^2 ]
+
+[ a = \\frac{20 - 0}{4} = 5 \\text{ m/s}^2 ]
+**Answer:** \\( 5 \\text{ m/s}^2 \\)
 
 OUTPUT RULES:
 1. Output pure plain text (.txt format). No markdown code blocks, no greetings or conversational intro.
 2. Put Answer: [Letter] on its own line.
 3. DO NOT use numbers in the explanation area (avoid 1. Formula 2. Calculation; instead use **Formula:**, **Calculation:**, **Answer:**).
-4. For math and physics formulas, wrap display equations in \\[ ... \\] and inline variables in \\( ... \\).`;
+4. For math and physics formulas, wrap display equations in [ ... ] or \\[ ... \\] and inline variables in \\( ... \\).
+5. PHONE COPY SHIELD (PREVENT FORMULA ELIMINATION ON PHONES):
+   - Wrap every key equation on its own standalone line as [ equation ] (e.g. [ a = \\frac{v - u}{t} ]).
+   - Place blank lines before and after every equation line. Mobile touch selection drag handles drop fractions or backslashes if equations touch surrounding text.
+   - Always retain all standard LaTeX backslashes (\\frac, \\sqrt, \\cdot, \\times, ^2). Never substitute plain ASCII like 'v - u / t'.`;
 
   const formulaShortcuts = [
+    { label: 'Acceleration [ a = \\frac{v - u}{t} ]', code: 'a = \\frac{v - u}{t}' },
+    { label: 'Displacement [ s = ut + \\frac{1}{2}at^2 ]', code: 's = ut + \\frac{1}{2}at^2' },
     { label: 'Fraction', code: '\\frac{a}{b}' },
     { label: 'Square Root', code: '\\sqrt{x}' },
     { label: 'Power / Exponent', code: 'x^2 + y^2 = r^2' },

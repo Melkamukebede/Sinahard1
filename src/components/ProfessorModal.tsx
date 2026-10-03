@@ -15,7 +15,10 @@ import {
   ChevronDown,
   Plus,
   Minus,
+  Smartphone,
+  ShieldCheck,
 } from 'lucide-react';
+import { getPhoneSafeLatexPromptDirective } from '../services/latexClipboardService';
 
 interface ProfessorModalProps {
   isOpen: boolean;
@@ -50,6 +53,7 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
   // UI View Tab & Interactive States
   const [activeView, setActiveView] = useState<ActiveView>('prompt');
   const [copied, setCopied] = useState<boolean>(false);
+  const [copiedDirective, setCopiedDirective] = useState<boolean>(false);
   const [isCopying, setIsCopying] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
@@ -231,20 +235,24 @@ Time Limit: ${timeLimit} minutes
 
 For each question:
 1. [Clear problem statement with LaTeX notation like \\( m = 1200 \\text{ kg} \\)]
-   A) [Option with \\( ... \\)]
-   B) [Option with \\( ... \\)]
-   C) [Option with \\( ... \\)]
-   D) [Option with \\( ... \\)]
+   A) [Option with \\( ... \\) or [ ... ]]
+   B) [Option with \\( ... \\) or [ ... ]]
+   C) [Option with \\( ... \\) or [ ... ]]
+   D) [Option with \\( ... \\) or [ ... ]]
    Answer: [Correct Option Letter: A, B, C, or D]
    Explanation: **Formula:**
-\\[ [State the governing formula or principle in LaTeX] \\]
+[ [State governing formula on its own line: e.g. a = \\frac{v - u}{t}] ]
 **Calculation:**
-\\[ [Step-by-step substitution and algebraic evaluation] \\]
+[ [Step-by-step evaluation on its own line: e.g. s = ut + \\frac{1}{2}at^2] ]
 **Answer:** \\( [Final numerical value with SI units] \\)
 
 CRITICAL RULES:
 1. STRICTLY NO NUMBERS IN EXPLANATION: Do NOT write "1. Formula", "2. Calculation", or "Step 1", "Step 2". Use ONLY bold labels (**Formula:**, **Calculation:**, **Answer:**).
-2. LATEX NOTATION: Wrap display equations in \\[ ... \\] and inline variables/numbers in \\( ... \\).
+2. MOBILE-SAFE LATEX COMPLIANCE (PREVENT PHONE COPY ELIMINATION):
+   - Wrap display equations on their own dedicated line using bracket format [ equation ] or \\[ equation \\] (e.g. [ a = \\frac{v - u}{t} ] or [ s = ut + \\frac{1}{2}at^2 ]).
+   - Place blank lines before and after every display equation so touch-selection drag handles on mobile phones never scramble or eliminate formulas.
+   - For inline variables or values in options, wrap in \\( ... \\) or [ ... ].
+   - Strictly retain all LaTeX commands and backslashes (\\frac, \\sqrt, \\times, \\cdot, \\pm, ^2). Never drop backslashes or simplify into broken plain text.
 3. DIFFICULTY CALIBRATION (${difficulty.toUpperCase()}): ${difficultyConfig.briefGuide}
 4. REALISTIC DISTRACTORS: Options B, C, D must reflect realistic student calculation slips (${difficultyConfig.distractorRule}).
 5. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the FORMAT SPECIFICATION header.`;
@@ -293,15 +301,17 @@ CRITICAL RULES:
    - Do NOT write numbered lists in the explanation (NEVER write "1. Formula", "2. Calculation", "1. Substitute", or "Step 1", "Step 2").
    - Structure every explanation vertically using clean, bold thematic labels:
      **Formula:**
-     \\[ \\text{State the governing equation or law} \\]
+     [ \\text{State the governing equation or law: e.g. a = \\frac{v - u}{t}} ]
      **Calculation:**
-     \\[ \\text{Step-by-step substitution and numerical evaluation} \\]
+     [ \\text{Step-by-step substitution and numerical evaluation: e.g. s = ut + \\frac{1}{2}at^2} ]
      **Answer:** \\( \\text{State final answer clearly with SI units} \\)
-2. LATEX MATHEMATICAL NOTATION:
-   - Use \\[ ... \\] for display math on its own line (e.g. \\[ E_k = \\frac{1}{2} m v^2 \\]).
-   - Use \\( ... \\) for inline variables, parameters, and units (e.g. \\( m = 1200 \\text{ kg} \\), \\( v = 20 \\text{ m/s} \\)).
-   - Wrap options in \\( ... \\) when they contain numerical values, equations, or scientific units.
-   - Do NOT output raw ASCII math (never write x^2 without \\(x^2\\) or sqrt without \\(\\sqrt{x}\\)).
+2. LATEX MATHEMATICAL NOTATION (PHONE-SAFE ANTI-ELIMINATION STANDARD):
+   - Mobile touch clipboards frequently strip single backslashes or destroy inline fractions when copied.
+   - To make equations 100% resilient across phones and desktop:
+     a) Always put display formulas on their own dedicated line using bracket notation [ equation ] or \\[ equation \\] (e.g. [ a = \\frac{v - u}{t} ] or [ s = ut + \\frac{1}{2}at^2 ]).
+     b) Separate equations with blank lines above and below to prevent mobile selection drag handles from merging words into formulas.
+     c) In multiple-choice options, enclose mathematical expressions and numbers with units in \\( ... \\) or [ ... ].
+     d) Always keep backslashes intact on all LaTeX keywords: \\frac{numerator}{denominator}, \\sqrt{x}, \\times, \\cdot, \\pm, \\Delta, etc. Never output raw ASCII math.
 3. DISTRACTOR INTEGRITY:
    - ${difficultyConfig.distractorRule}`;
     } else {
@@ -379,17 +389,20 @@ Time Limit: ${timeLimit} minutes
 \\[ E_k = \\frac{1}{2} (1200)(20^2) = 600 \\times 400 = 240,000 \\text{ J} = 240 \\text{ kJ} \\]
 **Answer:** \\( 240,000 \\text{ J} \\)
 
-2. According to Newton's Second Law, if a net force of \\( 45 \\text{ N} \\) acts on a \\( 5 \\text{ kg} \\) object, what is its acceleration?
-   A) \\( 9 \\text{ m/s}^2 \\)
-   B) \\( 225 \\text{ m/s}^2 \\)
-   C) \\( 0.11 \\text{ m/s}^2 \\)
-   D) \\( 40 \\text{ m/s}^2 \\)
+2. An object accelerates uniformly from initial velocity \( u = 5 \text{ m/s} \) to final velocity \( v = 25 \text{ m/s} \) in time \( t = 4 \text{ s} \). What is its acceleration and displacement?
+   A) \( a = 5 \text{ m/s}^2, s = 60 \text{ m} \)
+   B) \( a = 10 \text{ m/s}^2, s = 120 \text{ m} \)
+   C) \( a = 2.5 \text{ m/s}^2, s = 30 \text{ m} \)
+   D) \( a = 4 \text{ m/s}^2, s = 50 \text{ m} \)
    Answer: A
    Explanation: **Formula:**
-\\[ F = m a \\implies a = \\frac{F}{m} \\]
+[ a = \frac{v - u}{t} ]
+
 **Calculation:**
-\\[ a = \\frac{45 \\text{ N}}{5 \\text{ kg}} = 9 \\text{ m/s}^2 \\]
-**Answer:** \\( 9 \\text{ m/s}^2 \\)`;
+[ s = ut + \frac{1}{2}at^2 ]
+
+[ s = (5)(4) + \frac{1}{2}(5)(4^2) = 20 + 40 = 60 \text{ m} ]
+**Answer:** \( a = 5 \text{ m/s}^2, s = 60 \text{ m} \)`;
     } else {
       return `================================================================
 FORMAT SPECIFICATION:
@@ -429,6 +442,16 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
     }
   };
 
+  const handleCopyDirective = async () => {
+    try {
+      await navigator.clipboard.writeText(getPhoneSafeLatexPromptDirective());
+      setCopiedDirective(true);
+      setTimeout(() => setCopiedDirective(false), 2000);
+    } catch {
+      // ignore
+    }
+  };
+
   const handleCopyAndProceed = async () => {
     try {
       await navigator.clipboard.writeText(generatedPrompt);
@@ -458,7 +481,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-zinc-900 via-zinc-600 to-zinc-900 dark:from-white/40 dark:via-white/80 dark:to-white/40" />
 
         {/* Header */}
-        <div className="relative px-5 sm:px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between bg-zinc-50/80 dark:bg-white/[0.02]">
+        <div className="relative px-5 sm:px-6 py-4 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between bg-zinc-50/80 dark:bg-[#0c182b]/80">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center shadow-xs">
               <Sparkles className="w-5 h-5 stroke-[2.5]" />
@@ -468,8 +491,8 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                 <h3 className="font-bold text-base font-['Outfit',sans-serif] text-zinc-950 dark:text-white">
                   AI Prompt Studio
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
-                  1-Click Formatter
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  📱 Mobile-Safe LaTeX
                 </span>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -482,7 +505,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
             id="professor-modal-close-btn"
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center transition cursor-pointer border border-zinc-200 dark:border-zinc-700"
+            className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-[#132238] flex items-center justify-center transition cursor-pointer border border-zinc-200 dark:border-white/10"
             aria-label="Close AI Prompt Builder"
           >
             <X className="w-4 h-4 stroke-[2.5]" />
@@ -492,7 +515,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
         {/* Modal Body */}
         <div className="relative flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs bg-white dark:bg-[#070e1a]">
           {/* Workflow Banner */}
-          <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 shadow-xs flex items-center justify-between gap-3 text-zinc-700 dark:text-zinc-300">
+          <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 shadow-xs flex items-center justify-between gap-3 text-zinc-700 dark:text-zinc-300">
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center shrink-0 shadow-xs">
                 <HelpCircle className="w-4 h-4 stroke-[2.5]" />
@@ -502,7 +525,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
               </span>
             </div>
             {isGenerating && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-[11px] font-bold border border-zinc-300 dark:border-zinc-700 shrink-0">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white text-[11px] font-bold border border-zinc-300 dark:border-white/10 shrink-0">
                 <Loader2 className="w-3 h-3 stroke-[2.5] animate-spin" />
                 <span>Updating...</span>
               </div>
@@ -528,7 +551,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                   key={p.id}
                   type="button"
                   onClick={() => applyPreset(p.id as any)}
-                  className="px-3 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 shadow-2xs active:scale-98 cursor-pointer transition"
+                  className="px-3 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-[#0f1d33] hover:bg-zinc-200 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 text-zinc-800 dark:text-zinc-200 shadow-2xs active:scale-98 cursor-pointer transition"
                 >
                   {p.label}
                 </button>
@@ -547,13 +570,13 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
               className={`p-3.5 rounded-[22px] border text-left transition cursor-pointer flex items-start gap-3 shadow-xs active:scale-98 ${
                 subjectType === 'calculation'
                   ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white'
-                  : 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
+                  : 'bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-white/20'
               }`}
             >
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${
                 subjectType === 'calculation'
-                  ? 'bg-white/10 text-white dark:bg-zinc-900 dark:text-white border-white/20'
-                  : 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-700'
+                  ? 'bg-white/10 text-white dark:bg-[#070e1a] dark:text-white border-white/20'
+                  : 'bg-white dark:bg-[#0f1d33] text-zinc-900 dark:text-white border-zinc-200 dark:border-white/10'
               }`}>
                 <Calculator className="w-4 h-4 stroke-[2.5]" />
               </div>
@@ -564,8 +587,8 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                   </span>
                   <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border ${
                     subjectType === 'calculation'
-                      ? 'bg-white/20 text-white dark:bg-zinc-900 dark:text-white border-transparent'
-                      : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700'
+                      ? 'bg-white/20 text-white dark:bg-[#070e1a] dark:text-white border-transparent'
+                      : 'bg-zinc-200 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-white/10'
                   }`}>
                     KaTeX Steps
                   </span>
@@ -585,13 +608,13 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
               className={`p-3.5 rounded-[22px] border text-left transition cursor-pointer flex items-start gap-3 shadow-xs active:scale-98 ${
                 subjectType === 'theory'
                   ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white'
-                  : 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
+                  : 'bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-white/20'
               }`}
             >
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${
                 subjectType === 'theory'
-                  ? 'bg-white/10 text-white dark:bg-zinc-900 dark:text-white border-white/20'
-                  : 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-200 dark:border-zinc-700'
+                  ? 'bg-white/10 text-white dark:bg-[#070e1a] dark:text-white border-white/20'
+                  : 'bg-white dark:bg-[#0f1d33] text-zinc-900 dark:text-white border-zinc-200 dark:border-white/10'
               }`}>
                 <BookOpen className="w-4 h-4 stroke-[2.5]" />
               </div>
@@ -602,8 +625,8 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                   </span>
                   <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border ${
                     subjectType === 'theory'
-                      ? 'bg-white/20 text-white dark:bg-zinc-900 dark:text-white border-transparent'
-                      : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700'
+                      ? 'bg-white/20 text-white dark:bg-[#070e1a] dark:text-white border-transparent'
+                      : 'bg-zinc-200 dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-white/10'
                   }`}>
                     Conceptual
                   </span>
@@ -616,7 +639,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
           </div>
 
           {/* Simplified Core Configuration with Interactive Spinners */}
-          <div className="p-4 sm:p-5 rounded-[22px] bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-4 sm:p-5 rounded-[22px] bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 shadow-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* 1. Grade Selector with Stepper Spinner */}
             <div>
               <label className="block text-[11px] font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
@@ -627,7 +650,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                   type="button"
                   onClick={handlePrevGrade}
                   disabled={currentGradeIndex <= 0}
-                  className="w-8 h-8 rounded-xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
+                  className="w-8 h-8 rounded-xl bg-white dark:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
                   title="Previous grade"
                 >
                   <Minus className="w-3.5 h-3.5" />
@@ -639,7 +662,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                       triggerRegeneration();
                       setGrade(e.target.value);
                     }}
-                    className="w-full pl-3 pr-8 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs font-bold focus:outline-hidden focus:border-zinc-900 dark:focus:border-white cursor-pointer shadow-2xs appearance-none"
+                    className="w-full pl-3 pr-8 py-2 rounded-xl bg-white dark:bg-[#070e1a] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-bold focus:outline-hidden focus:border-zinc-900 dark:focus:border-white cursor-pointer shadow-2xs appearance-none"
                   >
                     <option value="7">Grade 7</option>
                     <option value="8">Grade 8</option>
@@ -656,7 +679,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                   type="button"
                   onClick={handleNextGrade}
                   disabled={currentGradeIndex >= GRADE_LIST.length - 1}
-                  className="w-8 h-8 rounded-xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
+                  className="w-8 h-8 rounded-xl bg-white dark:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
                   title="Next grade"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -677,7 +700,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                   setSubject(e.target.value);
                 }}
                 placeholder="e.g. Physics"
-                className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-zinc-900 dark:focus:border-white shadow-2xs"
+                className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#070e1a] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-zinc-900 dark:focus:border-white shadow-2xs"
               />
             </div>
 
@@ -694,7 +717,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                   setTopics(e.target.value);
                 }}
                 placeholder="e.g. Classical Mechanics"
-                className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-zinc-900 dark:focus:border-white shadow-2xs"
+                className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#070e1a] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-semibold focus:outline-hidden focus:border-zinc-900 dark:focus:border-white shadow-2xs"
               />
             </div>
 
@@ -713,7 +736,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                   type="button"
                   onClick={handleDecrementTime}
                   disabled={timeLimit <= 5}
-                  className="w-8 h-8 rounded-xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
+                  className="w-8 h-8 rounded-xl bg-white dark:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
                   title="Decrease by 5 mins"
                 >
                   <Minus className="w-3.5 h-3.5" />
@@ -728,7 +751,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                       triggerRegeneration();
                       setTimeLimit(Math.max(1, parseInt(e.target.value, 10) || 20));
                     }}
-                    className="w-full px-2 py-2 text-center text-xs font-bold rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-hidden focus:border-zinc-900 dark:focus:border-white shadow-2xs"
+                    className="w-full px-2 py-2 text-center text-xs font-bold rounded-xl bg-white dark:bg-[#070e1a] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:outline-hidden focus:border-zinc-900 dark:focus:border-white shadow-2xs"
                   />
                   <span className="text-[10px] text-zinc-400 font-bold absolute right-3 pointer-events-none">
                     mins
@@ -738,7 +761,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                   type="button"
                   onClick={handleIncrementTime}
                   disabled={timeLimit >= 180}
-                  className="w-8 h-8 rounded-xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
+                  className="w-8 h-8 rounded-xl bg-white dark:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
                   title="Increase by 5 mins"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -756,7 +779,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                       className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border ${
                         timeLimit === t
                           ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
-                          : 'bg-white dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'
+                          : 'bg-white dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-white/10 hover:border-zinc-300 dark:hover:border-white/20'
                       }`}
                     >
                       {t}m
@@ -781,7 +804,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                   type="button"
                   onClick={handleDecrementQuestions}
                   disabled={totalQuestions <= 1}
-                  className="w-8 h-8 rounded-xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
+                  className="w-8 h-8 rounded-xl bg-white dark:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
                   title="Decrease question count"
                 >
                   <Minus className="w-3.5 h-3.5" />
@@ -800,13 +823,13 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                       setTotalQuestions(1);
                     }
                   }}
-                  className="flex-1 px-2 py-2 text-center text-xs font-bold rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-hidden focus:border-zinc-900 dark:focus:border-white shadow-2xs"
+                  className="flex-1 px-2 py-2 text-center text-xs font-bold rounded-xl bg-white dark:bg-[#070e1a] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:outline-hidden focus:border-zinc-900 dark:focus:border-white shadow-2xs"
                 />
                 <button
                   type="button"
                   onClick={handleIncrementQuestions}
                   disabled={totalQuestions >= 100}
-                  className="w-8 h-8 rounded-xl bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
+                  className="w-8 h-8 rounded-xl bg-white dark:bg-[#0f1d33] text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-[#132238] border border-zinc-200 dark:border-white/10 flex items-center justify-center font-bold text-sm disabled:opacity-30 cursor-pointer transition active:scale-95 shrink-0 shadow-2xs"
                   title="Increase question count"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -824,7 +847,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                       className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border ${
                         totalQuestions === num
                           ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
-                          : 'bg-white dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'
+                          : 'bg-white dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-white/10 hover:border-zinc-300 dark:hover:border-white/20'
                       }`}
                     >
                       {num}
@@ -856,7 +879,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                     className={`flex-1 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition shadow-2xs ${
                       difficulty === lvl
                         ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs'
-                        : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600'
+                        : 'bg-white dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-white/20'
                     }`}
                   >
                     {lvl}
@@ -868,16 +891,16 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
 
           {/* View Selector: Master Prompt vs .txt Output Preview */}
           <div className="pt-1 space-y-2">
-            <div className="flex items-center justify-between flex-wrap gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+            <div className="flex items-center justify-between flex-wrap gap-2 border-b border-zinc-200 dark:border-white/10 pb-2">
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Main View Tabs */}
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => setActiveView('prompt')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                       activeView === 'prompt'
-                        ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
+                        ? 'bg-white dark:bg-[#0f1d33] text-zinc-950 dark:text-white shadow-xs'
                         : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                     }`}
                   >
@@ -889,7 +912,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                     onClick={() => setActiveView('txt_preview')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                       activeView === 'txt_preview'
-                        ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
+                        ? 'bg-white dark:bg-[#0f1d33] text-zinc-950 dark:text-white shadow-xs'
                         : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                     }`}
                   >
@@ -900,7 +923,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
 
                 {/* Brief vs Detailed Toggle (Only in Prompt view) */}
                 {activeView === 'prompt' && (
-                  <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10">
                     <button
                       type="button"
                       onClick={() => {
@@ -909,7 +932,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                       }}
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
                         promptStyle === 'brief'
-                          ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
+                          ? 'bg-white dark:bg-[#0f1d33] text-zinc-950 dark:text-white shadow-xs'
                           : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                       }`}
                       title="Concise high-impact prompt"
@@ -925,7 +948,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                       }}
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
                         promptStyle === 'detailed'
-                          ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs'
+                          ? 'bg-white dark:bg-[#0f1d33] text-zinc-950 dark:text-white shadow-xs'
                           : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
                       }`}
                       title="Full pedagogical rubric"
@@ -964,13 +987,53 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
 
             {/* TAB CONTENT: PROMPT */}
             {activeView === 'prompt' && (
-              <div className="space-y-1.5">
+              <div className="space-y-2.5">
+                {/* Phone-Safe LaTeX Shield Banner */}
+                <div className="p-3.5 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                      <Smartphone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-zinc-900 dark:text-white font-['Outfit',sans-serif]">
+                          Phone Copy Shield Active
+                        </span>
+                        <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold text-[9px] uppercase tracking-wider">
+                          Anti-Elimination
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-600 dark:text-zinc-300 mt-0.5 leading-snug">
+                        AI is instructed to isolate equations like <code className="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 text-emerald-700 dark:text-emerald-400 font-mono text-[10px] font-bold">[ a = \frac&#123;v - u&#125;&#123;t&#125; ]</code> on standalone bracket lines with blank line padding. This prevents mobile touch selection from cutting off backslashes or corrupting formulas when copying.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyDirective}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-[#0f1d33] hover:bg-zinc-100 dark:hover:bg-[#132238] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/10 transition cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95 shrink-0"
+                    title="Copy just the mobile-safe LaTeX rules to paste into ChatGPT or Claude"
+                  >
+                    {copiedDirective ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-emerald-600 dark:text-emerald-400">Rules Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-zinc-500" />
+                        <span>Copy Mobile Rules</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
                 <textarea
                   id="generated-prompt-textarea"
                   rows={9}
                   readOnly
                   value={generatedPrompt}
-                  className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 select-all focus:outline-hidden shadow-xs"
+                  className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-zinc-50 dark:bg-[#070e1a] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-100 select-all focus:outline-hidden shadow-xs"
                 />
                 <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 px-1 flex-wrap gap-2">
                   <span>Compatible with ChatGPT, Claude, Gemini & DeepSeek.</span>
@@ -989,7 +1052,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                   rows={9}
                   readOnly
                   value={sampleTxtPreview}
-                  className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 select-all focus:outline-hidden shadow-xs"
+                  className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-zinc-50 dark:bg-[#070e1a] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-100 select-all focus:outline-hidden shadow-xs"
                 />
                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400 px-1">
                   Step-by-step layout using <strong>**Formula:**</strong>, <strong>**Calculation:**</strong>, and <strong>**Answer:**</strong>.
@@ -1000,7 +1063,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
         </div>
 
         {/* Footer */}
-        <div className="px-5 sm:px-6 py-3.5 border-t border-zinc-100 dark:border-white/10 bg-zinc-50/80 dark:bg-white/[0.02] flex items-center justify-between">
+        <div className="px-5 sm:px-6 py-3.5 border-t border-zinc-100 dark:border-white/10 bg-zinc-50/80 dark:bg-[#0c182b]/80 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
             <span>Ready to generate in ChatGPT / Claude / Gemini</span>
           </div>
@@ -1010,7 +1073,7 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
               id="professor-footer-close-btn"
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer shadow-xs transition"
+              className="px-4 py-2 rounded-xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 font-bold text-xs hover:bg-zinc-100 dark:hover:bg-[#132238] cursor-pointer shadow-xs transition"
             >
               Close
             </button>

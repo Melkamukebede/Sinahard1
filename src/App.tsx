@@ -135,21 +135,21 @@ const CreateExamSkeleton: React.FC = () => (
   </div>
 );
 
-// Instant Modal Backdrop and Shell for PracticeModal so user sees immediate feedback
+// Instant Modal Backdrop and Shell for PracticeModal using signature App Dark Color aesthetic
 const PracticeModalLoadingFallback: React.FC<{ examName?: string }> = ({ examName }) => (
-  <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center">
-      <div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4 text-zinc-900 dark:text-white">
-        <Loader2 className="w-7 h-7 animate-spin" />
+  <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
+    <div className="bg-[#0c182b] border border-white/10 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center text-white">
+      <div className="w-14 h-14 rounded-2xl bg-[#0f1d33] border border-white/10 flex items-center justify-center mb-4 text-white shadow-xs">
+        <Loader2 className="w-7 h-7 animate-spin text-emerald-400" />
       </div>
-      <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-1">
+      <h3 className="text-base font-bold text-white mb-1">
         Launching Practice Session
       </h3>
-      <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1 mb-3 font-medium">
+      <p className="text-xs text-zinc-400 line-clamp-1 mb-3 font-medium">
         {examName || 'Loading questions...'}
       </p>
-      <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-        <div className="bg-zinc-900 dark:bg-white h-full w-2/3 rounded-full animate-pulse" />
+      <div className="w-full bg-[#0f1d33] h-1.5 rounded-full overflow-hidden">
+        <div className="bg-white h-full w-2/3 rounded-full animate-pulse" />
       </div>
     </div>
   </div>
