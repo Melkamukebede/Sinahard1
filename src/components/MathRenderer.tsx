@@ -30,24 +30,12 @@ function getCachedKatex(math: string, displayMode: boolean): string {
     }
 
     if (displayMode) {
-      // Option 2: Dedicated 1-Tap Quick-Copy Button on display equation container
-      html = `<div class="katex-display-wrapper group relative my-3 px-3.5 py-2.5 rounded-2xl bg-zinc-50/90 dark:bg-[#0c182b]/80 border border-zinc-200/80 dark:border-white/10 shadow-2xs overflow-x-auto flex items-center justify-between gap-3" data-latex="${encodedMath}" data-display="true">
-        <div class="katex-display-content overflow-x-auto py-1 flex-1 text-center font-normal">
+      // Seamless equation container without intrusive copy buttons or labels
+      // Option 1 automatic clipboard interceptor handles mobile and desktop copying seamlessly via data-latex
+      html = `<div class="katex-display-wrapper my-3 px-3.5 py-2.5 rounded-2xl bg-zinc-50/90 dark:bg-[#0c182b]/80 border border-zinc-200/80 dark:border-white/10 shadow-2xs overflow-x-auto text-center" data-latex="${encodedMath}" data-display="true">
+        <div class="katex-display-content overflow-x-auto py-1 font-normal">
           ${rendered}
         </div>
-        <button
-          type="button"
-          class="katex-copy-btn shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#0f1d33] hover:bg-zinc-100 dark:hover:bg-[#162742] text-zinc-700 dark:text-zinc-200 border border-zinc-200/90 dark:border-white/10 text-xs font-semibold shadow-2xs transition-all cursor-pointer select-none active:scale-95"
-          data-copy-latex="${encodedMath}"
-          title="Copy LaTeX formula"
-          aria-label="Copy LaTeX formula"
-        >
-          <svg class="copy-icon w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-          </svg>
-          <span class="copy-label hidden xs:inline text-[11px] font-bold">Copy LaTeX</span>
-        </button>
       </div>`;
     } else {
       html = rendered;

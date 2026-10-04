@@ -27,6 +27,18 @@
 export type LatexFormat = 'raw' | 'brackets' | 'dollars' | 'plain';
 
 /**
+ * Detects if the current user is on a mobile device or small touch viewport
+ */
+export function isMobileUserDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 768px)').matches) ||
+    window.innerWidth < 768
+  );
+}
+
+/**
  * Converts common LaTeX math expressions into human-readable plain text
  */
 export function latexToPlainText(latex: string): string {

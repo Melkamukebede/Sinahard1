@@ -12,13 +12,8 @@ import {
   Pause,
   Play,
   X,
-  Square,
-  LayoutList,
   Check,
-  Minimize2,
-  Maximize2,
   CloudOff,
-  Copy,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Exam, ExamAnswerRecord, ExamResult, Question } from '../types';
@@ -26,7 +21,6 @@ import { MathRenderer } from './MathRenderer';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { useNotifications } from '../context/NotificationContext';
 import { isAppOffline } from '../firebase';
-import { copyLatexToClipboard } from '../services/latexClipboardService';
 
 interface PracticeModalProps {
   exam: Exam | null;
@@ -34,8 +28,6 @@ interface PracticeModalProps {
   onClose: () => void;
   onSubmitResult: (result: ExamResult) => void;
 }
-
-type PracticeViewMode = '1-to-1' | '6-to-1';
 
 export const PracticeModal: React.FC<PracticeModalProps> = ({
   exam,
@@ -45,15 +37,8 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 }) => {
   const { notifyExamCompleted } = useNotifications();
 
-  // Mode: '1-to-1' (single focus) vs '6-to-1' (6 questions vertically per page)
-  const [viewMode, setViewMode] = useState<PracticeViewMode>('1-to-1');
-
-  // Density: 'full' (all headers & ribbons) vs 'minimalist' (hides non-essential headers for LaTeX math space)
-  const [densityMode, setDensityMode] = useState<'full' | 'minimalist'>('full');
-
-  // Navigation indices
-  const [currentIndex, setCurrentIndex] = useState(0); // for 1-to-1 mode
-  const [batchPage, setBatchPage] = useState(0); // for 6-to-1 mode (0-indexed)
+  // Exclusively 6-to-1 batch pagination (6 questions per page vertically, Full View default)
+  const [batchPage, setBatchPage] = useState(0); // 0-indexed
 
   // Answers & revealed explanations per-question
   const [userAnswers, setUserAnswers] = useState<(number | null)[]>([]);
@@ -67,24 +52,6 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
   // Submit confirmation dialog
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
-  // Copied question state
-  const [copiedQuestionIdx, setCopiedQuestionIdx] = useState<number | null>(null);
-
-  const handleCopyQuestion = async (question: Question, idx: number) => {
-    let fullText = `Question ${idx + 1}:\n${question.text}\n\n`;
-    if (question.options && question.options.length > 0) {
-      question.options.forEach((opt, oIdx) => {
-        const letter = String.fromCharCode(65 + oIdx);
-        fullText += `${letter}) ${opt}\n`;
-      });
-    }
-    const success = await copyLatexToClipboard(fullText, 'raw');
-    if (success) {
-      setCopiedQuestionIdx(idx);
-      setTimeout(() => setCopiedQuestionIdx(null), 2000);
-    }
-  };
-
   // Scroll ref to top of question container when page/question changes
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -93,7 +60,6 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
   // Initialize practice session
   useEffect(() => {
     if (isOpen && exam) {
-      setCurrentIndex(0);
       setBatchPage(0);
       setUserAnswers(new Array(exam.questions.length).fill(null));
       setRevealedQuestions({});
@@ -187,31 +153,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
     }));
   };
 
-  // 1-to-1 mode navigation
-  const handleNext1to1 = () => {
-    if (!exam) return;
-    if (currentIndex < exam.questions.length - 1) {
-      const nextIdx = currentIndex + 1;
-      setCurrentIndex(nextIdx);
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = 0;
-      }
-    } else {
-      setShowSubmitConfirm(true);
-    }
-  };
-
-  const handlePrev1to1 = () => {
-    if (currentIndex > 0) {
-      const prevIdx = currentIndex - 1;
-      setCurrentIndex(prevIdx);
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = 0;
-      }
-    }
-  };
-
-  // 6-to-1 mode navigation
+  // 6-to-1 mode navigation (exclusively batches of 6 questions)
   const totalBatchPages = exam ? Math.ceil(exam.questions.length / BATCH_SIZE) : 0;
 
   const handleNextBatch = () => {
@@ -238,21 +180,14 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
   // Jump to specific question from navigator strip
   const handleJumpToQuestion = (targetIdx: number) => {
     if (isPaused) return;
-    if (viewMode === '1-to-1') {
-      setCurrentIndex(targetIdx);
-    } else {
-      const targetBatch = Math.floor(targetIdx / BATCH_SIZE);
-      setBatchPage(targetBatch);
-      setTimeout(() => {
-        const el = document.getElementById(`practice-question-${targetIdx}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 50);
-    }
-    if (scrollContainerRef.current && viewMode === '1-to-1') {
-      scrollContainerRef.current.scrollTop = 0;
-    }
+    const targetBatch = Math.floor(targetIdx / BATCH_SIZE);
+    setBatchPage(targetBatch);
+    setTimeout(() => {
+      const el = document.getElementById(`practice-question-${targetIdx}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
   };
 
   // Final submission and grading
@@ -344,41 +279,22 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
       <div
         key={q.id || qIndex}
         id={`practice-question-${qIndex}`}
-        className="p-5 sm:p-6 rounded-[28px] bg-[#0c182b] border border-white/10 shadow-lg space-y-4 transition-all text-white"
+        className="p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 shadow-xs dark:shadow-lg space-y-4 transition-all text-zinc-900 dark:text-white"
       >
         {/* Card Header: Question Number */}
-        <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-white/10">
+        <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-zinc-100 dark:border-white/10">
           <div className="flex items-center gap-2.5">
-            <span className="w-7 h-7 rounded-xl bg-[#0f1d33] text-white font-bold text-xs flex items-center justify-center border border-white/10">
+            <span className="w-7 h-7 rounded-xl bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white font-bold text-xs flex items-center justify-center border border-zinc-200/60 dark:border-white/10">
               {qIndex + 1}
             </span>
-            <span className="text-xs font-bold tracking-wider uppercase text-zinc-400">
+            <span className="text-xs font-bold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
               Question {qIndex + 1} of {exam.questions.length}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => handleCopyQuestion(q, qIndex)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#0f1d33] hover:bg-[#132238] text-zinc-300 hover:text-white border border-white/10 transition-all active:scale-95 cursor-pointer shadow-xs"
-            title="Copy question and formulas as clean LaTeX"
-            aria-label="Copy question"
-          >
-            {copiedQuestionIdx === qIndex ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400 font-bold">Copied!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy Question</span>
-              </>
-            )}
-          </button>
         </div>
 
         {/* Question Statement */}
-        <div className="text-base sm:text-lg font-medium text-white leading-relaxed pt-1">
+        <div className="text-base sm:text-lg font-medium text-zinc-900 dark:text-white leading-relaxed pt-1">
           <MathRenderer content={q.text} />
         </div>
 
@@ -389,22 +305,22 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             const letter = String.fromCharCode(65 + optIdx);
             const isCorrectOption = q.correct === optIdx;
 
-            // Visual Styling based on selection and explanation state using signature App Dark Palette
+            // Visual Styling based on selection and explanation state using dynamic Light / Dark palette
             let optionCardClasses = '';
             if (isExplRevealed) {
               if (isCorrectOption) {
-                optionCardClasses = 'bg-emerald-500/15 border-emerald-500 text-white shadow-xs font-medium';
+                optionCardClasses = 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500 text-zinc-950 dark:text-white shadow-2xs font-medium';
               } else if (isSelected && !isCorrectOption) {
-                optionCardClasses = 'bg-rose-500/15 border-rose-500 text-white shadow-xs';
+                optionCardClasses = 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500 text-zinc-950 dark:text-white shadow-2xs';
               } else {
-                optionCardClasses = 'bg-[#091322]/40 border-white/5 opacity-50 text-zinc-400';
+                optionCardClasses = 'bg-zinc-50/50 dark:bg-[#091322]/40 border-zinc-200/80 dark:border-white/5 opacity-60 text-zinc-500 dark:text-zinc-400';
               }
             } else if (isSelected) {
-              optionCardClasses = 'bg-white text-zinc-950 border-white shadow-md font-bold';
+              optionCardClasses = 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white shadow-xs font-bold';
             } else {
               optionCardClasses = isDisabled
-                ? 'bg-[#091322]/40 border-white/5 text-zinc-500 opacity-60 cursor-not-allowed'
-                : 'bg-[#0f1d33] border-white/10 text-zinc-200 hover:bg-[#132238] hover:text-white cursor-pointer shadow-2xs';
+                ? 'bg-zinc-50/60 dark:bg-[#091322]/40 border-zinc-200/80 dark:border-white/5 text-zinc-500 opacity-60 cursor-not-allowed'
+                : 'bg-white dark:bg-[#0f1d33] border-zinc-200/80 dark:border-white/10 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-[#132238] cursor-pointer shadow-2xs';
             }
 
             return (
@@ -426,8 +342,8 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                       : isExplRevealed && isSelected && !isCorrectOption
                       ? 'bg-rose-500 text-white shadow-xs'
                       : isSelected
-                      ? 'bg-zinc-950 text-white shadow-xs'
-                      : 'bg-[#0c182b] text-zinc-300 border border-white/10'
+                      ? 'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white shadow-xs'
+                      : 'bg-zinc-100 dark:bg-[#0c182b] text-zinc-600 dark:text-zinc-400 border border-zinc-200/50 dark:border-white/10'
                   }`}
                 >
                   {letter}
@@ -437,10 +353,10 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 </div>
                 {/* Visual Icon Check / Indicator */}
                 {isExplRevealed && isCorrectOption && (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 )}
                 {isExplRevealed && isSelected && !isCorrectOption && (
-                  <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                  <XCircle className="w-5 h-5 text-rose-500 dark:text-rose-400 shrink-0" />
                 )}
               </div>
             );
@@ -448,24 +364,24 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
         </div>
 
         {/* Bottom Question Actions: Explanation Button at the bottom of every question */}
-        <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t border-white/10">
+        <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t border-zinc-100 dark:border-white/10">
           <button
             type="button"
             onClick={() => handleToggleExplanation(qIndex)}
             className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 cursor-pointer transition border shadow-2xs active:scale-98 ${
               isExplRevealed
-                ? 'bg-[#162742] text-white border-white/20'
-                : 'bg-[#0f1d33] text-zinc-300 border-white/10 hover:bg-[#132238] hover:text-white'
+                ? 'bg-zinc-100 dark:bg-[#162742] text-zinc-900 dark:text-white border-zinc-300 dark:border-white/20'
+                : 'bg-white dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-300 border-zinc-200/80 dark:border-white/10 hover:bg-zinc-50 dark:hover:bg-[#132238]'
             }`}
           >
             {isExplRevealed ? (
               <>
-                <EyeOff className="w-3.5 h-3.5 text-white" />
+                <EyeOff className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                 <span>Hide Explanation</span>
               </>
             ) : (
               <>
-                <Eye className="w-3.5 h-3.5 text-zinc-400" />
+                <Eye className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                 <span>View Explanation</span>
               </>
             )}
@@ -474,18 +390,18 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
         {/* Correct Answer Shower & Step-by-Step Explanation Banner */}
         {isExplRevealed && (
-          <div className="p-4 sm:p-5 rounded-[24px] bg-[#070e1a] border border-emerald-500/30 text-white space-y-3 animate-in fade-in duration-200">
+          <div className="p-4 sm:p-5 rounded-[24px] bg-zinc-50 dark:bg-[#070e1a] border border-zinc-200 dark:border-emerald-500/30 text-zinc-900 dark:text-white space-y-3 animate-in fade-in duration-200">
             {/* Banner Header: Correct Answer Shower */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-white/10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-zinc-200/80 dark:border-white/10">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-white text-zinc-950 flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                <div className="w-8 h-8 rounded-full bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
                   {String.fromCharCode(65 + q.correct)}
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 block">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 dark:text-zinc-400 block">
                     Correct Answer
                   </span>
-                  <div className="text-sm sm:text-base font-bold text-white">
+                  <div className="text-sm sm:text-base font-bold text-zinc-950 dark:text-white">
                     Option {String.fromCharCode(65 + q.correct)}: <MathRenderer content={q.options[q.correct]} inline />
                   </div>
                 </div>
@@ -494,18 +410,18 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               {/* Status Comparison Badge */}
               <div className="shrink-0">
                 {selectedOpt === q.correct ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#0f1d33] text-white border border-white/10">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/10">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
                     Your Choice: Correct ✓
                   </span>
                 ) : selectedOpt !== null && selectedOpt !== undefined ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30">
-                    <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                    <XCircle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
                     Your Choice: Option {String.fromCharCode(65 + selectedOpt)} (Incorrect)
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                     No answer selected
                   </span>
                 )}
@@ -514,8 +430,8 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
             {/* Step-by-Step Solution & LaTeX formulas */}
             {q.explanation && (
-              <div className="pt-1 text-xs sm:text-sm text-zinc-200 space-y-1.5">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+              <div className="pt-1 text-xs sm:text-sm text-zinc-700 dark:text-zinc-200 space-y-1.5">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
                   <span>Step-by-step Solution:</span>
                 </div>
                 <div className="leading-relaxed">
@@ -531,94 +447,24 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-        <div className="w-full max-w-4xl h-[94vh] max-h-[880px] bg-[#070e1a] border border-white/10 rounded-[32px] shadow-2xl flex flex-col overflow-hidden text-white backdrop-blur-2xl">
-          {/* Header Bar using App Color Design */}
-          <div className="px-5 sm:px-6 py-3.5 border-b border-white/10 flex items-center justify-between gap-3 bg-[#0c182b]/95 backdrop-blur-md flex-wrap text-white">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="w-full max-w-4xl h-[94vh] max-h-[880px] bg-white dark:bg-[#070e1a] border border-zinc-200/80 dark:border-white/10 rounded-[32px] shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-white backdrop-blur-2xl">
+          {/* Header Bar using App Dynamic Theme (Clean, mode buttons eliminated) */}
+          <div className="px-5 sm:px-6 py-3.5 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between gap-3 bg-white/90 dark:bg-[#0c182b]/95 backdrop-blur-md flex-wrap text-zinc-900 dark:text-white">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <h2 className="font-['Outfit',sans-serif] font-bold text-sm sm:text-base text-white truncate">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse shrink-0" />
+              <h2 className="font-['Outfit',sans-serif] font-bold text-sm sm:text-base text-zinc-900 dark:text-white truncate">
                 {exam.name}
               </h2>
               {Boolean(isAppOffline() || exam.metadata?.offlineCapped) && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 flex items-center gap-1 shrink-0" title="Offline Free/Guest 20-question cap active">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-center gap-1 shrink-0" title="Offline Free/Guest 20-question cap active">
                   <CloudOff className="w-2.5 h-2.5" />
                   <span>Offline (Max 20)</span>
                 </span>
               )}
             </div>
 
-            {/* Center Controls: Mode Toggle (1 to 1 vs 6 to 1) & Compact Mode Toggle */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="flex items-center p-1 rounded-full bg-[#091322] border border-white/10 text-xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setViewMode('1-to-1');
-                    if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
-                  }}
-                  className={`px-2.5 sm:px-3 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                    viewMode === '1-to-1'
-                      ? 'bg-white text-zinc-950 font-bold shadow-xs'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                  title="Single question focus mode"
-                >
-                  <Square className="w-3.5 h-3.5" />
-                  <span>1 to 1<span className="hidden sm:inline"> Mode</span></span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setViewMode('6-to-1');
-                    setBatchPage(Math.floor(currentIndex / BATCH_SIZE));
-                    if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
-                  }}
-                  className={`px-2 sm:px-2.5 py-1 rounded-full font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                    viewMode === '6-to-1'
-                      ? 'bg-white text-zinc-950 font-bold shadow-xs'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                  title="6 questions per page vertically"
-                >
-                  <LayoutList className="w-3.5 h-3.5" />
-                  <span>6 to 1<span className="hidden sm:inline"> Mode</span></span>
-                </button>
-              </div>
-
-              {/* Compact Mode Toggle (Full View vs Minimalist View) */}
-              <button
-                type="button"
-                onClick={() => setDensityMode((prev) => (prev === 'full' ? 'minimalist' : 'full'))}
-                className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 border shadow-2xs active:scale-95 ${
-                  densityMode === 'minimalist'
-                    ? 'bg-white text-zinc-950 font-bold border-white shadow-xs'
-                    : 'bg-[#0f1d33] text-zinc-300 border-white/10 hover:bg-[#132238] hover:text-white'
-                }`}
-                title={
-                  densityMode === 'minimalist'
-                    ? 'Switch to Full View (show tracking headers and jump ribbon)'
-                    : 'Switch to Minimalist View (hide non-essential headers for maximum LaTeX math workspace)'
-                }
-              >
-                {densityMode === 'minimalist' ? (
-                  <>
-                    <Maximize2 className="w-3 h-3 text-zinc-800" />
-                    <span className="font-bold">Minimalist</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-900 text-white font-mono">
-                      Q{currentIndex + 1}/{exam.questions.length}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Minimize2 className="w-3 h-3 text-zinc-400" />
-                    <span>Full View</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Right Controls: Timer & Close */}
+            {/* Right Controls: Timer & Close Button */}
             <div className="flex items-center gap-2.5">
               {/* Interactive Timer Button */}
               <button
@@ -627,20 +473,20 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
                 title="Click or press Space to pause/resume"
                 className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer border select-none shadow-xs ${
                   isPaused
-                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 animate-pulse'
+                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40 animate-pulse'
                     : timeLeft <= 60
-                    ? 'bg-rose-500/15 text-rose-400 border-rose-500/40 animate-pulse'
-                    : 'bg-[#0f1d33] text-zinc-200 border-white/10 hover:bg-[#132238] hover:text-white'
+                    ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 animate-pulse'
+                    : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-[#0f1d33] dark:hover:bg-[#132238] text-zinc-700 dark:text-zinc-200 border-zinc-200/80 dark:border-white/10'
                 }`}
               >
                 {isPaused ? (
                   <>
-                    <Play className="w-3.5 h-3.5 fill-current text-amber-400" />
+                    <Play className="w-3.5 h-3.5 fill-current text-amber-600 dark:text-amber-400" />
                     <span>PAUSED</span>
                   </>
                 ) : (
                   <>
-                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                    <Clock className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                     <span>{formatTimer(timeLeft)}</span>
                     <Pause className="w-3 h-3 opacity-60 ml-0.5" />
                   </>
@@ -651,7 +497,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-full text-zinc-400 hover:text-white hover:bg-[#0f1d33] transition cursor-pointer"
+                className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#0f1d33] transition cursor-pointer"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
@@ -660,196 +506,142 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full h-1 bg-[#0f1d33]">
+          <div className="w-full h-1 bg-zinc-100 dark:bg-[#0f1d33]">
             <div
-              className="h-full bg-white transition-all duration-300 ease-out"
+              className="h-full bg-zinc-900 dark:bg-white transition-all duration-300 ease-out"
               style={{ width: `${progressPct}%` }}
             />
           </div>
 
-          {/* Subheader Tracker & Question Navigation Ribbon (Hidden in Minimalist View to maximize workspace) */}
-          {densityMode === 'full' && (
-            <>
-              <div className="px-5 sm:px-6 py-2 bg-[#0c182b]/90 border-b border-white/10 flex items-center justify-between gap-3 text-xs text-zinc-400">
-                <div className="flex items-center gap-2 truncate">
-                  {viewMode === '1-to-1' ? (
-                    <span className="font-semibold text-zinc-200">
-                      Question {currentIndex + 1} of {exam.questions.length}
-                    </span>
-                  ) : (
-                    <span className="font-semibold text-zinc-200">
-                      Batch {batchPage + 1} of {totalBatchPages} (Questions {batchStartIdx + 1}–{batchEndIdx})
-                    </span>
-                  )}
-                </div>
+          {/* Subheader Tracker & Question Navigation Ribbon (Full View at default) */}
+          <div className="px-5 sm:px-6 py-2 bg-zinc-50/80 dark:bg-[#0c182b]/90 border-b border-zinc-100 dark:border-white/10 flex items-center justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="flex items-center gap-2 truncate">
+              <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                Batch {batchPage + 1} of {totalBatchPages} (Questions {batchStartIdx + 1}–{batchEndIdx})
+              </span>
+            </div>
 
-                {/* Answered Counter */}
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs">
-                    Answered: <strong className="text-white">{answeredCount}</strong> / {exam.questions.length}
-                  </span>
-                </div>
-              </div>
+            {/* Answered Counter */}
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-xs">
+                Answered: <strong className="text-zinc-900 dark:text-white">{answeredCount}</strong> / {exam.questions.length}
+              </span>
+            </div>
+          </div>
 
-              {/* Quick Question Jump Ribbon (Scrollable pills) */}
-              <div className="px-5 sm:px-6 py-1.5 bg-[#070e1a]/90 border-b border-white/10 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mr-1 shrink-0">
-                  Jump:
-                </span>
-                {exam.questions.map((_, idx) => {
-                  const isAns = userAnswers[idx] !== null && userAnswers[idx] !== undefined;
-                  const isExpl = !!revealedQuestions[idx];
-                  const isCurrent = viewMode === '1-to-1' ? currentIndex === idx : idx >= batchStartIdx && idx < batchEndIdx;
+          {/* Quick Question Jump Ribbon (Scrollable pills) */}
+          <div className="px-5 sm:px-6 py-1.5 bg-white/70 dark:bg-[#070e1a]/90 border-b border-zinc-100 dark:border-white/10 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mr-1 shrink-0">
+              Jump:
+            </span>
+            {exam.questions.map((_, idx) => {
+              const isAns = userAnswers[idx] !== null && userAnswers[idx] !== undefined;
+              const isExpl = !!revealedQuestions[idx];
+              const isInCurrentBatch = idx >= batchStartIdx && idx < batchEndIdx;
 
-                  let pillClass = '';
-                  if (isCurrent) {
-                    pillClass = 'ring-2 ring-white font-bold bg-white text-zinc-950';
-                  } else if (isAns) {
-                    pillClass = 'bg-[#162742] text-white border border-white/20 font-semibold';
-                  } else if (isExpl) {
-                    pillClass = 'bg-amber-500/15 text-amber-300 border border-amber-500/30';
-                  } else {
-                    pillClass = 'bg-[#0f1d33] text-zinc-300 border border-white/10 hover:bg-[#132238]';
-                  }
+              let pillClass = '';
+              if (isInCurrentBatch) {
+                pillClass = 'ring-2 ring-zinc-950 dark:ring-white font-bold bg-zinc-950 text-white dark:bg-white dark:text-zinc-950';
+              } else if (isAns) {
+                pillClass = 'bg-zinc-200 dark:bg-[#162742] text-zinc-900 dark:text-white border border-zinc-300 dark:border-white/20 font-semibold';
+              } else if (isExpl) {
+                pillClass = 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30';
+              } else {
+                pillClass = 'bg-zinc-100 dark:bg-[#0f1d33] text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-white/10 hover:bg-zinc-200 dark:hover:bg-[#132238]';
+              }
 
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleJumpToQuestion(idx)}
-                      className={`w-6 h-6 rounded-full text-[10px] flex items-center justify-center shrink-0 cursor-pointer transition ${pillClass}`}
-                    >
-                      {idx + 1}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleJumpToQuestion(idx)}
+                  className={`w-6 h-6 rounded-full text-[10px] flex items-center justify-center shrink-0 cursor-pointer transition ${pillClass}`}
+                >
+                  {idx + 1}
+                </button>
+              );
+            })}
+          </div>
 
-          {/* Main Questions View Area (Supports Blur when Time is Paused) */}
-          <div className="flex-1 relative overflow-hidden flex flex-col bg-[#070e1a]">
+          {/* Main Questions View Area (Exclusively 6-to-1 batch mode) */}
+          <div className="flex-1 relative overflow-hidden flex flex-col bg-zinc-50/50 dark:bg-[#070e1a]">
             {/* Scrollable Questions Container */}
             <div
               ref={scrollContainerRef}
-              className={`flex-1 overflow-y-auto ${densityMode === 'minimalist' ? 'p-3 sm:p-4' : 'p-4 sm:p-6'} transition-all duration-300 ${
+              className={`flex-1 overflow-y-auto p-4 sm:p-6 transition-all duration-300 ${
                 isPaused ? 'filter blur-md md:blur-lg select-none pointer-events-none opacity-40' : ''
               }`}
             >
               <div className="max-w-3xl mx-auto space-y-6">
-                {viewMode === '1-to-1' ? (
-                  // 1-to-1 Mode: Single Question
-                  renderQuestionCard(exam.questions[currentIndex], currentIndex)
-                ) : (
-                  // 6-to-1 Mode: 6 Questions vertically
-                  currentBatchQuestions.map((q, i) => {
-                    const actualIdx = batchStartIdx + i;
-                    return renderQuestionCard(q, actualIdx);
-                  })
-                )}
+                {currentBatchQuestions.map((q, i) => {
+                  const actualIdx = batchStartIdx + i;
+                  return renderQuestionCard(q, actualIdx);
+                })}
               </div>
             </div>
 
             {/* Anti-Peek Paused Overlay (Active only when paused) */}
             {isPaused && (
-              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/75 backdrop-blur-xs p-6 animate-in fade-in duration-200">
-                <div className="max-w-md w-full p-8 rounded-[28px] bg-[#070e1a]/95 border border-white/10 shadow-2xl text-center backdrop-blur-xl text-white">
-                  <div className="w-16 h-16 rounded-full bg-amber-500/15 text-amber-400 flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/60 dark:bg-black/75 backdrop-blur-xs p-6 animate-in fade-in duration-200">
+                <div className="max-w-md w-full p-8 rounded-[28px] bg-white/95 dark:bg-[#070e1a]/95 border border-zinc-200 dark:border-white/10 shadow-2xl text-center backdrop-blur-xl text-zinc-900 dark:text-white">
+                  <div className="w-16 h-16 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4 border border-amber-500/30">
                     <Pause className="w-8 h-8 fill-current" />
                   </div>
-                  <h3 className="text-xl font-bold font-['Outfit',sans-serif] text-white">
+                  <h3 className="text-xl font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white">
                     Exam Paused
                   </h3>
-                  <p className="text-xs text-zinc-400 max-w-xs mx-auto mt-1.5 mb-6 leading-relaxed">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto mt-1.5 mb-6 leading-relaxed">
                     Questions, equations, and answers are blurred to preserve testing integrity while the clock is stopped.
                   </p>
                   <button
                     type="button"
                     onClick={togglePause}
-                    className="w-full py-3 rounded-full bg-white text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98 transition hover:bg-zinc-100"
+                    className="w-full py-3 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98 transition hover:bg-zinc-800 dark:hover:bg-zinc-100"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
                     <span>Resume Exam</span>
                   </button>
-                  <p className="text-[11px] text-zinc-500 mt-2.5">or press Spacebar to resume</p>
+                  <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-2.5">or press Spacebar to resume</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Footer Navigation Controls */}
-          <div className="px-5 sm:px-6 py-3.5 border-t border-white/10 bg-[#0c182b]/95 backdrop-blur-md flex items-center justify-between gap-2 text-white">
-            {viewMode === '1-to-1' ? (
-              // 1-to-1 Mode Footer
-              <>
-                <button
-                  type="button"
-                  disabled={currentIndex === 0}
-                  onClick={handlePrev1to1}
-                  className="px-4 py-2 rounded-full border border-white/10 bg-[#0f1d33] text-zinc-200 font-semibold text-xs flex items-center gap-1.5 hover:bg-[#132238] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Previous</span>
-                </button>
+          {/* Footer Navigation Controls (Exclusively 6-to-1 batch pagination) */}
+          <div className="px-5 sm:px-6 py-3.5 border-t border-zinc-100 dark:border-white/10 bg-white/90 dark:bg-[#0c182b]/95 backdrop-blur-md flex items-center justify-between gap-2 text-zinc-900 dark:text-white">
+            <button
+              type="button"
+              disabled={batchPage === 0}
+              onClick={handlePrevBatch}
+              className="px-4 py-2 rounded-full border border-zinc-200/80 dark:border-white/10 bg-white dark:bg-[#0f1d33] text-zinc-700 dark:text-zinc-200 font-semibold text-xs flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-[#132238] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Prev<span className="hidden sm:inline">ious 6 Questions</span></span>
+            </button>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleNext1to1}
-                    className="px-5 py-2.5 rounded-full bg-white text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98 hover:bg-zinc-100"
-                  >
-                    {currentIndex === exam.questions.length - 1 ? (
-                      <>
-                        <span>Finish Exam</span>
-                        <Send className="w-3.5 h-3.5" />
-                      </>
-                    ) : (
-                      <>
-                        <span>Next</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </>
-            ) : (
-              // 6-to-1 Mode Footer (Batch pagination)
-              <>
-                <button
-                  type="button"
-                  disabled={batchPage === 0}
-                  onClick={handlePrevBatch}
-                  className="px-4 py-2 rounded-full border border-white/10 bg-[#0f1d33] text-zinc-200 font-semibold text-xs flex items-center gap-1.5 hover:bg-[#132238] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer shadow-2xs"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Prev<span className="hidden sm:inline">ious 6 Questions</span></span>
-                </button>
+            <div className="hidden sm:flex items-center text-xs text-zinc-500 dark:text-zinc-400">
+              Page {batchPage + 1} of {totalBatchPages}
+            </div>
 
-                <div className="hidden sm:flex items-center text-xs text-zinc-400">
-                  Page {batchPage + 1} of {totalBatchPages}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleNextBatch}
-                    className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98 hover:bg-zinc-100"
-                  >
-                    {batchPage === totalBatchPages - 1 ? (
-                      <>
-                        <span>Finish<span className="hidden sm:inline"> Exam</span></span>
-                        <Send className="w-3.5 h-3.5" />
-                      </>
-                    ) : (
-                      <>
-                        <span>Next<span className="hidden sm:inline"> 6 Questions</span></span>
-                        <ChevronRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </>
-            )}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleNextBatch}
+                className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98 hover:bg-zinc-800 dark:hover:bg-zinc-100"
+              >
+                {batchPage === totalBatchPages - 1 ? (
+                  <>
+                    <span>Finish<span className="hidden sm:inline"> Exam</span></span>
+                    <Send className="w-3.5 h-3.5" />
+                  </>
+                ) : (
+                  <>
+                    <span>Next<span className="hidden sm:inline"> 6 Questions</span></span>
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

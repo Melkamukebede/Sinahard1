@@ -69,9 +69,9 @@ OUTPUT RULES:
 2. Put Answer: [Letter] on its own line.
 3. DO NOT use numbers in the explanation area (avoid 1. Formula 2. Calculation; instead use **Formula:**, **Calculation:**, **Answer:**).
 4. For math and physics formulas, wrap display equations in [ ... ] or \\[ ... \\] and inline variables in \\( ... \\).
-5. PHONE COPY SHIELD (PREVENT FORMULA ELIMINATION ON PHONES):
+5. FORMULA ISOLATION & PRECISION:
    - Wrap every key equation on its own standalone line as [ equation ] (e.g. [ a = \\frac{v - u}{t} ]).
-   - Place blank lines before and after every equation line. Mobile touch selection drag handles drop fractions or backslashes if equations touch surrounding text.
+   - Place blank lines before and after every equation line to ensure clean formatting.
    - Always retain all standard LaTeX backslashes (\\frac, \\sqrt, \\cdot, \\times, ^2). Never substitute plain ASCII like 'v - u / t'.`;
 
   const formulaShortcuts = [

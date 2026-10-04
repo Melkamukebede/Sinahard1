@@ -15,10 +15,8 @@ import {
   ChevronDown,
   Plus,
   Minus,
-  Smartphone,
-  ShieldCheck,
 } from 'lucide-react';
-import { getPhoneSafeLatexPromptDirective } from '../services/latexClipboardService';
+import { isMobileUserDevice } from '../services/latexClipboardService';
 
 interface ProfessorModalProps {
   isOpen: boolean;
@@ -53,7 +51,6 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
   // UI View Tab & Interactive States
   const [activeView, setActiveView] = useState<ActiveView>('prompt');
   const [copied, setCopied] = useState<boolean>(false);
-  const [copiedDirective, setCopiedDirective] = useState<boolean>(false);
   const [isCopying, setIsCopying] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
@@ -213,12 +210,13 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
   // Generate standardized Plain Text (.TXT format) prompt for AI
   const generatedPrompt = useMemo(() => {
     const isMath = subjectType === 'calculation';
+    const isMobile = isMobileUserDevice();
     const mainTopic = topics.split(',')[0]?.trim() || 'Classical Mechanics';
     const cleanGrade = String(grade || '10');
 
     // BRIEF PROMPT MODE: High-impact, concise, laser-focused
     if (promptStyle === 'brief') {
-      if (isMath) {
+      if (isMath || isMobile) {
         return `Please generate ${totalQuestions} professional multiple choice questions in plain .txt format for:
 Grade: ${cleanGrade}
 Subject: ${subject}
@@ -248,11 +246,11 @@ For each question:
 
 CRITICAL RULES:
 1. STRICTLY NO NUMBERS IN EXPLANATION: Do NOT write "1. Formula", "2. Calculation", or "Step 1", "Step 2". Use ONLY bold labels (**Formula:**, **Calculation:**, **Answer:**).
-2. MOBILE-SAFE LATEX COMPLIANCE (PREVENT PHONE COPY ELIMINATION):
+2. FORMULA ISOLATION & ACCURACY:
    - Wrap display equations on their own dedicated line using bracket format [ equation ] or \\[ equation \\] (e.g. [ a = \\frac{v - u}{t} ] or [ s = ut + \\frac{1}{2}at^2 ]).
-   - Place blank lines before and after every display equation so touch-selection drag handles on mobile phones never scramble or eliminate formulas.
+   - Place blank lines before and after every display equation for clean formatting.
    - For inline variables or values in options, wrap in \\( ... \\) or [ ... ].
-   - Strictly retain all LaTeX commands and backslashes (\\frac, \\sqrt, \\times, \\cdot, \\pm, ^2). Never drop backslashes or simplify into broken plain text.
+   - Strictly retain all LaTeX commands and backslashes (\\frac, \\sqrt, \\times, \\cdot, \\pm, ^2). Never simplify into broken plain text.
 3. DIFFICULTY CALIBRATION (${difficulty.toUpperCase()}): ${difficultyConfig.briefGuide}
 4. REALISTIC DISTRACTORS: Options B, C, D must reflect realistic student calculation slips (${difficultyConfig.distractorRule}).
 5. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the FORMAT SPECIFICATION header.`;
@@ -305,11 +303,10 @@ CRITICAL RULES:
      **Calculation:**
      [ \\text{Step-by-step substitution and numerical evaluation: e.g. s = ut + \\frac{1}{2}at^2} ]
      **Answer:** \\( \\text{State final answer clearly with SI units} \\)
-2. LATEX MATHEMATICAL NOTATION (PHONE-SAFE ANTI-ELIMINATION STANDARD):
-   - Mobile touch clipboards frequently strip single backslashes or destroy inline fractions when copied.
-   - To make equations 100% resilient across phones and desktop:
+2. LATEX MATHEMATICAL NOTATION & FORMULA ISOLATION:
+   - To make equations 100% resilient across mobile phones and desktop:
      a) Always put display formulas on their own dedicated line using bracket notation [ equation ] or \\[ equation \\] (e.g. [ a = \\frac{v - u}{t} ] or [ s = ut + \\frac{1}{2}at^2 ]).
-     b) Separate equations with blank lines above and below to prevent mobile selection drag handles from merging words into formulas.
+     b) Separate equations with blank lines above and below for clean formatting.
      c) In multiple-choice options, enclose mathematical expressions and numbers with units in \\( ... \\) or [ ... ].
      d) Always keep backslashes intact on all LaTeX keywords: \\frac{numerator}{denominator}, \\sqrt{x}, \\times, \\cdot, \\pm, \\Delta, etc. Never output raw ASCII math.
 3. DISTRACTOR INTEGRITY:
@@ -322,7 +319,7 @@ CRITICAL RULES:
      **Core Concept:** [State underlying scientific law, definition, or historical context]
      **Key Reason:** [Explain exactly why the correct answer is valid]
      **Distractor Analysis:** [Briefly clarify why plausible incorrect choices fail]
-     **Answer:** [Option Letter and summary statement]`;
+     **Answer:** [Option Letter and summary statement]${isMobile ? `\n2. FORMULA NOTATION: If any scientific formulas or units are used, isolate them on dedicated bracket lines [ formula ] with blank line padding.` : ''}`;
     }
 
     return `You are an expert exam professor and national curriculum specialist creating a standardized ${totalQuestions}-question examination for Grade ${cleanGrade} students in ${subject}.
@@ -439,16 +436,6 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
       }, 150);
     } catch {
       setIsCopying(false);
-    }
-  };
-
-  const handleCopyDirective = async () => {
-    try {
-      await navigator.clipboard.writeText(getPhoneSafeLatexPromptDirective());
-      setCopiedDirective(true);
-      setTimeout(() => setCopiedDirective(false), 2000);
-    } catch {
-      // ignore
     }
   };
 
@@ -988,49 +975,9 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
             {/* TAB CONTENT: PROMPT */}
             {activeView === 'prompt' && (
               <div className="space-y-2.5">
-                {/* Phone-Safe LaTeX Shield Banner */}
-                <div className="p-3.5 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
-                      <Smartphone className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-zinc-900 dark:text-white font-['Outfit',sans-serif]">
-                          Phone Copy Shield Active
-                        </span>
-                        <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold text-[9px] uppercase tracking-wider">
-                          Anti-Elimination
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-zinc-600 dark:text-zinc-300 mt-0.5 leading-snug">
-                        AI is instructed to isolate equations like <code className="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 text-emerald-700 dark:text-emerald-400 font-mono text-[10px] font-bold">[ a = \frac&#123;v - u&#125;&#123;t&#125; ]</code> on standalone bracket lines with blank line padding. This prevents mobile touch selection from cutting off backslashes or corrupting formulas when copying.
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleCopyDirective}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-[#0f1d33] hover:bg-zinc-100 dark:hover:bg-[#132238] text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-white/10 transition cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95 shrink-0"
-                    title="Copy just the mobile-safe LaTeX rules to paste into ChatGPT or Claude"
-                  >
-                    {copiedDirective ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-emerald-600 dark:text-emerald-400">Rules Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5 text-zinc-500" />
-                        <span>Copy Mobile Rules</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
                 <textarea
                   id="generated-prompt-textarea"
-                  rows={9}
+                  rows={10}
                   readOnly
                   value={generatedPrompt}
                   className="w-full p-4 font-mono text-xs leading-relaxed rounded-[22px] bg-zinc-50 dark:bg-[#070e1a] border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-100 select-all focus:outline-hidden shadow-xs"
