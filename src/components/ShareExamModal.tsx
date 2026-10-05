@@ -20,6 +20,11 @@ import {
 } from 'lucide-react';
 import { Exam } from '../types';
 import { publishExamForCloudSharing, SHARE_BASE_URL } from '../services/shareService';
+import {
+  generateExamShareText,
+  addToSharedHistory,
+  DEFAULT_PRODUCTION_DOMAIN,
+} from '../services/sharedHistoryService';
 
 interface ShareExamModalProps {
   exam: Exam | null;
@@ -35,9 +40,35 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
   onStartPractice,
 }) => {
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedLocalLink, setCopiedLocalLink] = useState(false);
   const [copiedSpec, setCopiedSpec] = useState(false);
   const [nativeShareSuccess, setNativeShareSuccess] = useState(false);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'ready'>('idle');
+
+  // Generate short sharing link using requested production domain: https://sinahard1.pages.dev/
+  const compactExamId = exam ? (exam.catalogId || exam.id).trim() : '';
+  const productionLink = `${DEFAULT_PRODUCTION_DOMAIN}/?id=${encodeURIComponent(compactExamId)}`;
+  const currentOriginLink = typeof window !== 'undefined' && window.location.origin
+    ? `${window.location.origin}/?id=${encodeURIComponent(compactExamId)}`
+    : productionLink;
+  const isDifferentOrigin = typeof window !== 'undefined' && !window.location.origin.includes('sinahard1.pages.dev');
+
+  // Primary short link defaults to production https://sinahard1.pages.dev/?id=...
+  const shortLink = productionLink;
+
+  // Formatted exam specification text snippet matching exact requested template:
+  // 📌 Sinahard Exam Specification
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // •Title: ...
+  // • Level: ...
+  // • Subject: ...
+  // • Topic: ...
+  // • Duration: ... Minutes
+  // • Questions: ... Multiple-Choice Questions
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 👉 Practice this exam on Sinahard:
+  // https://sinahard1.pages.dev/?id=exam_...
+  const specSnippet = exam ? generateExamShareText(exam, false) : '';
 
   // Automatically publish/synchronize exam to Cloud Firestore so any recipient can open it directly in practice mode
   useEffect(() => {
@@ -46,8 +77,10 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
       publishExamForCloudSharing(exam).then((success) => {
         setCloudSyncStatus(success ? 'ready' : 'idle');
       });
+      // Save into Shared History automatically
+      addToSharedHistory(exam, 'shared_by_me', shortLink);
     }
-  }, [isOpen, exam]);
+  }, [isOpen, exam, shortLink]);
 
   if (!isOpen || !exam) return null;
 
@@ -59,30 +92,13 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
     }
     const match = exam.name.match(/grade\s*(\d{1,2})/i) || exam.name.match(/g(\d{1,2})/i);
     if (match) return `Grade ${match[1]}`;
-    if (/freshman|university|college/i.test(exam.name)) return 'Freshman';
+    if (/freshman|university|college/i.test(exam.name)) return 'Grade Freshman';
     return 'General';
   })();
 
-  const topicLabel = exam.topic?.trim() || exam.metadata?.topic?.trim() || exam.description?.trim() || 'General Curriculum';
+  const topicLabel = exam.topic?.trim() || exam.metadata?.topic?.trim() || exam.description?.trim() || exam.name;
   const questionCount = exam.questions?.length || 0;
   const streamLabel = exam.stream || exam.metadata?.stream || 'General';
-
-  // Generate short sharing link using requested production domain: https://sinahard.pages.dev/
-  const compactExamId = (exam.catalogId || exam.id).trim();
-  const shortLink = `${SHARE_BASE_URL}/?id=${encodeURIComponent(compactExamId)}`;
-
-  // Formatted exam specification text snippet
-  const specSnippet = `📚 Sinahard Exam Specification
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📌 Title: ${exam.name}
-🎓 Level: ${gradeLabel}
-📖 Subject: ${exam.subject || 'General'}
-🏷️ Topic: ${topicLabel}
-⏱️ Duration: ${exam.timeLimit} Minutes
-❓ Questions: ${questionCount} Multiple-Choice Questions
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👉 Practice this exam on Sinahard:
-${shortLink}`;
 
   // Copy link handler
   const handleCopyLink = async () => {
@@ -257,7 +273,7 @@ ${shortLink}`;
               </label>
               <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-200/80 dark:border-zinc-700 flex items-center gap-1">
                 <Link className="w-2.5 h-2.5" />
-                <span>{typeof window !== 'undefined' && window.location.host ? window.location.host : 'sinahard.pages.dev'}</span>
+                <span>sinahard1.pages.dev</span>
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -276,9 +292,25 @@ ${shortLink}`;
                 title="Copy short web link"
               >
                 {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                <span>{copiedLink ? 'Copied!' : 'Copy Short Link'}</span>
+                <span>{copiedLink ? 'Copied!' : 'Copy Link'}</span>
               </button>
             </div>
+            {isDifferentOrigin && (
+              <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-0.5">
+                <span>Dev / Preview Link:</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(currentOriginLink);
+                    setCopiedLocalLink(true);
+                    setTimeout(() => setCopiedLocalLink(false), 2000);
+                  }}
+                  className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1"
+                >
+                  {copiedLocalLink ? '✓ Copied Preview Link' : 'Copy Preview Domain Link'}
+                </button>
+              </div>
+            )}
             <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
               <p>
                 Opening this short link on mobile or desktop directly launches this exam in <strong>Practice Mode</strong>.

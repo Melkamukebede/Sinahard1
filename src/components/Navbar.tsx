@@ -32,7 +32,7 @@ import { getUserCoins } from '../services/coinService';
 import { isAppOffline, subscribeToNetworkState } from '../firebase';
 import { prefetchCreateWizard } from '../services/prefetch';
 
-export type PageTab = 'home' | 'files' | 'results' | 'create' | 'manual' | 'admin-subs';
+export type PageTab = 'home' | 'files' | 'results' | 'create' | 'manual' | 'admin-subs' | 'shared-history';
 
 interface NavbarProps {
   activeTab: PageTab;

@@ -13,6 +13,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { Play, AlertCircle, Loader2 } from 'lucide-react';
 import { extractTargetExamId, resolveExamForPractice } from './services/shareService';
+import { addToSharedHistory } from './services/sharedHistoryService';
 import {
   Exam,
   ExamResult,
@@ -98,6 +99,9 @@ const SubscriptionModal = lazyWithRetry(() =>
 );
 const AdminSubscriptionsView = lazyWithRetry(() =>
   import('./components/AdminSubscriptionsView').then((m) => ({ default: m.AdminSubscriptionsView }))
+);
+const SharedHistoryView = lazyWithRetry(() =>
+  import('./components/SharedHistoryView').then((m) => ({ default: m.SharedHistoryView }))
 );
 const CuratedExamsModal = lazyWithRetry(() =>
   import('./components/CuratedExamsModal').then((m) => ({ default: m.CuratedExamsModal }))
@@ -410,6 +414,9 @@ function MainApp() {
             // Ignore storage errors
           }
 
+          // Add to Shared History
+          addToSharedHistory(resolvedExam, 'accessed_by_me');
+
           // Directly launch in Practice Mode
           setActivePracticeExam(resolvedExam);
           setIsOpeningPracticeLink(false);
@@ -453,6 +460,7 @@ function MainApp() {
               } catch {
                 // Ignore storage errors
               }
+              addToSharedHistory(resolved, 'accessed_by_me');
               setActivePracticeExam(resolved);
               setIsOpeningPracticeLink(false);
               showToast(`🎯 Practice Mode: "${resolved.name}"`);
@@ -794,6 +802,16 @@ function MainApp() {
             />
           </Suspense>
         )}
+
+        {activeTab === 'shared-history' && (
+          <Suspense fallback={null}>
+            <SharedHistoryView
+              exams={exams}
+              onStartPractice={handleStartPractice}
+              onNavigateToFiles={() => setActiveTab('files')}
+            />
+          </Suspense>
+        )}
       </main>
 
       {/* Mobile Bottom Navigation Bar */}
@@ -828,6 +846,13 @@ function MainApp() {
             setCreateExamInitialMode('select');
           }
           setActiveTab('admin-subs');
+        }}
+        onNavigateToSharedHistory={() => {
+          if (activeTab !== 'create') {
+            setEditingExam(null);
+            setCreateExamInitialMode('select');
+          }
+          setActiveTab('shared-history');
         }}
         onOpenDatabaseUpload={
           (isAdmin || Boolean(user && isUserTeacher(user)))

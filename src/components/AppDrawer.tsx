@@ -21,6 +21,7 @@ import {
   Clock,
   Smartphone,
   Download,
+  Share2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -35,6 +36,7 @@ interface AppDrawerProps {
   onOpenNotificationsModal: () => void;
   onNavigateToManual?: () => void;
   onNavigateToAdminSubs?: () => void;
+  onNavigateToSharedHistory?: () => void;
   onOpenDatabaseUpload?: () => void;
   onExportAllData?: () => void;
   onResetDefaultExams?: () => void;
@@ -48,6 +50,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   onOpenNotificationsModal,
   onNavigateToManual,
   onNavigateToAdminSubs,
+  onNavigateToSharedHistory,
   onOpenDatabaseUpload,
   onOpenSubscriptionModal,
 }) => {
@@ -308,6 +311,37 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                       </div>
                       <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
                         Push exams and questions directly to Cloud Firestore
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              )}
+
+              {/* Shared History Page Button */}
+              {onNavigateToSharedHistory && (
+                <button
+                  id="drawer-shared-history-btn"
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onNavigateToSharedHistory();
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 rounded-[22px] bg-white dark:bg-[#0c182b] hover:bg-zinc-50 dark:hover:bg-[#0f1d33] border border-white/80 dark:border-white/10 text-left shadow-xs active:scale-98 transition cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-[#0f1d33] text-zinc-900 dark:text-white border border-white/80 dark:border-white/10 flex items-center justify-center font-bold shadow-2xs">
+                      <Share2 className="w-4 h-4 text-zinc-950 dark:text-white" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                        <span>Shared Exam History</span>
+                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
+                          Links &amp; Codes
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                        View shared tests, access codes &amp; delete history
                       </div>
                     </div>
                   </div>
