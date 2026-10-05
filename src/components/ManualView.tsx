@@ -64,15 +64,16 @@ Time Limit: 20 minutes
 [ a = \\frac{20 - 0}{4} = 5 \\text{ m/s}^2 ]
 **Answer:** \\( 5 \\text{ m/s}^2 \\)
 
-OUTPUT RULES:
+OUTPUT RULES (PHONE-OPTIMIZED EXACT LATEX):
 1. Output pure plain text (.txt format). No markdown code blocks, no greetings or conversational intro.
 2. Put Answer: [Letter] on its own line.
 3. DO NOT use numbers in the explanation area (avoid 1. Formula 2. Calculation; instead use **Formula:**, **Calculation:**, **Answer:**).
-4. For math and physics formulas, wrap display equations in [ ... ] or \\[ ... \\] and inline variables in \\( ... \\).
-5. FORMULA ISOLATION & PRECISION:
-   - Wrap every key equation on its own standalone line as [ equation ] (e.g. [ a = \\frac{v - u}{t} ]).
-   - Place blank lines before and after every equation line to ensure clean formatting.
-   - Always retain all standard LaTeX backslashes (\\frac, \\sqrt, \\cdot, \\times, ^2). Never substitute plain ASCII like 'v - u / t'.`;
+4. EXACT LATEX IN OPTIONS: Wrap EVERY numerical and mathematical option in \( ... \) (e.g. A) \( 5 \text{ m/s}^2 \), B) \( \frac{3}{4} \text{ m/s} \)). Never output raw ASCII like '3/4' or 'sqrt(5)'.
+5. FORMULA ISOLATION & PHONE CLIPBOARD COMPLIANCE:
+   - Wrap every key equation on its own standalone line as [ equation ] (e.g. [ a = \frac{v - u}{t} ]).
+   - Place blank lines before and after every equation line to ensure clean phone formatting.
+   - Wrap variables and units in \( ... \) with \text{...} for units (e.g. \( m = 1200 \text{ kg} \)).
+   - Strictly retain all LaTeX backslashes (\frac, \sqrt, \cdot, \times, \pm, \Delta, \theta, \pi, ^2). Never substitute broken plain ASCII.`;
 
   const formulaShortcuts = [
     { label: 'Acceleration [ a = \\frac{v - u}{t} ]', code: 'a = \\frac{v - u}{t}' },

@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Plus,
   Minus,
+  Smartphone,
 } from 'lucide-react';
 import { isMobileUserDevice } from '../services/latexClipboardService';
 
@@ -38,6 +39,10 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
   onGoToQuestionTextEditor,
   onGoToPaste,
 }) => {
+  // Mobile device detection and Phone LaTeX optimization toggle
+  const isMobileDevice = isMobileUserDevice();
+  const [optimizeForPhone, setOptimizeForPhone] = useState<boolean>(() => isMobileDevice);
+
   // Core Configuration - Brief & Focused
   const [subjectType, setSubjectType] = useState<SubjectType>('calculation');
   const [grade, setGrade] = useState<string>('10');
@@ -210,7 +215,7 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
   // Generate standardized Plain Text (.TXT format) prompt for AI
   const generatedPrompt = useMemo(() => {
     const isMath = subjectType === 'calculation';
-    const isMobile = isMobileUserDevice();
+    const isMobile = isMobileDevice || optimizeForPhone;
     const mainTopic = topics.split(',')[0]?.trim() || 'Classical Mechanics';
     const cleanGrade = String(grade || '10');
 
@@ -232,28 +237,34 @@ Time Limit: ${timeLimit} minutes
 ================================================================
 
 For each question:
-1. [Clear problem statement with LaTeX notation like \\( m = 1200 \\text{ kg} \\)]
-   A) [Option with \\( ... \\) or [ ... ]]
-   B) [Option with \\( ... \\) or [ ... ]]
-   C) [Option with \\( ... \\) or [ ... ]]
-   D) [Option with \\( ... \\) or [ ... ]]
+1. [Question statement with exact LaTeX notation for all quantities: \\( m = 1200 \\text{ kg} \\), \\( v = 20 \\text{ m/s} \\)]
+   A) [Option with exact LaTeX \\( ... \\): e.g. \\( 240,000 \\text{ J} \\) or \\( \\frac{3}{4} \\text{ m/s} \\)]
+   B) [Option with exact LaTeX \\( ... \\)]
+   C) [Option with exact LaTeX \\( ... \\)]
+   D) [Option with exact LaTeX \\( ... \\)]
    Answer: [Correct Option Letter: A, B, C, or D]
    Explanation: **Formula:**
-[ [State governing formula on its own line: e.g. a = \\frac{v - u}{t}] ]
+[ a = \\frac{v - u}{t} ]
 **Calculation:**
-[ [Step-by-step evaluation on its own line: e.g. s = ut + \\frac{1}{2}at^2] ]
-**Answer:** \\( [Final numerical value with SI units] \\)
+[ a = \\frac{20 - 0}{4} = 5 \\text{ m/s}^2 ]
+**Answer:** \\( a = 5 \\text{ m/s}^2 \\) (Option A)
 
-CRITICAL RULES:
-1. STRICTLY NO NUMBERS IN EXPLANATION: Do NOT write "1. Formula", "2. Calculation", or "Step 1", "Step 2". Use ONLY bold labels (**Formula:**, **Calculation:**, **Answer:**).
-2. FORMULA ISOLATION & ACCURACY:
-   - Wrap display equations on their own dedicated line using bracket format [ equation ] or \\[ equation \\] (e.g. [ a = \\frac{v - u}{t} ] or [ s = ut + \\frac{1}{2}at^2 ]).
+CRITICAL RULES FOR EXACT LATEX & PHONE CLIPBOARD COMPLIANCE:
+1. EXACT LATEX IN ALL 4 OPTIONS (A, B, C, D):
+   - Wrap EVERY mathematical or numerical option in \\( ... \\) (e.g. A) \\( 5 \\text{ m/s}^2 \\), B) \\( \\frac{3}{4} \\text{ m/s} \\), C) \\( 2.5\\sqrt{2} \\text{ m/s} \\)).
+   - NEVER output plain ASCII math like '5 m/s^2', '3/4', or 'sqrt(5)'. Phone clipboards mangle raw text math.
+2. STRICTLY NO NUMBERS IN EXPLANATIONS:
+   - Do NOT write numbered lists like "1. Formula", "2. Calculation", or "Step 1", "Step 2".
+   - Use ONLY bold thematic labels (**Formula:**, **Calculation:**, **Answer:**).
+3. FORMULA ISOLATION & ACCURACY:
+   - Wrap display equations on their own dedicated line using bracket format [ equation ] (e.g. [ s = ut + \\frac{1}{2}at^2 ]).
    - Place blank lines before and after every display equation for clean formatting.
-   - For inline variables or values in options, wrap in \\( ... \\) or [ ... ].
-   - Strictly retain all LaTeX commands and backslashes (\\frac, \\sqrt, \\times, \\cdot, \\pm, ^2). Never simplify into broken plain text.
-3. DIFFICULTY CALIBRATION (${difficulty.toUpperCase()}): ${difficultyConfig.briefGuide}
-4. REALISTIC DISTRACTORS: Options B, C, D must reflect realistic student calculation slips (${difficultyConfig.distractorRule}).
-5. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the FORMAT SPECIFICATION header.`;
+   - For inline variables or numbers with units, wrap in \\( ... \\).
+   - Strictly retain all LaTeX commands and backslashes (\\frac, \\sqrt, \\times, \\cdot, \\pm, ^2, _0, \\Delta, \\theta, \\pi, \\Omega).
+   - Wrap units in \\text{...} inside math mode (e.g. \\text{ kg}, \\text{ m/s}^2, \\text{ N}, \\text{ J}).
+4. DIFFICULTY CALIBRATION (${difficulty.toUpperCase()}): ${difficultyConfig.briefGuide}
+5. REALISTIC DISTRACTORS: Options B, C, D must reflect realistic student calculation slips (${difficultyConfig.distractorRule}).
+6. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the FORMAT SPECIFICATION header.`;
       } else {
         return `Please generate ${totalQuestions} professional multiple choice questions in plain .txt format for:
 Grade: ${cleanGrade}
@@ -262,7 +273,7 @@ Topic: ${mainTopic}
 Time Limit: ${timeLimit} minutes
 
 FORMAT SPECIFICATION:
-================================================================
+===============================================================
 Grade: ${cleanGrade}
 Subject: ${subject}
 Topic: ${mainTopic}
@@ -295,21 +306,25 @@ CRITICAL RULES:
     let subjectRules = '';
     if (isMath) {
       subjectRules = `CRITICAL FORMATTING & VERTICAL STEP-WISE EXPLANATION RULES (MANDATORY):
-1. STRICTLY NO NUMBERS IN EXPLANATION:
+1. EXACT LATEX IN QUESTION STATEMENT & ALL OPTIONS:
+   - In problem statements, wrap every variable, quantity, and unit in \\( ... \\) (e.g. \\( m = 1200 \\text{ kg} \\), \\( v = 20 \\text{ m/s} \\), \\( \\theta = 30^\\circ \\)).
+   - In multiple-choice options (A, B, C, D), EVERY numerical or formula option MUST be enclosed in \\( ... \\) (e.g. A) \\( 5 \\text{ m/s}^2 \\), B) \\( \\frac{3}{4} \\text{ m/s} \\), C) \\( 10\\sqrt{2} \\text{ m/s} \\)).
+   - NEVER output raw plain ASCII fractions (3/4) or roots (sqrt). Use \\frac{3}{4} and \\sqrt{2}.
+2. STRICTLY NO NUMBERS IN EXPLANATION:
    - Do NOT write numbered lists in the explanation (NEVER write "1. Formula", "2. Calculation", "1. Substitute", or "Step 1", "Step 2").
    - Structure every explanation vertically using clean, bold thematic labels:
      **Formula:**
-     [ \\text{State the governing equation or law: e.g. a = \\frac{v - u}{t}} ]
+     [ a = \\frac{v - u}{t} ]
      **Calculation:**
-     [ \\text{Step-by-step substitution and numerical evaluation: e.g. s = ut + \\frac{1}{2}at^2} ]
-     **Answer:** \\( \\text{State final answer clearly with SI units} \\)
-2. LATEX MATHEMATICAL NOTATION & FORMULA ISOLATION:
-   - To make equations 100% resilient across mobile phones and desktop:
-     a) Always put display formulas on their own dedicated line using bracket notation [ equation ] or \\[ equation \\] (e.g. [ a = \\frac{v - u}{t} ] or [ s = ut + \\frac{1}{2}at^2 ]).
+     [ a = \\frac{20 - 0}{4} = 5 \\text{ m/s}^2 ]
+     **Answer:** \\( a = 5 \\text{ m/s}^2 \\) (Option A)
+3. PHONE-SAFE LATEX MATHEMATICAL NOTATION & FORMULA ISOLATION:
+   - To make equations 100% resilient across mobile phones and desktop touch clipboards:
+     a) Always put display formulas on their own dedicated line using bracket notation [ equation ] (e.g. [ a = \\frac{v - u}{t} ] or [ s = ut + \\frac{1}{2}at^2 ]).
      b) Separate equations with blank lines above and below for clean formatting.
-     c) In multiple-choice options, enclose mathematical expressions and numbers with units in \\( ... \\) or [ ... ].
-     d) Always keep backslashes intact on all LaTeX keywords: \\frac{numerator}{denominator}, \\sqrt{x}, \\times, \\cdot, \\pm, \\Delta, etc. Never output raw ASCII math.
-3. DISTRACTOR INTEGRITY:
+     c) Always keep backslashes intact on all LaTeX keywords: \\frac{numerator}{denominator}, \\sqrt{x}, \\times, \\cdot, \\pm, \\Delta, \\theta, \\pi, \\Omega, \\mu. Never output raw ASCII math.
+     d) Wrap physical units in \\text{...} inside math mode (e.g. \\( 50 \\text{ m/s} \\), \\( 1200 \\text{ kg} \\), \\( 3000 \\text{ N} \\)).
+4. DISTRACTOR INTEGRITY:
    - ${difficultyConfig.distractorRule}`;
     } else {
       subjectRules = `CRITICAL THEORY & CONCEPTUAL EXPLANATION RULES:
@@ -319,7 +334,7 @@ CRITICAL RULES:
      **Core Concept:** [State underlying scientific law, definition, or historical context]
      **Key Reason:** [Explain exactly why the correct answer is valid]
      **Distractor Analysis:** [Briefly clarify why plausible incorrect choices fail]
-     **Answer:** [Option Letter and summary statement]${isMobile ? `\n2. FORMULA NOTATION: If any scientific formulas or units are used, isolate them on dedicated bracket lines [ formula ] with blank line padding.` : ''}`;
+     **Answer:** [Option Letter and summary statement]${isMobile ? `\n2. FORMULA NOTATION (PHONE-OPTIMIZED): If any scientific formulas or units are used, isolate them on dedicated bracket lines [ formula ] with blank line padding and wrap inline symbols in \\( ... \\).` : ''}`;
     }
 
     return `You are an expert exam professor and national curriculum specialist creating a standardized ${totalQuestions}-question examination for Grade ${cleanGrade} students in ${subject}.
@@ -340,11 +355,11 @@ Time Limit: ${timeLimit} minutes
 ================================================================
 
 QUESTION STRUCTURE (Repeat for all ${totalQuestions} questions):
-1. [Question text or scenario]
-   A) [Option A]
-   B) [Option B]
-   C) [Option C]
-   D) [Option D]
+1. [Question text or scenario with exact LaTeX: \\( m = 1200 \\text{ kg} \\)]
+   A) [Option A with exact LaTeX: \\( ... \\)]
+   B) [Option B with exact LaTeX: \\( ... \\)]
+   C) [Option C with exact LaTeX: \\( ... \\)]
+   D) [Option D with exact LaTeX: \\( ... \\)]
    Answer: [Correct Option Letter: A, B, C, or D]
    Explanation:
 [Provide step-wise explanation without numbers according to rules below]
@@ -359,7 +374,7 @@ EXAM PARAMETERS:
 - Specific Topics to Cover: ${topics || 'Standard curriculum'}
 - Difficulty Setting: ${difficulty}
 - Answer Key Balance: Randomize correct option letters evenly across A, B, C, and D.`;
-  }, [subjectType, grade, subject, topics, totalQuestions, timeLimit, difficulty, promptStyle, difficultyConfig]);
+  }, [subjectType, grade, subject, topics, totalQuestions, timeLimit, difficulty, promptStyle, difficultyConfig, isMobileDevice, optimizeForPhone]);
 
   // Sample TXT Output Preview matching user request
   const sampleTxtPreview = useMemo(() => {
@@ -478,9 +493,22 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                 <h3 className="font-bold text-base font-['Outfit',sans-serif] text-zinc-950 dark:text-white">
                   AI Prompt Studio
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                  📱 Mobile-Safe LaTeX
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOptimizeForPhone((prev) => !prev);
+                    triggerRegeneration();
+                  }}
+                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                    optimizeForPhone
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:text-zinc-800 dark:hover:text-zinc-200'
+                  }`}
+                  title="Toggle Phone-Optimized Exact LaTeX prompt directives"
+                >
+                  <Smartphone className="w-3 h-3" />
+                  <span>{optimizeForPhone ? '📱 Phone LaTeX: Active' : 'Phone LaTeX: Off'}</span>
+                </button>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 Instant exam prompts for ChatGPT, Claude, Gemini & DeepSeek
