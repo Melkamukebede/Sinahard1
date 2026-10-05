@@ -11,7 +11,7 @@ import { CURATED_EXAMS_CATALOG } from './data/curatedCatalog';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
-import { Play, AlertCircle, Loader2 } from 'lucide-react';
+import { Play, AlertCircle, Loader2, LogIn } from 'lucide-react';
 import { extractTargetExamId, resolveExamForPractice } from './services/shareService';
 import { addToSharedHistory } from './services/sharedHistoryService';
 import {
@@ -185,6 +185,7 @@ function MainApp() {
   // User freemium / trial status computation (Option 3: 5-Day Trial then 20 manual / 15 import limit)
   const userCreatedAt = user?.metadata?.creationTime;
   const userTier = getUserTierStatus(user, activeSubscription, userCreatedAt);
+  const isStudentLoggedIn = Boolean(!authLoading && user && user.uid !== 'guest' && !user.isAnonymous);
   const isAdmin = Boolean(user && !user.isAnonymous && user.uid !== 'guest' && isUserAdmin(user));
   const isTeacher = Boolean(user && isUserTeacher(user));
   const isVerifiedTeacher = Boolean(user && isTeacherVerified(user));
@@ -232,6 +233,8 @@ function MainApp() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Direct Practice Mode launch states for shared links (?id=... or ?examId=...)
+  const [pendingSharedExamId, setPendingSharedExamId] = useState<string | null>(() => extractTargetExamId());
+  const [requiresLoginForSharedExam, setRequiresLoginForSharedExam] = useState<boolean>(false);
   const [isOpeningPracticeLink, setIsOpeningPracticeLink] = useState<boolean>(() => {
     return !!extractTargetExamId();
   });
@@ -385,14 +388,35 @@ function MainApp() {
     }
   }, [user]);
 
-  // Handle shared exam links: directly launch into Practice Mode immediately (?id=... or ?examId=... or path)
+  // Handle shared exam links: check student login, prompt login if needed, and launch into Practice Mode (?id=... or ?examId=...)
   useEffect(() => {
-    const targetId = extractTargetExamId();
+    const targetId = extractTargetExamId() || pendingSharedExamId;
     if (!targetId) {
       setIsOpeningPracticeLink(false);
       return;
     }
 
+    // 1. Wait for Firebase Auth initialization to finish before checking login status
+    if (authLoading) {
+      setIsOpeningPracticeLink(true);
+      setPracticeLinkStatus(`Verifying student account for exam "${targetId}"...`);
+      return;
+    }
+
+    const isStudentLoggedIn = Boolean(user && user.uid !== 'guest' && !user.isAnonymous);
+
+    // 2. Requirement: "make if student not logid in to access shared link exam , say login first to access the exams and launch to log in page"
+    if (!isStudentLoggedIn) {
+      setIsOpeningPracticeLink(false);
+      setPendingSharedExamId(targetId);
+      setRequiresLoginForSharedExam(true);
+      showToast('Login first to access the exams');
+      openRegistrationModal();
+      return;
+    }
+
+    // 3. Student is logged in: proceed to load and launch practice mode
+    setRequiresLoginForSharedExam(false);
     let isMounted = true;
     setIsOpeningPracticeLink(true);
     setPracticeLinkStatus(`Loading exam "${targetId}" for practice...`);
@@ -420,6 +444,7 @@ function MainApp() {
           // Directly launch in Practice Mode
           setActivePracticeExam(resolvedExam);
           setIsOpeningPracticeLink(false);
+          setPendingSharedExamId(null);
           showToast(`🎯 Practice Mode: "${resolvedExam.name}"`);
 
           // Clean URL state without browser reload
@@ -450,13 +475,22 @@ function MainApp() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [authLoading, user, exams, pendingSharedExamId, openRegistrationModal]);
 
   // Listen to popstate/hashchange so clicking or navigating to a shared exam link inside the app also triggers Practice Mode
   useEffect(() => {
     const handleUrlChange = () => {
       const targetId = extractTargetExamId();
       if (targetId && !activePracticeExam) {
+        const isStudentLoggedIn = Boolean(!authLoading && user && user.uid !== 'guest' && !user.isAnonymous);
+        if (!isStudentLoggedIn) {
+          setPendingSharedExamId(targetId);
+          setRequiresLoginForSharedExam(true);
+          showToast('Login first to access the exams');
+          openRegistrationModal();
+          return;
+        }
+
         setIsOpeningPracticeLink(true);
         setPracticeLinkStatus(`Opening exam "${targetId}" in Practice Mode...`);
         resolveExamForPractice(targetId, { currentExams: exams })
@@ -470,6 +504,7 @@ function MainApp() {
               addToSharedHistory(resolved, 'accessed_by_me');
               setActivePracticeExam(resolved);
               setIsOpeningPracticeLink(false);
+              setPendingSharedExamId(null);
               showToast(`🎯 Practice Mode: "${resolved.name}"`);
               window.history.replaceState({}, '', window.location.pathname);
             }
@@ -996,10 +1031,58 @@ function MainApp() {
       />
 
       {/* Direct Practice Mode Launching Overlay for Shared Links */}
-      {(isOpeningPracticeLink || practiceLinkError) && (
+      {(isOpeningPracticeLink || practiceLinkError || (requiresLoginForSharedExam && !isStudentLoggedIn)) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
           <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 p-6 shadow-2xl text-center flex flex-col items-center space-y-4">
-            {practiceLinkError ? (
+            {requiresLoginForSharedExam && !isStudentLoggedIn ? (
+              <>
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-xs">
+                  <LogIn className="w-6 h-6" />
+                </div>
+                <div className="space-y-1.5">
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-white font-['Syne',sans-serif]">
+                    Login First to Access the Exams
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                    You must be logged in to access and practice this shared exam. Please sign in with your student account to continue.
+                  </p>
+                </div>
+                <div className="w-full space-y-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const success = await signInWithGoogle();
+                      if (!success) {
+                        openRegistrationModal();
+                      }
+                    }}
+                    className="w-full py-2.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold transition cursor-pointer hover:opacity-90 flex items-center justify-center gap-2 shadow-xs"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>Sign in with Google</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openRegistrationModal()}
+                    className="w-full py-2 rounded-full border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition cursor-pointer"
+                  >
+                    Open Login &amp; Profile Page
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRequiresLoginForSharedExam(false);
+                      setPendingSharedExamId(null);
+                      setIsOpeningPracticeLink(false);
+                      window.history.replaceState({}, '', window.location.pathname);
+                    }}
+                    className="w-full text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 py-1 transition cursor-pointer"
+                  >
+                    Cancel &amp; Return to Library
+                  </button>
+                </div>
+              </>
+            ) : practiceLinkError ? (
               <>
                 <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
                   <AlertCircle className="w-6 h-6" />

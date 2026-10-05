@@ -44,8 +44,10 @@ export const SharedHistoryView: React.FC<SharedHistoryViewProps> = ({
   onShowToast,
   exams = [],
 }) => {
-  const { user } = useAuth();
+  const { user, openRegistrationModal } = useAuth();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const isStudentLoggedIn = Boolean(user && user.uid !== 'guest' && !user.isAnonymous);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -80,6 +82,13 @@ export const SharedHistoryView: React.FC<SharedHistoryViewProps> = ({
   // Handle Accessing an exam by ID or pasted link
   const handleAccessExam = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!isStudentLoggedIn) {
+      setAccessError('Login first to access the exams');
+      showToast('Login first to access the exams');
+      openRegistrationModal();
+      return;
+    }
+
     const rawInput = inputCodeOrLink.trim();
     if (!rawInput) {
       setAccessError('Please enter an Exam Code or paste a Sinahard link.');
@@ -561,6 +570,12 @@ ${item.shareUrl}`;
                   <button
                     type="button"
                     onClick={async () => {
+                      if (!isStudentLoggedIn) {
+                        showToast('Login first to access the exams');
+                        openRegistrationModal();
+                        return;
+                      }
+
                       if (matchedExam && matchedExam.questions && matchedExam.questions.length > 0) {
                         onStartPractice(matchedExam);
                       } else {
