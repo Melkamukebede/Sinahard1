@@ -32,8 +32,22 @@ service cloud.firestore {
     // Exams Collection (Cloud Database Storage)
     match /exams/{examId} {
       allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && (
+      allow create: if isSignedIn() || (
+        request.resource.data.isPublic == true &&
+        request.resource.data.id == examId
+      );
+      allow update: if (
+        isSignedIn() && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.authorId == request.auth.uid ||
+          isAdmin()
+        )
+      ) || (
+        resource.data.isPublic == true &&
+        request.resource.data.isPublic == true &&
+        request.resource.data.id == examId
+      );
+      allow delete: if isSignedIn() && (
         resource.data.userId == request.auth.uid ||
         resource.data.authorId == request.auth.uid ||
         isAdmin()
@@ -43,8 +57,18 @@ service cloud.firestore {
     // Questions Bank Collection (Individual Question Storage)
     match /questions/{questionId} {
       allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && (
+      allow create: if isSignedIn() || request.resource.data.isPublic == true;
+      allow update: if (
+        isSignedIn() && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.authorId == request.auth.uid ||
+          isAdmin()
+        )
+      ) || (
+        resource.data.isPublic == true &&
+        request.resource.data.isPublic == true
+      );
+      allow delete: if isSignedIn() && (
         resource.data.userId == request.auth.uid ||
         resource.data.authorId == request.auth.uid ||
         isAdmin()

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Share2,
   Copy,
@@ -17,9 +17,11 @@ import {
   Link,
   Loader2,
   CloudCheck,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { Exam } from '../types';
-import { publishExamForCloudSharing, SHARE_BASE_URL } from '../services/shareService';
+import { publishExamForCloudSharing } from '../services/shareService';
 import {
   generateExamShareText,
   addToSharedHistory,
@@ -43,44 +45,49 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
   const [copiedLocalLink, setCopiedLocalLink] = useState(false);
   const [copiedSpec, setCopiedSpec] = useState(false);
   const [nativeShareSuccess, setNativeShareSuccess] = useState(false);
-  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'ready'>('idle');
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'ready' | 'error'>('idle');
+  const [cloudSyncError, setCloudSyncError] = useState<string | null>(null);
 
-  // Generate short sharing link using requested production domain: https://sinahard1.pages.dev/
+  // Default to active origin so test and practice links work immediately
+  const [domainMode, setDomainMode] = useState<'active' | 'production'>('active');
+
   const compactExamId = exam ? (exam.catalogId || exam.id).trim() : '';
   const productionLink = `${DEFAULT_PRODUCTION_DOMAIN}/?id=${encodeURIComponent(compactExamId)}`;
-  const currentOriginLink = typeof window !== 'undefined' && window.location.origin
-    ? `${window.location.origin}/?id=${encodeURIComponent(compactExamId)}`
-    : productionLink;
-  const isDifferentOrigin = typeof window !== 'undefined' && !window.location.origin.includes('sinahard1.pages.dev');
+  
+  const activeOrigin = typeof window !== 'undefined' && window.location.origin
+    ? window.location.origin
+    : DEFAULT_PRODUCTION_DOMAIN;
+  const currentOriginLink = `${activeOrigin}/?id=${encodeURIComponent(compactExamId)}`;
+  const isDifferentOrigin = activeOrigin !== DEFAULT_PRODUCTION_DOMAIN;
 
-  // Primary short link defaults to production https://sinahard1.pages.dev/?id=...
-  const shortLink = productionLink;
+  // Active link is default; production link is optional toggle
+  const shortLink = domainMode === 'production' ? productionLink : currentOriginLink;
 
-  // Formatted exam specification text snippet matching exact requested template:
-  // 📌 Sinahard Exam Specification
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // •Title: ...
-  // • Level: ...
-  // • Subject: ...
-  // • Topic: ...
-  // • Duration: ... Minutes
-  // • Questions: ... Multiple-Choice Questions
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 👉 Practice this exam on Sinahard:
-  // https://sinahard1.pages.dev/?id=exam_...
-  const specSnippet = exam ? generateExamShareText(exam, false) : '';
+  // Formatted exam specification text snippet
+  const specSnippet = exam ? generateExamShareText(exam, domainMode) : '';
 
-  // Automatically publish/synchronize exam to Cloud Firestore so any recipient can open it directly in practice mode
+  // Publish to Cloud Firestore
+  const handlePublishToCloud = useCallback(async () => {
+    if (!exam) return;
+    setCloudSyncStatus('syncing');
+    setCloudSyncError(null);
+
+    const result = await publishExamForCloudSharing(exam);
+    if (result.success) {
+      setCloudSyncStatus('ready');
+      addToSharedHistory(exam, 'shared_by_me', shortLink);
+    } else {
+      setCloudSyncStatus('error');
+      setCloudSyncError(result.error || 'Failed to upload exam to cloud.');
+    }
+  }, [exam, shortLink]);
+
+  // Automatically publish/synchronize exam to Cloud Firestore when opened
   useEffect(() => {
     if (isOpen && exam) {
-      setCloudSyncStatus('syncing');
-      publishExamForCloudSharing(exam).then((success) => {
-        setCloudSyncStatus(success ? 'ready' : 'idle');
-      });
-      // Save into Shared History automatically
-      addToSharedHistory(exam, 'shared_by_me', shortLink);
+      handlePublishToCloud();
     }
-  }, [isOpen, exam, shortLink]);
+  }, [isOpen, exam?.id, handlePublishToCloud]);
 
   if (!isOpen || !exam) return null;
 
@@ -202,7 +209,47 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
         </div>
 
         {/* Scrollable Content */}
-        <div className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1">
+        <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+          {/* Cloud Synchronization Status Banner */}
+          {cloudSyncStatus === 'syncing' && (
+            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>Uploading exam to cloud database so anyone can practice...</span>
+              </div>
+            </div>
+          )}
+
+          {cloudSyncStatus === 'ready' && (
+            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2">
+                <CloudCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="font-medium">
+                  Exam uploaded to cloud! Anyone with this link can practice instantly without logging in.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {cloudSyncStatus === 'error' && (
+            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                <span className="truncate">
+                  Cloud upload failed: {cloudSyncError || 'Network issue'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handlePublishToCloud}
+                className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-semibold text-[11px] shrink-0 hover:bg-rose-700 transition flex items-center gap-1 cursor-pointer"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Retry</span>
+              </button>
+            </div>
+          )}
+
           {/* Exam Summary Specification Card */}
           <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#070e1a] border border-zinc-200/80 dark:border-white/10 space-y-3">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -271,11 +318,36 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
                 <Globe className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                 <span>1. Direct Short Exam Link</span>
               </label>
-              <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-200/80 dark:border-zinc-700 flex items-center gap-1">
-                <Link className="w-2.5 h-2.5" />
-                <span>sinahard1.pages.dev</span>
-              </span>
+
+              {/* Domain Switcher */}
+              {isDifferentOrigin && (
+                <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800/80 p-0.5 rounded-full border border-zinc-200 dark:border-zinc-700 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setDomainMode('active')}
+                    className={`px-2 py-0.5 rounded-full font-semibold transition cursor-pointer ${
+                      domainMode === 'active'
+                        ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-2xs'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Active App
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDomainMode('production')}
+                    className={`px-2 py-0.5 rounded-full font-semibold transition cursor-pointer ${
+                      domainMode === 'production'
+                        ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-2xs'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                  >
+                    sinahard1.pages.dev
+                  </button>
+                </div>
+              )}
             </div>
+
             <div className="flex items-center gap-2">
               <div className="flex-1 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 font-mono text-[11px] sm:text-xs text-zinc-700 dark:text-zinc-300 truncate select-all flex items-center gap-2">
                 <span className="truncate">{shortLink}</span>
@@ -295,38 +367,11 @@ export const ShareExamModal: React.FC<ShareExamModalProps> = ({
                 <span>{copiedLink ? 'Copied!' : 'Copy Link'}</span>
               </button>
             </div>
-            {isDifferentOrigin && (
-              <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-0.5">
-                <span>Dev / Preview Link:</span>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(currentOriginLink);
-                    setCopiedLocalLink(true);
-                    setTimeout(() => setCopiedLocalLink(false), 2000);
-                  }}
-                  className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1"
-                >
-                  {copiedLocalLink ? '✓ Copied Preview Link' : 'Copy Preview Domain Link'}
-                </button>
-              </div>
-            )}
+
             <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
               <p>
                 Opening this short link on mobile or desktop directly launches this exam in <strong>Practice Mode</strong>.
               </p>
-              {cloudSyncStatus === 'syncing' && (
-                <span className="shrink-0 flex items-center gap-1 text-zinc-400">
-                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                  <span>Syncing...</span>
-                </span>
-              )}
-              {cloudSyncStatus === 'ready' && (
-                <span className="shrink-0 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                  <CloudCheck className="w-3 h-3" />
-                  <span>Cloud Ready</span>
-                </span>
-              )}
             </div>
           </div>
 

@@ -37,13 +37,15 @@ export function getCleanGradeLabel(exam: Exam): string {
 
 /**
  * Formats the standard share URL for an exam.
- * Uses https://sinahard1.pages.dev/?id=... as primary target
+ * Defaults to the active app origin so shared links open and work immediately,
+ * with optional production domain (sinahard1.pages.dev) selection.
  */
-export function buildExamShareUrl(exam: Exam, preferLocalOrigin = false): string {
+export function buildExamShareUrl(exam: Exam, domainOption: 'active' | 'production' = 'active'): string {
   const examId = (exam.catalogId || exam.id).trim();
-  const baseUrl = preferLocalOrigin && typeof window !== 'undefined' && window.location.origin
+  const activeOrigin = typeof window !== 'undefined' && window.location.origin
     ? window.location.origin
     : DEFAULT_PRODUCTION_DOMAIN;
+  const baseUrl = domainOption === 'production' ? DEFAULT_PRODUCTION_DOMAIN : activeOrigin;
   return `${baseUrl}/?id=${encodeURIComponent(examId)}`;
 }
 
@@ -63,14 +65,14 @@ export function buildExamShareUrl(exam: Exam, preferLocalOrigin = false): string
  * 👉 Practice this exam on Sinahard:
  * https://sinahard1.pages.dev/?id=exam_1791170263655
  */
-export function generateExamShareText(exam: Exam, preferLocalOrigin = false): string {
+export function generateExamShareText(exam: Exam, domainOption: 'active' | 'production' = 'active'): string {
   const title = (exam.name || exam.title || 'Practice Exam').trim();
   const level = getCleanGradeLabel(exam);
   const subject = (exam.subject || exam.metadata?.subject || 'General').trim();
   const topic = (exam.topic || exam.metadata?.topic || exam.description || title).trim();
   const duration = Number(exam.timeLimit) || 40;
   const questionsCount = exam.questions?.length || exam.questionCount || 0;
-  const shareUrl = buildExamShareUrl(exam, preferLocalOrigin);
+  const shareUrl = buildExamShareUrl(exam, domainOption);
 
   return `📌 Sinahard Exam Specification
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━

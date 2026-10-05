@@ -82,29 +82,29 @@ export function extractTargetExamId(): string | null {
   return null;
 }
 
+export interface CloudPublishResult {
+  success: boolean;
+  examId: string;
+  error?: string;
+}
+
 /**
  * Automatically publishes/synchronizes an exam to Cloud Firestore /exams/{examId}
  * so that any recipient opening the short link on any device can immediately fetch it
  * and launch Practice Mode with complete questions and specifications.
  */
-export async function publishExamForCloudSharing(exam: Exam): Promise<boolean> {
+export async function publishExamForCloudSharing(exam: Exam): Promise<CloudPublishResult> {
+  const examId = (exam.catalogId || exam.id).trim();
+  if (!examId) {
+    return { success: false, examId: '', error: 'Missing exam identifier.' };
+  }
+
   try {
-    const examId = (exam.catalogId || exam.id).trim();
-    if (!examId) return false;
+    const authorUid = auth.currentUser?.uid || 'guest';
+    const authorEmail = auth.currentUser?.email || null;
+    const nowIso = new Date().toISOString();
 
-    // Ensure user has auth token for Firestore security rules
-    if (!auth.currentUser) {
-      try {
-        await signInAnonymously(auth);
-      } catch (authErr) {
-        console.warn('Anonymous authentication for share publishing fallback:', authErr);
-      }
-    }
-
-    const examDocRef = doc(db, 'exams', examId);
-    const existingSnap = await getDoc(examDocRef);
-
-    // Sanitize questions array
+    // Sanitize questions array to guarantee complete fields
     const sanitizedQuestions: Question[] = (exam.questions || []).map((q, idx) => ({
       id: q.id || `q_${examId}_${idx + 1}`,
       text: String(q.text || ''),
@@ -118,10 +118,6 @@ export async function publishExamForCloudSharing(exam: Exam): Promise<boolean> {
           : 0,
       explanation: q.explanation ? String(q.explanation) : '',
     }));
-
-    const authorUid = auth.currentUser?.uid || 'guest';
-    const authorEmail = auth.currentUser?.email || null;
-    const nowIso = new Date().toISOString();
 
     const title = (exam.title || exam.name || 'Practice Exam').trim();
     const examMetadata = {
@@ -138,6 +134,10 @@ export async function publishExamForCloudSharing(exam: Exam): Promise<boolean> {
       id: examId,
       catalogId: exam.catalogId || examId,
       title,
+      name: title,
+      grade: String(exam.grade || '12'),
+      subject: (exam.subject || 'General').trim(),
+      timeLimit: Number(exam.timeLimit) || 20,
       metadata: examMetadata,
       questions: sanitizedQuestions,
       questionCount: sanitizedQuestions.length,
@@ -149,20 +149,19 @@ export async function publishExamForCloudSharing(exam: Exam): Promise<boolean> {
       ...(authorEmail ? { authorEmail } : {}),
     };
 
-    if (!existingSnap.exists()) {
-      await setDoc(examDocRef, payload);
-    } else {
-      // If questions are missing or newer, merge in place
-      const currentData = existingSnap.data();
-      if (!currentData.questions || currentData.questions.length === 0) {
-        await setDoc(examDocRef, payload, { merge: true });
-      }
-    }
+    const examDocRef = doc(db, 'exams', examId);
+    // Write directly using merge: true to handle both initial creation and updates
+    await setDoc(examDocRef, payload, { merge: true });
 
-    return true;
-  } catch (err) {
-    console.warn('Background exam publishing for share link failed (continuing gracefully):', err);
-    return false;
+    return { success: true, examId };
+  } catch (err: any) {
+    const errorDetails = err?.message || String(err);
+    console.error('Failed uploading exam to Cloud Firestore for sharing:', err);
+    return {
+      success: false,
+      examId,
+      error: errorDetails,
+    };
   }
 }
 

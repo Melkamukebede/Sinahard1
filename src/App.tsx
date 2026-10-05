@@ -427,7 +427,7 @@ function MainApp() {
         } else {
           setIsOpeningPracticeLink(false);
           setPracticeLinkError(
-            `Exam "${targetId}" could not be found or does not contain questions.`
+            `Exam "${targetId}" was not found in the cloud library. The author may need to open the exam and tap Share to complete the cloud sync.`
           );
         }
       })
@@ -435,9 +435,16 @@ function MainApp() {
         if (!isMounted) return;
         console.warn('Could not launch direct practice mode for exam:', err);
         setIsOpeningPracticeLink(false);
-        setPracticeLinkError(
-          'Unable to load shared exam for practice. Please check your internet connection and try again.'
-        );
+        const errorText = err instanceof Error ? err.message : String(err);
+        if (errorText.includes('offline') || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+          setPracticeLinkError(
+            'Unable to load shared exam because you appear to be offline. Please check your internet connection and try again.'
+          );
+        } else {
+          setPracticeLinkError(
+            `Exam "${targetId}" could not be found in the cloud library. Please ensure the author uploaded the exam via the Share menu.`
+          );
+        }
       });
 
     return () => {

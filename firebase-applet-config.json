@@ -1,12 +1,12 @@
 {
   "projectId": "exam-master-live",
-  "appId": "1:217369811965:web:a39e58b9f7cb2a72945794",
+  "appId": "1:217369811965:web:b84d5094b389f168945794",
   "apiKey": "AIzaSyCpD_eAOshPEN6e7vXuCuZXaR0CewXzw5I",
   "authDomain": "exam-master-live.firebaseapp.com",
   "firestoreDatabaseId": "(default)",
   "storageBucket": "exam-master-live.firebasestorage.app",
   "messagingSenderId": "217369811965",
-  "measurementId": "G-22KSRC5FWB",
-  "oAuthClientId": "",
+  "measurementId": "",
+  "oAuthClientId": "217369811965-lpabfhl6cohkjdll1d9oeaggbd4ocmgj.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }
