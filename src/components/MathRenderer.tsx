@@ -93,13 +93,26 @@ function processMathContent(content: string, isInlineOnly = false): string {
     return token;
   });
 
-  // Replace bare bracket display blocks [ ... ] (commonly copied without backslash on phones/ChatGPT)
-  // Uses lookbehind / lookahead so consecutive equations [ Eq1 ] [ Eq2 ] or [ Eq1 ]\n[ Eq2 ] match without skipping
-  text = text.replace(/(?:^|(?<=[\s\n]))\[\s*([a-zA-Z0-9_\s\+\-\*\/\=\^\(\)\,\.\{\}\\]*?\\(?:frac|sqrt|sum|int|cdot|vec|times|alpha|beta|theta|pi|pm|approx|left|right|text|lim|over|partial|Delta|Omega|lambda)[a-zA-Z0-9_\s\+\-\*\/\=\^\(\)\,\.\{\}\\]*?)\s*\](?=[\s\n]|$)/g, (_, math) => {
-    const token = `__MATH_BLOCK_${counter++}__`;
-    const html = getCachedKatex(math.trim(), !isInlineOnly);
-    mathTokens.push({ token, html });
-    return token;
+  // Replace bare bracket display blocks [ ... ] (commonly copied without backslash on phones/ChatGPT/DeepSeek)
+  // E.g.: [ a = \frac{v - u}{t} ], [ F = ma ], [ a = \frac{24 - 0}{8} = 3 \text{ m/s}^2 ], [ F = 1200 \times 3 = 3600 \text{ N} ]
+  // Excludes markdown links [text](url) and non-math brackets like [Option A] or [Question statement]
+  const proseBracketExclusions = /\b(?:question|statement|option|explanation|step|concept|context|reason|analysis|correct|letter|please|select|choose|describe|note|warning)\b/i;
+  text = text.replace(/(?:^|(?<=[\s\n]))\[\s*([^\n\]]+?)\s*\](?![(\[])(?=[\s\n]|$)/g, (fullMatch, inner) => {
+    const trimmed = inner.trim();
+    if (!trimmed) return fullMatch;
+    if (proseBracketExclusions.test(trimmed)) return fullMatch;
+
+    // Check if bracket content contains math operators, symbols, or equations
+    const hasMathIndicator = /[=+\-*/\^_±×÷≤≥<>√∫∑∏\\]/.test(trimmed) ||
+      /\\(?:frac|sqrt|sum|int|cdot|vec|times|alpha|beta|theta|pi|pm|approx|left|right|text|lim|over|partial|Delta|Omega|lambda|degree|circ)/.test(trimmed);
+
+    if (hasMathIndicator) {
+      const token = `__MATH_BLOCK_${counter++}__`;
+      const html = getCachedKatex(trimmed, !isInlineOnly);
+      mathTokens.push({ token, html });
+      return token;
+    }
+    return fullMatch;
   });
 
   // Replace inline \( ... \)
@@ -118,23 +131,34 @@ function processMathContent(content: string, isInlineOnly = false): string {
     return token;
   });
 
-  // Auto-detect standalone lines containing naked LaTeX (equations with \frac, \sqrt, etc. that lost delimiters on phone)
-  text = text.replace(/(?:^|\n)\s*([a-zA-Z0-9\(\)\s\+\-\*\/\=\,\.]*\\(?:frac|sqrt|sum|int|cdot|vec|times|alpha|beta|theta|pi|pm|approx|lim|partial|Delta|Omega|lambda|text)\{[^\}\n]+\}[^\n]*)(?=\n|$)/g, (fullMatch, math) => {
-    if (math.includes('__MATH_')) return fullMatch;
-    const token = `__MATH_BLOCK_${counter++}__`;
-    const html = getCachedKatex(math.trim(), !isInlineOnly);
-    mathTokens.push({ token, html });
-    return `\n${token}\n`;
-  });
-
-  // Auto-detect inline naked LaTeX formulas like \frac{1}{2} or \sqrt{3} that lost inline $ delimiters
-  text = text.replace(/(?<![\$\w\\])(?:\\(?:frac\{[^\}\n]+\}\{[^\}\n]+\}|sqrt(?:\[[^\]\n]+\])?\{[^\}\n]+\}))/g, (math) => {
-    if (math.includes('__MATH_')) return math;
+  // Auto-detect naked quantities with \text{...} that lost $ delimiters inline on phones
+  // E.g. 'm = 1200 \text{ kg}', 'v = 24 \text{ m/s}', 't = 8 \text{ s}', '2400 \text{ N}', '3 \text{ m/s}^2', '3600 \text{ N}'
+  const nakedQuantityRegex = /(?:\b[a-zA-Zα-ωΑ-Ω](?:_[0-9a-zA-Z]+)?\s*=\s*)?-?\d+(?:\.\d+)?(?:\s*(?:\\times|\\cdot|[×*])\s*\d+(?:\.\d+)?)*\s*\\text\{[^\}\n]+\}(?:\^\{?[0-9\-\+\w]+\}?|\^[0-9\-\+\w]+)?/g;
+  text = text.replace(nakedQuantityRegex, (match) => {
+    if (match.includes('__MATH_')) return match;
     const token = `__MATH_INLINE_${counter++}__`;
-    const html = getCachedKatex(math.trim(), false);
+    const html = getCachedKatex(match.trim(), false);
     mathTokens.push({ token, html });
     return token;
   });
+
+  // Auto-detect inline naked LaTeX formulas like \frac{1}{2}, \sqrt{3}, \theta = ..., etc. that lost inline $ delimiters
+  const nakedLatexRegex = /(?<![\$\w\\])(?:\\(?:frac\{[^\}\n]+\}\{[^\}\n]+\}|sqrt(?:\[[^\]\n]+\])?\{[^\}\n]+\}|alpha|beta|gamma|theta|pi|lambda|Delta|Omega|times|cdot|approx|pm)(?:[^\$\n<]*?\\text\{[^\}\n]+\})?)/g;
+  text = text.replace(nakedLatexRegex, (match) => {
+    if (match.includes('__MATH_')) return match;
+    const token = `__MATH_INLINE_${counter++}__`;
+    const html = getCachedKatex(match.trim(), false);
+    mathTokens.push({ token, html });
+    return token;
+  });
+
+  // If isInlineOnly is true (like multiple-choice options) and the text still has LaTeX commands (\text, \frac, etc.)
+  if (isInlineOnly && text.includes('\\') && !text.includes('__MATH_')) {
+    const token = `__MATH_INLINE_${counter++}__`;
+    const html = getCachedKatex(text.trim(), false);
+    mathTokens.push({ token, html });
+    text = token;
+  }
 
   // Step 2: Escape HTML
   let html = text

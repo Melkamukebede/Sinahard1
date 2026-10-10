@@ -92,6 +92,16 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
       .join('\n');
   };
 
+  const cleanMathNotation = (str: string): string => {
+    if (!str) return '';
+    let cleaned = str;
+    const nakedQuantityRegex = /(?<![\$\w\\])(?:[a-zA-Zα-ωΑ-Ω](?:_[0-9a-zA-Z]+)?\s*=\s*)?-?\d+(?:\.\d+)?(?:\s*(?:\\times|\\cdot|[×*])\s*\d+(?:\.\d+)?)*\s*\\text\{[^\}\n]+\}(?:\^\{?[0-9\-\+\w]+\}?|\^[0-9\-\+\w]+)?(?![\$])/g;
+    cleaned = cleaned.replace(nakedQuantityRegex, (match) => {
+      return `$${match.trim()}$`;
+    });
+    return cleaned;
+  };
+
   // Helper: parse plain text questions supporting vertical step-wise explanations
   const parsePlainText = (raw: string): Question[] => {
     const questions: Question[] = [];
@@ -201,10 +211,10 @@ export const PasteJsonModal: React.FC<PasteJsonModalProps> = ({
 
         questions.push({
           id: 'q_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-          text: fullText,
-          options: options.slice(0, 4),
+          text: cleanMathNotation(fullText),
+          options: options.slice(0, 4).map((opt) => cleanMathNotation(opt)),
           correct: correct >= 0 && correct < 4 ? correct : 0,
-          explanation: fullExplanation,
+          explanation: cleanMathNotation(fullExplanation),
         });
       }
     });

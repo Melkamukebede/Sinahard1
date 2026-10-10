@@ -241,6 +241,44 @@ function MainApp() {
   const [practiceLinkStatus, setPracticeLinkStatus] = useState<string>('Preparing Practice Mode...');
   const [practiceLinkError, setPracticeLinkError] = useState<string | null>(null);
 
+  // Direct Practice Mode Launch helper for shared exam access
+  const handleLaunchSharedExam = useCallback((examId: string) => {
+    setRequiresLoginForSharedExam(false);
+    setIsOpeningPracticeLink(true);
+    setPracticeLinkStatus(`Loading exam "${examId}" for practice...`);
+    setPracticeLinkError(null);
+
+    resolveExamForPractice(examId, {
+      currentExams: exams,
+      onStatus: (status) => setPracticeLinkStatus(status),
+    })
+      .then(async (resolvedExam) => {
+        if (resolvedExam && resolvedExam.questions && resolvedExam.questions.length > 0) {
+          try {
+            await saveExamToDb(resolvedExam, user);
+          } catch {
+            // Ignore storage errors
+          }
+          addToSharedHistory(resolvedExam, 'accessed_by_me');
+          setActivePracticeExam(resolvedExam);
+          setIsOpeningPracticeLink(false);
+          setPendingSharedExamId(null);
+          showToast(`🎯 Practice Mode: "${resolvedExam.name}"`);
+          window.history.replaceState({}, '', window.location.pathname);
+        } else {
+          setIsOpeningPracticeLink(false);
+          setPracticeLinkError(
+            `Exam "${examId}" was not found in the cloud library. Please ensure the author uploaded the exam via the Share menu.`
+          );
+        }
+      })
+      .catch((err) => {
+        setIsOpeningPracticeLink(false);
+        const errorText = err instanceof Error ? err.message : String(err);
+        setPracticeLinkError(errorText || 'Failed to load shared exam.');
+      });
+  }, [exams, user]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -1009,7 +1047,12 @@ function MainApp() {
         <UserRegistrationModal
           isOpen={isRegistrationModalOpen}
           onClose={closeRegistrationModal}
+          sharedExamId={pendingSharedExamId}
+          onAccessSharedExam={handleLaunchSharedExam}
           onSuccess={(registeredProfile) => {
+            if (pendingSharedExamId) {
+              handleLaunchSharedExam(pendingSharedExamId);
+            }
             if (registeredProfile.role === 'teacher') {
               showToast(`Registered successfully as Teacher for ${registeredProfile.school || 'your school'}!`);
             } else {
@@ -1044,7 +1087,7 @@ function MainApp() {
                     Login First to Access the Exams
                   </h3>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                    You must be logged in to access and practice this shared exam. Please sign in with your student account to continue.
+                    You must be logged in to access and practice this shared exam. Sign in with Google or sign up with email to continue.
                   </p>
                 </div>
                 <div className="w-full space-y-2 pt-1">
@@ -1052,7 +1095,9 @@ function MainApp() {
                     type="button"
                     onClick={async () => {
                       const success = await signInWithGoogle();
-                      if (!success) {
+                      if (success && pendingSharedExamId) {
+                        handleLaunchSharedExam(pendingSharedExamId);
+                      } else {
                         openRegistrationModal();
                       }
                     }}
@@ -1064,9 +1109,9 @@ function MainApp() {
                   <button
                     type="button"
                     onClick={() => openRegistrationModal()}
-                    className="w-full py-2 rounded-full border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition cursor-pointer"
+                    className="w-full py-2 rounded-full border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition cursor-pointer flex items-center justify-center gap-1.5"
                   >
-                    Open Login &amp; Profile Page
+                    <span>Sign Up with Email / Full Setup</span>
                   </button>
                   <button
                     type="button"

@@ -3,6 +3,10 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   signOut as fbSignOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
   User as FirebaseUser,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
@@ -19,6 +23,9 @@ interface AuthContextType {
   openRegistrationModal: () => void;
   closeRegistrationModal: () => void;
   signInWithGoogle: () => Promise<boolean>;
+  signUpWithEmail: (email: string, password: string, displayName?: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  sendPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   error: string | null;
   clearError: () => void;
@@ -366,6 +373,88 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signUpWithEmail = async (
+    email: string,
+    password: string,
+    displayName?: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (isSigningInRef.current) return { success: false, error: 'Operation in progress' };
+    isSigningInRef.current = true;
+    setIsSigningIn(true);
+    setError(null);
+    try {
+      const userCred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      if (displayName?.trim() && userCred.user) {
+        try {
+          await updateProfile(userCred.user, { displayName: displayName.trim() });
+        } catch {
+          // ignore profile update error
+        }
+      }
+      setFirebaseUser(userCred.user);
+      return { success: true };
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code || '';
+      let msg = 'Failed to create account.';
+      if (code === 'auth/email-already-in-use') {
+        msg = 'This email is already in use. Please sign in instead.';
+      } else if (code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      } else if (code === 'auth/weak-password') {
+        msg = 'Password should be at least 6 characters.';
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
+      setError(msg);
+      return { success: false, error: msg };
+    } finally {
+      isSigningInRef.current = false;
+      setIsSigningIn(false);
+    }
+  };
+
+  const signInWithEmail = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (isSigningInRef.current) return { success: false, error: 'Operation in progress' };
+    isSigningInRef.current = true;
+    setIsSigningIn(true);
+    setError(null);
+    try {
+      const userCred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      setFirebaseUser(userCred.user);
+      return { success: true };
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code || '';
+      let msg = 'Failed to sign in.';
+      if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        msg = 'Invalid email or password. Please verify your credentials.';
+      } else if (code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      } else if (code === 'auth/too-many-requests') {
+        msg = 'Access temporarily locked due to failed attempts. Please try again later.';
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
+      setError(msg);
+      return { success: false, error: msg };
+    } finally {
+      isSigningInRef.current = false;
+      setIsSigningIn(false);
+    }
+  };
+
+  const sendPasswordReset = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      return { success: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to send password reset email.';
+      return { success: false, error: msg };
+    }
+  };
+
   const signOut = async () => {
     setError(null);
     try {
@@ -538,6 +627,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         openRegistrationModal,
         closeRegistrationModal,
         signInWithGoogle,
+        signUpWithEmail,
+        signInWithEmail,
+        sendPasswordReset,
         signOut,
         error,
         clearError,

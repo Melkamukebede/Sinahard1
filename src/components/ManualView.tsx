@@ -16,6 +16,9 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  Video,
+  Clapperboard,
+  Sparkles,
 } from 'lucide-react';
 import { MathRenderer } from './MathRenderer';
 
@@ -35,11 +38,76 @@ export const ManualView: React.FC<ManualViewProps> = ({
 }) => {
   // Expand/collapse for Math & Science formulas section
   const [isMathExpanded, setIsMathExpanded] = useState<boolean>(false);
+  const [isVideoPromptExpanded, setIsVideoPromptExpanded] = useState<boolean>(true);
 
   // Live math formula sandbox state
   const [formulaInput, setFormulaInput] = useState<string>('\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}');
   const [copiedSymbol, setCopiedSymbol] = useState<string | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
+  const [copiedVideoPrompt, setCopiedVideoPrompt] = useState<boolean>(false);
+  const [copiedShortVideoPrompt, setCopiedShortVideoPrompt] = useState<boolean>(false);
+
+  const googleVidsSinglePrompt = `Create a 30-second inspiring animated commercial video for Sinahard (the AI Exam Preparation App for Ethiopian students). 
+Style: Cinematic 3D animation (Pixar/DreamWorks studio quality), warm and inviting study room lighting. 
+Setting: A wooden study desk where an ambitious Ethiopian high school boy (Bekele) wearing a green hoodie sits surrounded by heavy matriculation textbooks next to a friendly, wise silverback gorilla wearing round scholar spectacles and a cozy knitted vest.
+Dialogue (Amharic audio with English subtitles): 
+The stressed boy drops his pen and turns to the gorilla asking urgently: "እባክህ AI ጥያቄዎችን የሚፈጥር አፕ ንገረኝ!" (Please tell me an AI app that creates exam questions!).
+The wise gorilla smiles warmly, shows him the Sinahard app on a smartphone, and explains enthusiastically in Amharic: "አትጨነቅ! መፍትሄው ሲናሃርድ (Sinahard) ነው! በAI ብሔራዊ እና የትምህርት ቤት ፈተናዎችን በሰከንዶች ውስጥ የሚያዘጋጅልህ፣ ለእያንዳንዱ ጥያቄም የሂሳብና የፊዚክስ ቀመሮችን ደረጃ-በደረጃ የሚያብራራልህ ምርጥ አፕ ነው!" (Don't stress! The solution is Sinahard! It generates national & school exams in seconds, complete with step-by-step math formulas!).
+The screen shows Sinahard running with a test timer, LaTeX physics equations (F = ma), and 100% score celebration. 
+Ending: Bekele scores 100% and high-fives the gorilla with joy. 
+Final title card: "ሲናሃርድ (Sinahard) — Ace Your Exams with AI! Start Practicing Today!"`;
+
+  const googleVidsStoryboardPrompt = `================================================================
+GOOGLE VIDS PROMPT: SINAHARD EXAM PREP APP VIDEO COMMERCIAL
+Concept: Ethiopian Student & Wise Professor Gorilla
+Target Audience: Ethiopian High School & Matric Students (Grades 8, 10, 12, University)
+Video Aspect Ratio: 16:9 Landscape / 9:16 Shorts
+Visual Style: Warm, 3D Cinematic Animation (Pixar/Disney style), rich colors, realistic character expressions.
+================================================================
+
+CHARACTERS:
+1. Bekele (ዳዊት): 17-year-old ambitious Ethiopian high school student wearing a casual green hoodie, sitting at his wooden desk surrounded by textbooks, looking overwhelmed by upcoming exams.
+2. Professor Gorilla: A charismatic, gentle, highly intelligent gorilla wearing vintage round reading spectacles and a knitted academic vest, sitting beside Bekele as his wise study mentor.
+
+SETTING:
+A cozy bedroom study desk in Addis Ababa, Ethiopia. Piles of physics and mathematics exercise books, a pencil holder, a traditional Ethiopian Jebena coffee pot in the background, and an ambient warm desk lamp.
+
+----------------------------------------------------------------
+SCENE 1: THE OVERWHELMED STUDENT (0:00 - 0:07)
+Camera: Medium close-up on Bekele. He groans, drops his pencil onto a stack of past exam papers, rubbing his forehead in frustration.
+Bekele turns to Professor Gorilla sitting next to him and pleads in Amharic:
+Bekele (Dialogue): "እባክህ AI ጥያቄዎችን የሚፈጥር አፕ ንገረኝ! የፈተና ጊዜ ደረሰ፤ እንዴት ተዘጋጅቼ ከፍተኛ ውጤት ላምጣ?"
+(English Subtitle: "Please tell me an AI app that creates exam questions! Exam season is here—how can I practice and score top marks?")
+
+----------------------------------------------------------------
+SCENE 2: THE REVELATION & SINAHARD INTRO (0:07 - 0:16)
+Camera: Close-up on Professor Gorilla. He smiles knowingly, pushes his round spectacles up his nose with one finger, and pats Bekele's shoulder reassuringly.
+The gorilla pulls out a modern smartphone glowing with the sleek Sinahard logo.
+Professor Gorilla (Dialogue in warm, motivating Amharic):
+"አትጨነቅ ወዳጄ! መፍትሄው ሲናሃርድ (Sinahard) ነው! በAI አማካኝነት ብሔራዊ እና የትምህርት ቤት ፈተናዎችን በሰከንዶች ውስጥ የሚያዘጋጅልህ፣ ለእያንዳንዱ ጥያቄም ደረጃ-በደረጃ ግልጽ ማብራሪያና የሂሳብ ቀመሮችን የሚሰጥ ምርጥ አፕ ነው!"
+(English Subtitle: "Don't stress, my friend! The answer is Sinahard! It uses AI to generate national and school exams in seconds, complete with step-by-step solutions and math formulas!")
+
+----------------------------------------------------------------
+SCENE 3: SINAHARD IN ACTION (0:16 - 0:24)
+Camera: Smooth 3D screen overlay showing the Sinahard application in action:
+- Clean KaTeX math & physics formulas rendered with precision: [ a = (v - u)/t ], [ F = ma = 3600 N ].
+- Real exam timer countdown ticking with active focus mode.
+- Instant score breakdown with green success badges.
+- One-tap exam sharing to practice offline with classmates.
+Gorilla (Voiceover):
+"የፊዚክስ፣ የሂሳብ፣ የባዮሎጂ እና የሁሉንም የትምህርት ዓይነቶች ፈተናዎች በስልክህም ሆነ በኮምፒውተርህ በቀላሉ ተለማመድ!"
+(English Subtitle: "Practice physics, math, biology, and all subjects seamlessly on your phone or computer!")
+
+----------------------------------------------------------------
+SCENE 4: VICTORY & CALL TO ACTION (0:24 - 0:30)
+Camera: Bekele submits his practice exam. The screen bursts with golden stars: "100% EXCELLENT!".
+Bekele jumps out of his chair cheering and gives Professor Gorilla an enthusiastic high-five.
+Professor Gorilla gives a confident thumbs-up to the camera with a friendly wink.
+On-Screen Animated Title Card:
+"ሲናሃርድ (Sinahard) — በAI ፈተናዎችን በቀላሉ ይለማመዱ፣ ውጤትዎን ያሳድጉ!"
+"Ace Your National Exams with AI! Start Practicing on Sinahard Today!"
+Audio: Upbeat, motivating Ethiopian afrobeat / modern lo-fi study beat fading out.
+================================================================`;
 
   const samplePrompt = `================================================================
 FORMAT SPECIFICATION:
@@ -49,31 +117,29 @@ Topic: Classical Mechanics & Kinematics
 Time Limit: 20 minutes
 ================================================================
 
-1. An object accelerates uniformly from rest to final velocity \\( v = 20 \\text{ m/s} \\) in time \\( t = 4 \\text{ s} \\). What is its acceleration?
-   A) \\( 5 \\text{ m/s}^2 \\)
-   B) \\( 80 \\text{ m/s}^2 \\)
-   C) \\( 2.5 \\text{ m/s}^2 \\)
-   D) \\( 10 \\text{ m/s}^2 \\)
+1. An object accelerates uniformly from rest to final velocity $v = 20\\text{ m/s}$ in time $t = 4\\text{ s}$. What is its acceleration?
+   A) $5\\text{ m/s}^2$
+   B) $80\\text{ m/s}^2$
+   C) $2.5\\text{ m/s}^2$
+   D) $10\\text{ m/s}^2$
    Answer: A
    Explanation: **Formula:**
 [ a = \\frac{v - u}{t} ]
 
 **Calculation:**
-[ s = ut + \\frac{1}{2}at^2 ]
-
-[ a = \\frac{20 - 0}{4} = 5 \\text{ m/s}^2 ]
-**Answer:** \\( 5 \\text{ m/s}^2 \\)
+[ a = \\frac{20 - 0}{4} = 5\\text{ m/s}^2 ]
+**Answer:** $5\\text{ m/s}^2$ (Option A)
 
 OUTPUT RULES (PHONE-OPTIMIZED EXACT LATEX):
 1. Output pure plain text (.txt format). No markdown code blocks, no greetings or conversational intro.
 2. Put Answer: [Letter] on its own line.
 3. DO NOT use numbers in the explanation area (avoid 1. Formula 2. Calculation; instead use **Formula:**, **Calculation:**, **Answer:**).
-4. EXACT LATEX IN OPTIONS: Wrap EVERY numerical and mathematical option in \( ... \) (e.g. A) \( 5 \text{ m/s}^2 \), B) \( \frac{3}{4} \text{ m/s} \)). Never output raw ASCII like '3/4' or 'sqrt(5)'.
+4. EXACT LATEX IN ALL 4 OPTIONS: Wrap EVERY numerical and mathematical option in $...$ (e.g. A) $2400\\text{ N}$, B) $3600\\text{ N}$). Never output raw ASCII like '3/4' or 'sqrt(5)'.
 5. FORMULA ISOLATION & PHONE CLIPBOARD COMPLIANCE:
-   - Wrap every key equation on its own standalone line as [ equation ] (e.g. [ a = \frac{v - u}{t} ]).
+   - Wrap display equations on their own dedicated line using bracket format [ equation ] (e.g. [ a = \\frac{v - u}{t} ] and [ F = ma ]).
    - Place blank lines before and after every equation line to ensure clean phone formatting.
-   - Wrap variables and units in \( ... \) with \text{...} for units (e.g. \( m = 1200 \text{ kg} \)).
-   - Strictly retain all LaTeX backslashes (\frac, \sqrt, \cdot, \times, \pm, \Delta, \theta, \pi, ^2). Never substitute broken plain ASCII.`;
+   - Wrap inline variables and units in $...$ with \\text{...} for units (e.g. $m = 1200\\text{ kg}$, $v = 24\\text{ m/s}$).
+   - Strictly retain all LaTeX backslashes (\\frac, \\sqrt, \\cdot, \\times, \\pm, \\Delta, \\theta, \\pi, ^2). Never substitute broken plain ASCII.`;
 
   const formulaShortcuts = [
     { label: 'Acceleration [ a = \\frac{v - u}{t} ]', code: 'a = \\frac{v - u}{t}' },
@@ -273,6 +339,120 @@ OUTPUT RULES (PHONE-OPTIMIZED EXACT LATEX):
         <div className="relative z-10 p-4 rounded-[22px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 font-mono text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed shadow-xs">
           {samplePrompt}
         </div>
+      </div>
+
+      {/* Video Ad Prompts for Google Vids & AI Generators (Student & Gorilla) */}
+      <div className="relative p-5 sm:p-6 rounded-[32px] sm:rounded-[38px] bg-white/60 dark:bg-[000000]/95 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_20px_50px_rgba(25,50,80,0.06)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.45)] space-y-4 overflow-hidden">
+        <div className="relative z-10 flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 font-bold text-xs uppercase tracking-wider">
+              <Clapperboard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Video Ad Generator Prompts</span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                Google Vids Ready
+              </span>
+            </div>
+            <h2 className="text-sm sm:text-base font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white mt-1">
+              Ethiopian Student & Professor Gorilla Commercial
+            </h2>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Paste these prompts directly into Google Vids, Veo, or AI video creators to generate an Amharic promo video.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(googleVidsSinglePrompt);
+                setCopiedShortVideoPrompt(true);
+                setTimeout(() => setCopiedShortVideoPrompt(false), 2000);
+              }}
+              className="px-3.5 py-1.5 rounded-full bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-white/80 dark:border-white/10 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
+              title="Copy short prompt for Google Vids prompt bar"
+            >
+              {copiedShortVideoPrompt ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Short Prompt Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Copy Short (Google Vids)</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(googleVidsStoryboardPrompt);
+                setCopiedVideoPrompt(true);
+                setTimeout(() => setCopiedVideoPrompt(false), 2000);
+              }}
+              className="px-3.5 py-1.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
+              title="Copy complete scene-by-scene storyboard"
+            >
+              {copiedVideoPrompt ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-white dark:text-zinc-950" />
+                  <span>Full Script Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Full Storyboard</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Amharic Dialogue Highlights */}
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="p-3.5 rounded-[20px] bg-amber-500/10 border border-amber-500/20 text-xs space-y-1.5">
+            <div className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+              <span>🇪🇹 ተማሪው ዳዊት (The Student):</span>
+            </div>
+            <p className="font-medium text-zinc-800 dark:text-zinc-200 leading-relaxed font-sans">
+              "እባክህ AI ጥያቄዎችን የሚፈጥር አፕ ንገረኝ! የፈተና ጊዜ ደረሰ፤ እንዴት ተዘጋጅቼ ከፍተኛ ውጤት ላምጣ?"
+            </p>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 italic">
+              "Please tell me an AI app that creates exam questions! Exam season is here—how can I score top marks?"
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-[20px] bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1.5">
+            <div className="font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+              <span>🦍 ፕሮፌሰር ጎሪላ (The Wise Gorilla):</span>
+            </div>
+            <p className="font-medium text-zinc-800 dark:text-zinc-200 leading-relaxed font-sans">
+              "አትጨነቅ! መፍትሄው ሲናሃርድ (Sinahard) ነው! በAI አማካኝነት ብሔራዊ እና የትምህርት ቤት ፈተናዎችን በሰከንዶች ውስጥ የሚያዘጋጅልህ፣ ደረጃ-በደረጃ ማብራሪያና የሂሳብ ቀመሮችን የሚሰጥህ ምርጥ አፕ ነው!"
+            </p>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 italic">
+              "Don't stress! The answer is Sinahard! It generates national & school exams with step-by-step math formulas in seconds!"
+            </p>
+          </div>
+        </div>
+
+        {/* Toggle full prompt view */}
+        <div className="relative z-10 pt-1">
+          <button
+            type="button"
+            onClick={() => setIsVideoPromptExpanded((prev) => !prev)}
+            className="flex items-center gap-2 text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition cursor-pointer"
+          >
+            <span>{isVideoPromptExpanded ? 'Hide' : 'View'} Full Google Vids Storyboard Script</span>
+            {isVideoPromptExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+
+        {isVideoPromptExpanded && (
+          <div className="relative z-10 p-4 rounded-[22px] bg-white dark:bg-[000000] border border-white/80 dark:border-white/10 font-mono text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed shadow-xs max-h-96 overflow-y-auto">
+            {googleVidsStoryboardPrompt}
+          </div>
+        )}
       </div>
 
       {/* Expandable Math & Science Formulas Area */}

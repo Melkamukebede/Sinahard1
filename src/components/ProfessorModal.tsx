@@ -237,34 +237,42 @@ Time Limit: ${timeLimit} minutes
 ================================================================
 
 For each question:
-1. [Question statement with exact LaTeX notation for all quantities: \\( m = 1200 \\text{ kg} \\), \\( v = 20 \\text{ m/s} \\)]
-   A) [Option with exact LaTeX \\( ... \\): e.g. \\( 240,000 \\text{ J} \\) or \\( \\frac{3}{4} \\text{ m/s} \\)]
-   B) [Option with exact LaTeX \\( ... \\)]
-   C) [Option with exact LaTeX \\( ... \\)]
-   D) [Option with exact LaTeX \\( ... \\)]
+1. [Question statement with exact LaTeX notation for all quantities: $m = 1200\\text{ kg}$, $v = 24\\text{ m/s}$, $t = 8\\text{ s}$]
+   A) [Option with exact LaTeX $...$: e.g. $2400\\text{ N}$ or $\\frac{3}{4}\\text{ m/s}$]
+   B) [Option with exact LaTeX $...$]
+   C) [Option with exact LaTeX $...$]
+   D) [Option with exact LaTeX $...$]
    Answer: [Correct Option Letter: A, B, C, or D]
    Explanation: **Formula:**
 [ a = \\frac{v - u}{t} ]
+
+[ F = ma ]
+
 **Calculation:**
-[ a = \\frac{20 - 0}{4} = 5 \\text{ m/s}^2 ]
-**Answer:** \\( a = 5 \\text{ m/s}^2 \\) (Option A)
+[ a = \\frac{24 - 0}{8} = 3\\text{ m/s}^2 ]
+
+[ F = 1200 \\times 3 = 3600\\text{ N} ]
+
+**Answer:** $3600\\text{ N}$ (Option B)
 
 CRITICAL RULES FOR EXACT LATEX & PHONE CLIPBOARD COMPLIANCE:
-1. EXACT LATEX IN ALL 4 OPTIONS (A, B, C, D):
-   - Wrap EVERY mathematical or numerical option in \\( ... \\) (e.g. A) \\( 5 \\text{ m/s}^2 \\), B) \\( \\frac{3}{4} \\text{ m/s} \\), C) \\( 2.5\\sqrt{2} \\text{ m/s} \\)).
-   - NEVER output plain ASCII math like '5 m/s^2', '3/4', or 'sqrt(5)'. Phone clipboards mangle raw text math.
-2. STRICTLY NO NUMBERS IN EXPLANATIONS:
+1. DELIMIT EVERY MATHEMATICAL QUANTITY & UNIT:
+   - In Question statements, wrap ALL variables, formulas, and quantities with units in $...$ (e.g. $m = 1200\\text{ kg}$, $v = 24\\text{ m/s}$, $t = 8\\text{ s}$).
+   - NEVER leave naked \\text{...} or raw units unwrapped in the question or options. Always enclose in $...$.
+2. EXACT LATEX IN ALL 4 OPTIONS (A, B, C, D):
+   - Wrap EVERY mathematical or numerical option in $...$ (e.g. A) $2400\\text{ N}$, B) $3600\\text{ N}$, C) $4800\\text{ N}$, D) $14400\\text{ N}$).
+   - NEVER output plain ASCII math like '5 m/s^2', '3/4', or 'sqrt(5)'. Always use $\\frac{3}{4}$ and $\\sqrt{2}$.
+3. STRICTLY NO NUMBERS IN EXPLANATIONS:
    - Do NOT write numbered lists like "1. Formula", "2. Calculation", or "Step 1", "Step 2".
    - Use ONLY bold thematic labels (**Formula:**, **Calculation:**, **Answer:**).
-3. FORMULA ISOLATION & ACCURACY:
-   - Wrap display equations on their own dedicated line using bracket format [ equation ] (e.g. [ s = ut + \\frac{1}{2}at^2 ]).
+4. FORMULA ISOLATION & BRACKETS:
+   - Wrap display equations on their own dedicated line using bracket format [ equation ] (e.g. [ a = \\frac{v - u}{t} ] and [ F = ma ]).
    - Place blank lines before and after every display equation for clean formatting.
-   - For inline variables or numbers with units, wrap in \\( ... \\).
    - Strictly retain all LaTeX commands and backslashes (\\frac, \\sqrt, \\times, \\cdot, \\pm, ^2, _0, \\Delta, \\theta, \\pi, \\Omega).
    - Wrap units in \\text{...} inside math mode (e.g. \\text{ kg}, \\text{ m/s}^2, \\text{ N}, \\text{ J}).
-4. DIFFICULTY CALIBRATION (${difficulty.toUpperCase()}): ${difficultyConfig.briefGuide}
-5. REALISTIC DISTRACTORS: Options B, C, D must reflect realistic student calculation slips (${difficultyConfig.distractorRule}).
-6. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the FORMAT SPECIFICATION header.`;
+5. DIFFICULTY CALIBRATION (${difficulty.toUpperCase()}): ${difficultyConfig.briefGuide}
+6. REALISTIC DISTRACTORS: Options B, C, D must reflect realistic student calculation slips (${difficultyConfig.distractorRule}).
+7. OUTPUT: Return strictly pure plain text. Do not wrap in markdown code blocks (\`\`\`). Start immediately with the FORMAT SPECIFICATION header.`;
       } else {
         return `Please generate ${totalQuestions} professional multiple choice questions in plain .txt format for:
 Grade: ${cleanGrade}
@@ -307,23 +315,30 @@ CRITICAL RULES:
     if (isMath) {
       subjectRules = `CRITICAL FORMATTING & VERTICAL STEP-WISE EXPLANATION RULES (MANDATORY):
 1. EXACT LATEX IN QUESTION STATEMENT & ALL OPTIONS:
-   - In problem statements, wrap every variable, quantity, and unit in \\( ... \\) (e.g. \\( m = 1200 \\text{ kg} \\), \\( v = 20 \\text{ m/s} \\), \\( \\theta = 30^\\circ \\)).
-   - In multiple-choice options (A, B, C, D), EVERY numerical or formula option MUST be enclosed in \\( ... \\) (e.g. A) \\( 5 \\text{ m/s}^2 \\), B) \\( \\frac{3}{4} \\text{ m/s} \\), C) \\( 10\\sqrt{2} \\text{ m/s} \\)).
+   - In problem statements, wrap every variable, quantity, and unit in $...$ (e.g. $m = 1200\\text{ kg}$, $v = 24\\text{ m/s}$, $\\theta = 30^\\circ$).
+   - NEVER leave raw \\text{...} or numbers unwrapped without $...$.
+   - In multiple-choice options (A, B, C, D), EVERY numerical or formula option MUST be enclosed in $...$ (e.g. A) $2400\\text{ N}$, B) $3600\\text{ N}$, C) $\\frac{3}{4}\\text{ m/s}$).
    - NEVER output raw plain ASCII fractions (3/4) or roots (sqrt). Use \\frac{3}{4} and \\sqrt{2}.
 2. STRICTLY NO NUMBERS IN EXPLANATION:
    - Do NOT write numbered lists in the explanation (NEVER write "1. Formula", "2. Calculation", "1. Substitute", or "Step 1", "Step 2").
    - Structure every explanation vertically using clean, bold thematic labels:
      **Formula:**
      [ a = \\frac{v - u}{t} ]
+     
+     [ F = ma ]
+     
      **Calculation:**
-     [ a = \\frac{20 - 0}{4} = 5 \\text{ m/s}^2 ]
-     **Answer:** \\( a = 5 \\text{ m/s}^2 \\) (Option A)
+     [ a = \\frac{24 - 0}{8} = 3\\text{ m/s}^2 ]
+     
+     [ F = 1200 \\times 3 = 3600\\text{ N} ]
+     
+     **Answer:** $3600\\text{ N}$ (Option B)
 3. PHONE-SAFE LATEX MATHEMATICAL NOTATION & FORMULA ISOLATION:
    - To make equations 100% resilient across mobile phones and desktop touch clipboards:
-     a) Always put display formulas on their own dedicated line using bracket notation [ equation ] (e.g. [ a = \\frac{v - u}{t} ] or [ s = ut + \\frac{1}{2}at^2 ]).
+     a) Always put display formulas on their own dedicated line using bracket notation [ equation ] (e.g. [ a = \\frac{v - u}{t} ] or [ F = ma ]).
      b) Separate equations with blank lines above and below for clean formatting.
      c) Always keep backslashes intact on all LaTeX keywords: \\frac{numerator}{denominator}, \\sqrt{x}, \\times, \\cdot, \\pm, \\Delta, \\theta, \\pi, \\Omega, \\mu. Never output raw ASCII math.
-     d) Wrap physical units in \\text{...} inside math mode (e.g. \\( 50 \\text{ m/s} \\), \\( 1200 \\text{ kg} \\), \\( 3000 \\text{ N} \\)).
+     d) Wrap physical units in \\text{...} inside math mode (e.g. $50\\text{ m/s}$, $1200\\text{ kg}$, $3600\\text{ N}$).
 4. DISTRACTOR INTEGRITY:
    - ${difficultyConfig.distractorRule}`;
     } else {
@@ -334,7 +349,7 @@ CRITICAL RULES:
      **Core Concept:** [State underlying scientific law, definition, or historical context]
      **Key Reason:** [Explain exactly why the correct answer is valid]
      **Distractor Analysis:** [Briefly clarify why plausible incorrect choices fail]
-     **Answer:** [Option Letter and summary statement]${isMobile ? `\n2. FORMULA NOTATION (PHONE-OPTIMIZED): If any scientific formulas or units are used, isolate them on dedicated bracket lines [ formula ] with blank line padding and wrap inline symbols in \\( ... \\).` : ''}`;
+     **Answer:** [Option Letter and summary statement]${isMobile ? `\n2. FORMULA NOTATION (PHONE-OPTIMIZED): If any scientific formulas or units are used, isolate them on dedicated bracket lines [ formula ] with blank line padding and wrap inline symbols in $...$.` : ''}`;
     }
 
     return `You are an expert exam professor and national curriculum specialist creating a standardized ${totalQuestions}-question examination for Grade ${cleanGrade} students in ${subject}.
@@ -355,11 +370,11 @@ Time Limit: ${timeLimit} minutes
 ================================================================
 
 QUESTION STRUCTURE (Repeat for all ${totalQuestions} questions):
-1. [Question text or scenario with exact LaTeX: \\( m = 1200 \\text{ kg} \\)]
-   A) [Option A with exact LaTeX: \\( ... \\)]
-   B) [Option B with exact LaTeX: \\( ... \\)]
-   C) [Option C with exact LaTeX: \\( ... \\)]
-   D) [Option D with exact LaTeX: \\( ... \\)]
+1. [Question text or scenario with exact LaTeX: $m = 1200\\text{ kg}$, $v = 24\\text{ m/s}$]
+   A) [Option A with exact LaTeX: $2400\\text{ N}$]
+   B) [Option B with exact LaTeX: $3600\\text{ N}$]
+   C) [Option C with exact LaTeX: $4800\\text{ N}$]
+   D) [Option D with exact LaTeX: $14400\\text{ N}$]
    Answer: [Correct Option Letter: A, B, C, or D]
    Explanation:
 [Provide step-wise explanation without numbers according to rules below]
@@ -389,32 +404,39 @@ Topic: ${mainTopic}
 Time Limit: ${timeLimit} minutes
 ================================================================
 
-1. A car of mass \\( m = 1200 \\text{ kg} \\) accelerates from rest to \\( v = 20 \\text{ m/s} \\). What is its kinetic energy?
-   A) \\( 240,000 \\text{ J} \\)
-   B) \\( 120,000 \\text{ J} \\)
-   C) \\( 480,000 \\text{ J} \\)
-   D) \\( 24,000 \\text{ J} \\)
-   Answer: A
+1. A car of mass $m = 1200\\text{ kg}$ accelerates uniformly from rest to a velocity of $v = 24\\text{ m/s}$ in $t = 8\\text{ s}$. What is the net force acting on the car?
+   A) $2400\\text{ N}$
+   B) $3600\\text{ N}$
+   C) $4800\\text{ N}$
+   D) $14400\\text{ N}$
+   Answer: B
    Explanation: **Formula:**
-\\[ E_k = \\frac{1}{2} m v^2 \\]
-**Calculation:**
-\\[ E_k = \\frac{1}{2} (1200)(20^2) = 600 \\times 400 = 240,000 \\text{ J} = 240 \\text{ kJ} \\]
-**Answer:** \\( 240,000 \\text{ J} \\)
+[ a = \\frac{v - u}{t} ]
 
-2. An object accelerates uniformly from initial velocity \( u = 5 \text{ m/s} \) to final velocity \( v = 25 \text{ m/s} \) in time \( t = 4 \text{ s} \). What is its acceleration and displacement?
-   A) \( a = 5 \text{ m/s}^2, s = 60 \text{ m} \)
-   B) \( a = 10 \text{ m/s}^2, s = 120 \text{ m} \)
-   C) \( a = 2.5 \text{ m/s}^2, s = 30 \text{ m} \)
-   D) \( a = 4 \text{ m/s}^2, s = 50 \text{ m} \)
-   Answer: A
-   Explanation: **Formula:**
-[ a = \frac{v - u}{t} ]
+[ F = ma ]
 
 **Calculation:**
-[ s = ut + \frac{1}{2}at^2 ]
+[ a = \\frac{24 - 0}{8} = 3\\text{ m/s}^2 ]
 
-[ s = (5)(4) + \frac{1}{2}(5)(4^2) = 20 + 40 = 60 \text{ m} ]
-**Answer:** \( a = 5 \text{ m/s}^2, s = 60 \text{ m} \)`;
+[ F = 1200 \\times 3 = 3600\\text{ N} ]
+
+**Answer:** $3600\\text{ N}$ (Option B)
+
+2. An object accelerates uniformly from initial velocity $u = 5\\text{ m/s}$ to final velocity $v = 25\\text{ m/s}$ in time $t = 4\\text{ s}$. What is its displacement?
+   A) $60\\text{ m}$
+   B) $120\\text{ m}$
+   C) $30\\text{ m}$
+   D) $50\\text{ m}$
+   Answer: A
+   Explanation: **Formula:**
+[ s = ut + \\frac{1}{2}at^2 ]
+
+**Calculation:**
+[ a = \\frac{25 - 5}{4} = 5\\text{ m/s}^2 ]
+
+[ s = (5)(4) + \\frac{1}{2}(5)(4^2) = 20 + 40 = 60\\text{ m} ]
+
+**Answer:** $60\\text{ m}$ (Option A)`;
     } else {
       return `================================================================
 FORMAT SPECIFICATION:
