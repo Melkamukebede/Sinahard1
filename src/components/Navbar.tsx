@@ -19,6 +19,7 @@ import {
   UserPlus,
   Edit3,
   CheckCircle2,
+  Lock,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -61,6 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     popupBlocked,
     dismissPopupBlocked,
     openRegistrationModal,
+    firstRegisteredEmail,
   } = useAuth();
   const { unreadAlertsCount } = useNotifications();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -421,6 +423,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 pt-0.5 line-clamp-1">
                         School: {user.school || user.schoolName} {user.region ? `(${user.region})` : ''}
                       </p>
+                    )}
+                    {firstRegisteredEmail && (
+                      <div className="pt-1 flex items-center gap-1.5 text-[10px] text-zinc-500 dark:text-zinc-400">
+                        <Lock className="w-3 h-3 text-sky-500 shrink-0" />
+                        <span className="truncate">Bound Account: <strong className="text-zinc-800 dark:text-zinc-200 font-semibold">{firstRegisteredEmail}</strong></span>
+                      </div>
                     )}
                   </div>
 

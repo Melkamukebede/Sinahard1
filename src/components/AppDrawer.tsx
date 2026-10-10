@@ -22,6 +22,7 @@ import {
   Smartphone,
   Download,
   Share2,
+  Lock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -54,7 +55,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   onOpenDatabaseUpload,
   onOpenSubscriptionModal,
 }) => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, firstRegisteredEmail } = useAuth();
   const { unreadAlertsCount, completedToday, dailyGoal, studyStreakDays } = useNotifications();
   const { isInstalled, installApp } = usePWAInstall();
   const [copiedPhone, setCopiedPhone] = React.useState(false);
@@ -171,6 +172,18 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   </div>
                 </div>
               </div>
+
+              {firstRegisteredEmail && (
+                <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <span className="flex items-center gap-1.5">
+                    <Lock className="w-3 h-3 text-sky-500 shrink-0" />
+                    <span>Bound Account:</span>
+                  </span>
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200 truncate max-w-[140px]">
+                    {firstRegisteredEmail}
+                  </span>
+                </div>
+              )}
 
               {isCloudSynced && (
                 <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between">

@@ -21,6 +21,8 @@
         "targetExamYear": { "type": "string", "maxLength": 32 },
         "phoneNumber": { "type": "string", "maxLength": 32 },
         "isRegistered": { "type": "boolean" },
+        "firstRegisteredEmail": { "type": "string", "maxLength": 256 },
+        "deviceId": { "type": "string", "maxLength": 128 },
         "createdAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "email"]

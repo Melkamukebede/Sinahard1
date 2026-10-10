@@ -34,6 +34,8 @@ interface AuthContextType {
   updateStudentGrade: (grade: number | string, stream?: 'Natural Science' | 'Social Science' | 'General') => Promise<void>;
   updateStudentProfile: (profile: Partial<AppUser>) => Promise<void>;
   refreshUserProfile: () => Promise<boolean>;
+  firstRegisteredEmail: string | null;
+  resetDeviceEmailBinding: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,6 +51,17 @@ const LOCAL_STUDENT_IS_REGISTERED_KEY = 'student_is_registered';
 const LOCAL_USER_ROLE_KEY = 'user_account_role';
 const LOCAL_TEACHER_NAME_KEY = 'teacher_display_name';
 const LOCAL_TEACHER_IS_VERIFIED_KEY = 'teacher_is_verified';
+const LOCAL_FIRST_REGISTERED_EMAIL_KEY = 'sinahard_first_registered_email';
+const LOCAL_DEVICE_ID_KEY = 'sinahard_device_id';
+
+function getOrCreateDeviceId(): string {
+  let id = localStorage.getItem(LOCAL_DEVICE_ID_KEY);
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+    localStorage.setItem(LOCAL_DEVICE_ID_KEY, id);
+  }
+  return id;
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -97,11 +110,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [error, setError] = useState<string | null>(null);
 
+  // Single Account Policy: Each user / device can only use the first registered email account
+  const [firstRegisteredEmail, setFirstRegisteredEmail] = useState<string | null>(() => {
+    return localStorage.getItem(LOCAL_FIRST_REGISTERED_EMAIL_KEY) || null;
+  });
+
+  const recordFirstRegisteredEmail = (email: string) => {
+    if (!email) return;
+    const clean = email.toLowerCase().trim();
+    if (clean === 'melkamukebede11@gmail.com') return; // Admin is never restricted
+    const existing = localStorage.getItem(LOCAL_FIRST_REGISTERED_EMAIL_KEY);
+    if (!existing) {
+      localStorage.setItem(LOCAL_FIRST_REGISTERED_EMAIL_KEY, clean);
+      setFirstRegisteredEmail(clean);
+    }
+  };
+
+  const checkDeviceEmailLock = (attemptedEmail: string): { allowed: boolean; error?: string } => {
+    const cleanAttempt = attemptedEmail.toLowerCase().trim();
+    if (cleanAttempt === 'melkamukebede11@gmail.com') {
+      return { allowed: true };
+    }
+    const currentFirst = firstRegisteredEmail || localStorage.getItem(LOCAL_FIRST_REGISTERED_EMAIL_KEY);
+    if (currentFirst && currentFirst.toLowerCase().trim() !== cleanAttempt) {
+      return {
+        allowed: false,
+        error: `Single Account Policy: This device is bound to your first registered email account (${currentFirst}). Each user can only use the one email account registered first.`,
+      };
+    }
+    return { allowed: true };
+  };
+
+  const resetDeviceEmailBinding = () => {
+    localStorage.removeItem(LOCAL_FIRST_REGISTERED_EMAIL_KEY);
+    setFirstRegisteredEmail(null);
+  };
+
   const isSigningInRef = useRef<boolean>(false);
   const unsubUserRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser && currentUser.email) {
+        const attemptedEmail = currentUser.email.toLowerCase().trim();
+        const lockCheck = checkDeviceEmailLock(attemptedEmail);
+        if (!lockCheck.allowed) {
+          console.warn('Current auth session does not match the first registered email on this device.');
+          await fbSignOut(auth);
+          setError(lockCheck.error || 'Only the first registered email account is permitted on this device.');
+          setFirebaseUser(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        recordFirstRegisteredEmail(attemptedEmail);
+      }
       setFirebaseUser(currentUser);
       if (currentUser) {
         const savedGrade = localStorage.getItem(LOCAL_STUDENT_GRADE_KEY) || '12';
@@ -162,6 +225,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               phoneNumber: savedPhone,
               isRegistered: localRegistered,
               isVerifiedTeacher: (isEmailAdmin || initialRole === 'admin') ? true : savedIsVerifiedTeacher,
+              firstRegisteredEmail: currentUser.email || '',
+              deviceId: getOrCreateDeviceId(),
               createdAt: new Date().toISOString(),
             });
             // If new user and not yet fully registered, open registration modal
@@ -170,6 +235,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           } else {
             const data = userSnap.data();
+            if (data?.firstRegisteredEmail && !firstRegisteredEmail && currentUser.email?.toLowerCase().trim() !== 'melkamukebede11@gmail.com') {
+              recordFirstRegisteredEmail(data.firstRegisteredEmail);
+            }
             const resolvedRole = isEmailAdmin 
               ? 'admin' 
               : (data?.role || savedRole || 'student');
@@ -335,6 +403,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const result = await signInWithPopup(auth, googleProvider);
       if (result && result.user) {
+        const attemptedEmail = (result.user.email || '').toLowerCase().trim();
+        const lockCheck = checkDeviceEmailLock(attemptedEmail);
+        if (!lockCheck.allowed) {
+          await fbSignOut(auth);
+          setError(lockCheck.error || 'Only the first registered email account is permitted on this device.');
+          return false;
+        }
+        recordFirstRegisteredEmail(attemptedEmail);
         setFirebaseUser(result.user);
         setError(null);
         setPopupBlocked(false);
@@ -379,6 +455,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     displayName?: string
   ): Promise<{ success: boolean; error?: string }> => {
     if (isSigningInRef.current) return { success: false, error: 'Operation in progress' };
+
+    const lockCheck = checkDeviceEmailLock(email);
+    if (!lockCheck.allowed) {
+      setError(lockCheck.error || 'Only the first registered email account is permitted on this device.');
+      return { success: false, error: lockCheck.error };
+    }
+
     isSigningInRef.current = true;
     setIsSigningIn(true);
     setError(null);
@@ -391,6 +474,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // ignore profile update error
         }
       }
+      recordFirstRegisteredEmail(email.trim());
       setFirebaseUser(userCred.user);
       return { success: true };
     } catch (err: unknown) {
@@ -418,11 +502,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string
   ): Promise<{ success: boolean; error?: string }> => {
     if (isSigningInRef.current) return { success: false, error: 'Operation in progress' };
+
+    const lockCheck = checkDeviceEmailLock(email);
+    if (!lockCheck.allowed) {
+      setError(lockCheck.error || 'Only the first registered email account is permitted on this device.');
+      return { success: false, error: lockCheck.error };
+    }
+
     isSigningInRef.current = true;
     setIsSigningIn(true);
     setError(null);
     try {
       const userCred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      recordFirstRegisteredEmail(email.trim());
       setFirebaseUser(userCred.user);
       return { success: true };
     } catch (err: unknown) {
@@ -537,6 +629,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           userRef,
           {
             ...profileData,
+            firstRegisteredEmail: firstRegisteredEmail || user?.email || firebaseUser?.email || null,
+            deviceId: getOrCreateDeviceId(),
             ...(resolvedSchool ? { school: resolvedSchool, schoolName: resolvedSchool } : {}),
             isVerifiedTeacher: isVerified,
             isRegistered: true,
@@ -638,6 +732,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateStudentGrade,
         updateStudentProfile,
         refreshUserProfile,
+        firstRegisteredEmail,
+        resetDeviceEmailBinding,
       }}
     >
       {children}

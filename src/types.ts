@@ -145,6 +145,8 @@ export interface AppUser {
   targetExamYear?: string | number;
   phoneNumber?: string;
   isRegistered?: boolean;
+  firstRegisteredEmail?: string | null;
+  deviceId?: string;
   coins?: number;
   metadata?: {
     creationTime?: string;
