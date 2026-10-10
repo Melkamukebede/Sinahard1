@@ -39,6 +39,8 @@ export interface UserRegistrationModalProps {
   sharedExamId?: string | null;
   sharedExamName?: string | null;
   onAccessSharedExam?: (examId: string) => void;
+  initialStep?: 1 | 2;
+  initialEmailMode?: 'signup' | 'signin';
 }
 
 const ETHIOPIAN_REGIONS = [
@@ -224,6 +226,8 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
   sharedExamId,
   sharedExamName,
   onAccessSharedExam,
+  initialStep,
+  initialEmailMode,
 }) => {
   const {
     user,
@@ -253,17 +257,39 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
   // Step 1: Sign up by email / Sign in by Google options
   // Step 2: Linked with Firebase -> Grade, Stream, School, etc.
   const [currentStep, setCurrentStep] = useState<1 | 2>(() => {
-    // If user is already authenticated with Firebase, go straight to Step 2
+    if (initialStep) return initialStep;
     return isFirebaseLinked ? 2 : 1;
   });
 
   // Step 1 Email Auth state
-  const [emailAuthMode, setEmailAuthMode] = useState<'signup' | 'signin'>('signup');
+  const [emailAuthMode, setEmailAuthMode] = useState<'signup' | 'signin'>(
+    initialEmailMode || 'signup'
+  );
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [resetSentSuccess, setResetSentSuccess] = useState(false);
+
+  // Reset and synchronize step and auth mode whenever modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      if (initialStep) {
+        setCurrentStep(initialStep);
+      } else if (isFirebaseLinked) {
+        setCurrentStep(2);
+      } else {
+        setCurrentStep(1);
+      }
+
+      if (initialEmailMode) {
+        setEmailAuthMode(initialEmailMode);
+      } else if (!isFirebaseLinked) {
+        setEmailAuthMode('signup');
+      }
+      setFormError(null);
+    }
+  }, [isOpen, isFirebaseLinked, initialStep, initialEmailMode]);
 
   // Step 2 Profile states
   const [selectedRole, setSelectedRole] = useState<UserRole>(() => {
@@ -506,7 +532,7 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-md overflow-y-auto font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-md overflow-y-auto font-['Plus_Jakarta_Sans',sans-serif]">
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

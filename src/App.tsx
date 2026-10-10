@@ -11,7 +11,7 @@ import { CURATED_EXAMS_CATALOG } from './data/curatedCatalog';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
-import { Play, AlertCircle, Loader2, LogIn } from 'lucide-react';
+import { Play, AlertCircle, Loader2, LogIn, UserPlus } from 'lucide-react';
 import { extractTargetExamId, resolveExamForPractice } from './services/shareService';
 import { addToSharedHistory } from './services/sharedHistoryService';
 import {
@@ -166,6 +166,7 @@ function MainApp() {
   }, []);
   const {
     user,
+    firebaseUser,
     loading: authLoading,
     signInWithGoogle,
     signOut,
@@ -235,6 +236,8 @@ function MainApp() {
   // Direct Practice Mode launch states for shared links (?id=... or ?examId=...)
   const [pendingSharedExamId, setPendingSharedExamId] = useState<string | null>(() => extractTargetExamId());
   const [requiresLoginForSharedExam, setRequiresLoginForSharedExam] = useState<boolean>(false);
+  const [registrationInitialStep, setRegistrationInitialStep] = useState<1 | 2>(1);
+  const [registrationInitialEmailMode, setRegistrationInitialEmailMode] = useState<'signup' | 'signin'>('signup');
   const [isOpeningPracticeLink, setIsOpeningPracticeLink] = useState<boolean>(() => {
     return !!extractTargetExamId();
   });
@@ -449,7 +452,6 @@ function MainApp() {
       setPendingSharedExamId(targetId);
       setRequiresLoginForSharedExam(true);
       showToast('Login first to access the exams');
-      openRegistrationModal();
       return;
     }
 
@@ -525,7 +527,6 @@ function MainApp() {
           setPendingSharedExamId(targetId);
           setRequiresLoginForSharedExam(true);
           showToast('Login first to access the exams');
-          openRegistrationModal();
           return;
         }
 
@@ -1049,7 +1050,10 @@ function MainApp() {
           onClose={closeRegistrationModal}
           sharedExamId={pendingSharedExamId}
           onAccessSharedExam={handleLaunchSharedExam}
+          initialStep={registrationInitialStep}
+          initialEmailMode={registrationInitialEmailMode}
           onSuccess={(registeredProfile) => {
+            setRequiresLoginForSharedExam(false);
             if (pendingSharedExamId) {
               handleLaunchSharedExam(pendingSharedExamId);
             }
@@ -1074,7 +1078,7 @@ function MainApp() {
       />
 
       {/* Direct Practice Mode Launching Overlay for Shared Links */}
-      {(isOpeningPracticeLink || practiceLinkError || (requiresLoginForSharedExam && !isStudentLoggedIn)) && (
+      {(isOpeningPracticeLink || practiceLinkError || (requiresLoginForSharedExam && !isStudentLoggedIn && !isRegistrationModalOpen)) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
           <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 p-6 shadow-2xl text-center flex flex-col items-center space-y-4">
             {requiresLoginForSharedExam && !isStudentLoggedIn ? (
@@ -1095,9 +1099,15 @@ function MainApp() {
                     type="button"
                     onClick={async () => {
                       const success = await signInWithGoogle();
-                      if (success && pendingSharedExamId) {
-                        handleLaunchSharedExam(pendingSharedExamId);
+                      if (success) {
+                        setRequiresLoginForSharedExam(false);
+                        if (pendingSharedExamId) {
+                          handleLaunchSharedExam(pendingSharedExamId);
+                        }
                       } else {
+                        setRequiresLoginForSharedExam(false);
+                        setRegistrationInitialStep(firebaseUser ? 2 : 1);
+                        setRegistrationInitialEmailMode('signup');
                         openRegistrationModal();
                       }
                     }}
@@ -1108,9 +1118,15 @@ function MainApp() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => openRegistrationModal()}
-                    className="w-full py-2 rounded-full border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition cursor-pointer flex items-center justify-center gap-1.5"
+                    onClick={() => {
+                      setRequiresLoginForSharedExam(false);
+                      setRegistrationInitialStep(1);
+                      setRegistrationInitialEmailMode('signup');
+                      openRegistrationModal();
+                    }}
+                    className="w-full py-2.5 rounded-full border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
                   >
+                    <UserPlus className="w-3.5 h-3.5 text-zinc-900 dark:text-white" />
                     <span>Sign Up with Email / Full Setup</span>
                   </button>
                   <button
