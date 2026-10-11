@@ -1,10 +1,178 @@
-import { doc, getDoc, setDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { db, auth } from '../firebase';
-import { Exam, Question } from '../types';
+import { Exam, Question, AppUser } from '../types';
 import { CURATED_EXAMS_CATALOG } from '../data/curatedCatalog';
 import { getCachedOfficialExams, sanitizeFirestoreExam } from './officialExams';
 import { getLocalExams } from './db';
+import { getSharedHistory, deleteFromSharedHistory } from './sharedHistoryService';
+
+export const MAX_USER_SHARED_EXAMS = 5;
+
+/**
+ * Checks if a user has privileged (unlimited) exam creation & cloud sharing privileges.
+ * Admin and Teacher roles have UNLIMITED storage and sharing in Firebase.
+ */
+export function isUserPrivileged(user?: AppUser | null): boolean {
+  if (user) {
+    if (user.role === 'admin' || user.role === 'teacher' || user.isVerifiedTeacher) {
+      return true;
+    }
+    if (user.email && user.email.toLowerCase().trim() === 'melkamukebede11@gmail.com') {
+      return true;
+    }
+  }
+  const currentEmail = auth.currentUser?.email;
+  if (currentEmail && currentEmail.toLowerCase().trim() === 'melkamukebede11@gmail.com') {
+    return true;
+  }
+  return false;
+}
+
+export interface UserCloudExamItem {
+  id: string;
+  title: string;
+  subject: string;
+  grade: string;
+  questionCount: number;
+  createdAt: string;
+}
+
+/**
+ * Retrieves all exams currently published and stored in Cloud Firestore by the user.
+ * Supports both Firestore remote queries and local shared history.
+ */
+export async function getUserCloudSharedExams(user?: AppUser | null): Promise<UserCloudExamItem[]> {
+  const authorUid = auth.currentUser?.uid || user?.uid;
+  const authorEmail = auth.currentUser?.email || user?.email;
+
+  const itemsMap = new Map<string, UserCloudExamItem>();
+
+  // 1. Query Firestore if author UID is available
+  if (authorUid && authorUid !== 'guest') {
+    try {
+      const qUser = query(collection(db, 'exams'), where('userId', '==', authorUid));
+      const snapUser = await getDocs(qUser);
+      snapUser.forEach((d) => {
+        const data = d.data();
+        itemsMap.set(d.id, {
+          id: d.id,
+          title: data.title || data.name || 'Shared Exam',
+          subject: data.subject || data.metadata?.subject || 'General',
+          grade: String(data.grade || data.metadata?.grade || '12'),
+          questionCount: Array.isArray(data.questions) ? data.questions.length : (data.questionCount || 0),
+          createdAt: data.createdAt || new Date().toISOString(),
+        });
+      });
+    } catch (err) {
+      console.warn('Could not query Firestore exams by user ID:', err);
+    }
+  }
+
+  // 2. Query Firestore by authorEmail if present
+  if (authorEmail) {
+    try {
+      const qEmail = query(collection(db, 'exams'), where('authorEmail', '==', authorEmail));
+      const snapEmail = await getDocs(qEmail);
+      snapEmail.forEach((d) => {
+        const data = d.data();
+        if (!itemsMap.has(d.id)) {
+          itemsMap.set(d.id, {
+            id: d.id,
+            title: data.title || data.name || 'Shared Exam',
+            subject: data.subject || data.metadata?.subject || 'General',
+            grade: String(data.grade || data.metadata?.grade || '12'),
+            questionCount: Array.isArray(data.questions) ? data.questions.length : (data.questionCount || 0),
+            createdAt: data.createdAt || new Date().toISOString(),
+          });
+        }
+      });
+    } catch (err) {
+      console.warn('Could not query Firestore exams by authorEmail:', err);
+    }
+  }
+
+  // 3. Always merge local shared_by_me history items so user sees all exams they shared on this device
+  try {
+    const localHist = getSharedHistory().filter((i) => i.type === 'shared_by_me');
+    localHist.forEach((h) => {
+      if (!itemsMap.has(h.examId)) {
+        itemsMap.set(h.examId, {
+          id: h.examId,
+          title: h.title,
+          subject: h.subject,
+          grade: h.grade,
+          questionCount: h.questionsCount,
+          createdAt: h.sharedAt,
+        });
+      }
+    });
+  } catch (histErr) {
+    console.warn('Could not read local shared history:', histErr);
+  }
+
+  const list = Array.from(itemsMap.values());
+  list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return list;
+}
+
+/**
+ * Gets the number of exams stored in Cloud Firestore by this user.
+ */
+export async function getUserCloudSharedCount(user?: AppUser | null): Promise<number> {
+  const exams = await getUserCloudSharedExams(user);
+  return exams.length;
+}
+
+/**
+ * Permanently deletes an exam from Cloud Firestore /exams/{examId} and updates local shared history.
+ */
+export async function deleteExamFromCloud(examId: string): Promise<{ success: boolean; error?: string }> {
+  const cleanId = (examId || '').trim();
+  if (!cleanId) {
+    return { success: false, error: 'Invalid exam ID' };
+  }
+
+  try {
+    if (!auth.currentUser) {
+      try {
+        await signInAnonymously(auth);
+      } catch {}
+    }
+
+    const examDocRef = doc(db, 'exams', cleanId);
+    await deleteDoc(examDocRef);
+    deleteFromSharedHistory(cleanId);
+
+    // Also update any cached official/cloud exams
+    try {
+      const cacheKey = 'exam_master_official_exams_cache';
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const list = JSON.parse(cached);
+        if (Array.isArray(list)) {
+          const next = list.filter((e: any) => e.id !== cleanId && e.catalogId !== cleanId);
+          localStorage.setItem(cacheKey, JSON.stringify(next));
+        }
+      }
+    } catch {}
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sinahard_cloud_exams_updated', { detail: { examId: cleanId } }));
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    const errMsg = err?.message || String(err);
+    console.error(`Failed to delete exam "${cleanId}" from Cloud Firestore:`, err);
+    // Still delete from local history
+    deleteFromSharedHistory(cleanId);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sinahard_cloud_exams_updated', { detail: { examId: cleanId } }));
+    }
+    return { success: false, error: errMsg };
+  }
+}
 
 export const getShareBaseUrl = (): string => {
   if (typeof window !== 'undefined' && window.location.origin) {
@@ -92,17 +260,43 @@ export interface CloudPublishResult {
  * Automatically publishes/synchronizes an exam to Cloud Firestore /exams/{examId}
  * so that any recipient opening the short link on any device can immediately fetch it
  * and launch Practice Mode with complete questions and specifications.
+ * Enforces a strict 5 exams storage limit in Firebase for regular users, with unlimited storage for admin and teachers.
  */
-export async function publishExamForCloudSharing(exam: Exam): Promise<CloudPublishResult> {
+export async function publishExamForCloudSharing(exam: Exam, user?: AppUser | null): Promise<CloudPublishResult> {
   const examId = (exam.catalogId || exam.id).trim();
   if (!examId) {
     return { success: false, examId: '', error: 'Missing exam identifier.' };
   }
 
   try {
-    const authorUid = auth.currentUser?.uid || 'guest';
-    const authorEmail = auth.currentUser?.email || null;
+    // Ensure Firebase auth session exists so Firestore rules allow storage
+    if (!auth.currentUser) {
+      try {
+        await signInAnonymously(auth);
+      } catch (authErr) {
+        console.warn('Anonymous sign-in for cloud sharing fallback:', authErr);
+      }
+    }
+
+    const authorUid = auth.currentUser?.uid || user?.uid || 'guest';
+    const authorEmail = auth.currentUser?.email || user?.email || null;
     const nowIso = new Date().toISOString();
+
+    const isPrivileged = isUserPrivileged(user);
+
+    // Enforce 5 exams storage limit in Firebase for regular users
+    if (!isPrivileged) {
+      const existingCloudExams = await getUserCloudSharedExams(user);
+      const isAlreadyShared = existingCloudExams.some((e) => e.id === examId);
+
+      if (!isAlreadyShared && existingCloudExams.length >= MAX_USER_SHARED_EXAMS) {
+        return {
+          success: false,
+          examId,
+          error: `Storage limit reached: You have reached the limit of ${MAX_USER_SHARED_EXAMS} shared exams in Firebase. Regular users have a 5-exam storage limit. Please delete one of your shared exams to share this one.`,
+        };
+      }
+    }
 
     // Sanitize questions array to guarantee complete fields
     const sanitizedQuestions: Question[] = (exam.questions || []).map((q, idx) => ({

@@ -424,10 +424,14 @@ export const CreateExamWizard: React.FC<CreateExamWizardProps> = ({
     return subscribeToNetworkState(setIsOffline);
   }, []);
 
-  const isTeacherUser = user?.role === 'teacher' || Boolean(user?.isVerifiedTeacher);
-  const isPremium = !isOffline && Boolean(userTier?.isPremium || isAdmin || isTeacherUser);
+  const isTeacherUser =
+    user?.role === 'teacher' ||
+    Boolean(user?.isVerifiedTeacher) ||
+    user?.email?.toLowerCase().trim() === 'melkamukebede11@gmail.com';
+  const isPrivilegedCreator = Boolean(isAdmin || isTeacherUser);
+  const isPremium = !isOffline && Boolean(userTier?.isPremium || isPrivilegedCreator);
   const maxQuestions = isOffline
-    ? OFFLINE_FREE_GUEST_LIMITS.maxQuestionsPerExam
+    ? (isPrivilegedCreator ? 200 : OFFLINE_FREE_GUEST_LIMITS.maxQuestionsPerExam)
     : (isPremium ? 200 : (userTier?.maxQuestionsPerExam ?? 20));
 
   // Real-time Parser for Smart Paste
@@ -887,15 +891,22 @@ Time Limit: 25 minutes
           <div className="flex items-center gap-3 sm:gap-4">
             <SinahardLogo size="lg" idSuffix="create-hero" className="shrink-0" />
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/20 text-[11px] font-semibold text-sky-800 dark:text-sky-300 mb-1">
-                <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
-                  <Sparkles className="w-3 h-3 text-black stroke-[2.5]" />
-                </span>
-                <span>Sinahard Exam Studio</span>
-                <span className="text-sky-400">•</span>
-                <span className="font-normal text-zinc-600 dark:text-zinc-400">
-                  {currentStep === 1 ? 'Step 1: Info & Smart Paste' : 'Step 2: Verify & KaTeX Math'}
-                </span>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/20 text-[11px] font-semibold text-sky-800 dark:text-sky-300">
+                  <span className="p-0.5 rounded bg-white text-black flex items-center justify-center">
+                    <Sparkles className="w-3 h-3 text-black stroke-[2.5]" />
+                  </span>
+                  <span>Sinahard Exam Studio</span>
+                  <span className="text-sky-400">•</span>
+                  <span className="font-normal text-zinc-600 dark:text-zinc-400">
+                    {currentStep === 1 ? 'Step 1: Info & Smart Paste' : 'Step 2: Verify & KaTeX Math'}
+                  </span>
+                </div>
+                {isPrivilegedCreator && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20">
+                    Unlimited Creation &amp; Cloud Sharing
+                  </span>
+                )}
               </div>
               <h1 className="text-xl sm:text-2xl font-bold font-['Outfit',sans-serif] tracking-tight text-zinc-950 dark:text-white">
                 {currentStep === 1 ? 'Create & Import Exam' : 'Verify Questions & KaTeX Formulas'}

@@ -27,7 +27,7 @@ import {
   addToSharedHistory,
   generateExamShareText,
 } from '../services/sharedHistoryService';
-import { resolveExamForPractice, extractTargetExamId } from '../services/shareService';
+import { resolveExamForPractice, extractTargetExamId, deleteExamFromCloud, isUserPrivileged, MAX_USER_SHARED_EXAMS } from '../services/shareService';
 import { saveExamToDb } from '../services/db';
 import { useAuth } from '../context/AuthContext';
 
@@ -192,12 +192,21 @@ ${item.shareUrl}`;
     }
   };
 
-  // Delete an item from history
-  const handleDeleteItem = (id: string) => {
-    deleteFromSharedHistory(id);
+  const isPrivilegedUser = isUserPrivileged(user);
+
+  // Delete an item from history (and remove from Cloud Firestore if shared by user)
+  const handleDeleteItem = async (item: SharedHistoryItem) => {
+    if (item.type === 'shared_by_me') {
+      try {
+        await deleteExamFromCloud(item.examId);
+      } catch (err) {
+        console.warn('Could not delete from Cloud Firestore:', err);
+      }
+    }
+    deleteFromSharedHistory(item.id);
     refreshHistory();
     setItemToDelete(null);
-    showToast('Removed from shared history.');
+    showToast(item.type === 'shared_by_me' ? 'Removed from Firebase cloud & shared history (slot freed).' : 'Removed from shared history.');
   };
 
   // Clear all
@@ -254,10 +263,16 @@ ${item.shareUrl}`;
           </div>
 
           {/* Quick Metrics */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             <div className="px-3.5 py-2 rounded-2xl bg-zinc-100 dark:bg-[#070e1a] border border-zinc-200/80 dark:border-white/10 text-center">
               <div className="text-[10px] font-bold uppercase text-zinc-400">Shared by You</div>
               <div className="text-base font-bold text-zinc-900 dark:text-white">{sharedByMeCount}</div>
+            </div>
+            <div className="px-3.5 py-2 rounded-2xl bg-zinc-100 dark:bg-[#070e1a] border border-zinc-200/80 dark:border-white/10 text-center">
+              <div className="text-[10px] font-bold uppercase text-zinc-400">Firebase Storage</div>
+              <div className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                {isPrivilegedUser ? 'Unlimited' : `${sharedByMeCount} / ${MAX_USER_SHARED_EXAMS}`}
+              </div>
             </div>
             <div className="px-3.5 py-2 rounded-2xl bg-zinc-100 dark:bg-[#070e1a] border border-zinc-200/80 dark:border-white/10 text-center">
               <div className="text-[10px] font-bold uppercase text-zinc-400">Accessed</div>
@@ -632,7 +647,7 @@ ${item.shareUrl}`;
               </button>
               <button
                 type="button"
-                onClick={() => handleDeleteItem(itemToDelete.id)}
+                onClick={() => handleDeleteItem(itemToDelete)}
                 className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer shadow-xs active:scale-95"
               >
                 Delete

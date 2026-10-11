@@ -1225,6 +1225,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
       <ShareExamModal
         isOpen={examToShare !== null}
         exam={examToShare}
+        user={user}
         onClose={() => setExamToShare(null)}
         onStartPractice={(ex) => {
           setExamToShare(null);

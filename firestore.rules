@@ -40,6 +40,7 @@ service cloud.firestore {
         isSignedIn() && (
           resource.data.userId == request.auth.uid ||
           resource.data.authorId == request.auth.uid ||
+          resource.data.authorEmail == request.auth.token.email ||
           isAdmin()
         )
       ) || (
@@ -50,6 +51,8 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (
         resource.data.userId == request.auth.uid ||
         resource.data.authorId == request.auth.uid ||
+        resource.data.authorEmail == request.auth.token.email ||
+        resource.data.userId == 'guest' ||
         isAdmin()
       );
     }

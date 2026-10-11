@@ -12,7 +12,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { Play, AlertCircle, Loader2, LogIn, UserPlus } from 'lucide-react';
-import { extractTargetExamId, resolveExamForPractice } from './services/shareService';
+import { extractTargetExamId, resolveExamForPractice, deleteExamFromCloud } from './services/shareService';
 import { addToSharedHistory } from './services/sharedHistoryService';
 import {
   Exam,
@@ -584,6 +584,8 @@ function MainApp() {
     setExamToDelete(null);
     try {
       await deleteExamFromDb(id, user);
+      // Also delete from Cloud Firestore to free Firebase storage quota if it was shared
+      deleteExamFromCloud(id).catch(() => {});
       showToast('Exam removed from library');
     } catch {
       showToast('Failed to delete exam');
