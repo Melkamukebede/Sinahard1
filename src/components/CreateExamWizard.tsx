@@ -1029,7 +1029,7 @@ Time Limit: 25 minutes
                     </span>
                   </div>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Generate ready-to-use prompts for ChatGPT, Claude & Gemini
+                    Create prompts for ChatGPT, Claude, DeepSeek & generate directly with Gemini
                   </p>
                 </div>
               </div>

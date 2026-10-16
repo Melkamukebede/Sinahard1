@@ -84,6 +84,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   results,
   onNavigate,
   onStartPractice,
+  onOpenProfessorModal,
   onOpenSubscriptionModal,
   onOpenCuratedModal,
   onOpenRegistrationModal,
@@ -839,16 +840,22 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       </div>
 
                       {/* Point 3 */}
-                      <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 flex flex-col justify-between space-y-3">
+                      <div
+                        onClick={onOpenProfessorModal}
+                        className="p-5 rounded-2xl bg-zinc-50 dark:bg-[#0c182b] border border-zinc-200/80 dark:border-white/10 flex flex-col justify-between space-y-3 cursor-pointer hover:border-zinc-400 dark:hover:border-white/30 transition group"
+                      >
                         <div className="space-y-2">
-                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 flex items-center justify-center shadow-xs">
-                            <Download className="w-5 h-5 text-zinc-950 dark:text-white" />
+                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#0f1d33] border border-zinc-200/80 dark:border-white/10 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                            <Sparkles className="w-5 h-5 text-zinc-950 dark:text-white" />
                           </div>
-                          <h4 className="font-bold text-sm text-zinc-950 dark:text-white">
-                            3. Bulk Import & AI
-                          </h4>
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-bold text-sm text-zinc-950 dark:text-white">
+                              3. AI Prompt Studio
+                            </h4>
+                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Launch →</span>
+                          </div>
                           <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                            Paste question text directly from Telegram, study channels, or AI exports into clean tests.
+                            Generate holistic exam prompts or create questions directly in-app with Gemini AI and balanced random answers.
                           </p>
                         </div>
                       </div>

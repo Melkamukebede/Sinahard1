@@ -664,6 +664,45 @@ function MainApp() {
     }
   };
 
+  const handleAddQuestionsFromAIGeneration = async (generatedQuestions: Question[], examTitle?: string) => {
+    setIsProfessorModalOpen(false);
+    if (activeTab === 'create' && editingExam) {
+      const updated = {
+        ...editingExam,
+        questions: [...editingExam.questions, ...generatedQuestions],
+      };
+      setEditingExam(updated);
+      showToast(`Added ${generatedQuestions.length} AI questions to draft.`);
+    } else {
+      const newExam: Exam = {
+        id: 'exam_' + Date.now(),
+        name: examTitle || `AI Exam (${new Date().toLocaleDateString()})`,
+        title: examTitle || 'AI Generated Exam',
+        subject: editingExam?.subject || 'Practice Exam',
+        timeLimit: Math.max(15, Math.round(generatedQuestions.length * 2)),
+        questions: generatedQuestions,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setExams((prev) => [newExam, ...prev]);
+      await saveExamToDb(newExam, user);
+      showToast(`Created new exam with ${generatedQuestions.length} AI questions!`);
+      setEditingExam(newExam);
+      setActiveTab('create');
+    }
+  };
+
+  const handleStartAIPractice = async (exam: Exam) => {
+    setIsProfessorModalOpen(false);
+    setExams((prev) => [exam, ...prev.filter((e) => e.id !== exam.id)]);
+    try {
+      await saveExamToDb(exam, user);
+    } catch {
+      // ignore
+    }
+    handleStartPractice(exam);
+  };
+
   const handleSubmitResult = async (result: ExamResult) => {
     const resWithId: ExamResult = {
       ...result,
@@ -986,6 +1025,8 @@ function MainApp() {
             onClose={() => setIsProfessorModalOpen(false)}
             onGoToQuestionTextEditor={handleOpenQuestionTextEditor}
             onGoToPaste={handleOpenQuestionTextEditor}
+            onAddGeneratedQuestions={handleAddQuestionsFromAIGeneration}
+            onStartDirectPractice={handleStartAIPractice}
           />
         )}
 

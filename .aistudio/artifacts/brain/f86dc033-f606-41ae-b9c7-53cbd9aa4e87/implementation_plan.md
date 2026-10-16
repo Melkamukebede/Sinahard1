@@ -1,173 +1,175 @@
-# Automated Home Page Launch & Seamless Registration Flow
+# AI Prompt Studio Optimization, Direct In-App Question Generation & Cross-Platform LaTeX
 
 ## Summary
-Update the authentication and registration flow so that whenever a user signs in with Google or registers/logs in via email, the registration modal automatically closes and launches the user straight to the **Home page** (or directly into Practice Mode if opening a shared exam link). For first-time Google sign-ins, provide an intuitive, 1-click profile confirmation ("Confirm & Go to Home") before seamlessly launching into the Home dashboard.
+Transform the **AI Prompt Studio** into a streamlined, high-impact prompt generator and in-app question creation engine. The studio generates brief, holistic, and mathematically rigorous prompts for external AI tools (ChatGPT, Claude, Gemini, DeepSeek) while adding a direct **1-click "Generate with Gemini"** engine that creates formatted questions with step-by-step LaTeX explanations directly in-app. In addition, exam practice mode introduces **dynamic answer choice shuffling** to randomize options for students, while the KaTeX rendering engine is hardened for seamless display and copy resilience across both PC and mobile phones.
 
 ---
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The following decisions were clarified and confirmed in Phase 1:
+> The following user preferences were confirmed in Phase 1:
 
-- **Confirmed Decision 1 (Immediate Navigation)**: After connecting with Google or signing in with email, returning/registered users will immediately have the modal dismissed and launch straight into the Home view (`activeTab = 'home'`).
-- **Confirmed Decision 2 (First-Time Google Sign-Ins)**: First-time Google accounts without a completed profile will be shown a quick 1-click confirmation card with intelligent defaults (Grade 12, Natural Science, School Name) and a prominent **"Confirm & Go to Home"** primary action, eliminating multi-step friction.
-- **Confirmed Decision 3 (Shared Exam Deep Links)**: If an unauthenticated student arrived via a shared exam link (`/?id=...`), successful authentication will immediately launch that shared exam in **Practice Mode**, with subsequent completion or exit returning to Home.
+- **Confirmed Decision 1 (In-App AI + Copy Prompt)**: The prompt page will feature dual capabilities: a one-click **"Generate Exam with AI"** action powered by server-side Gemini API (`gemini-3.8-flash`) that parses and stages questions directly for immediate practice or saving, alongside the pristine **"Copy Prompt"** button for external AI platforms.
+- **Confirmed Decision 2 (Dynamic Option Shuffling)**: Option choices (A, B, C, D) will be shuffled dynamically when students enter **Practice Mode**, with automated re-indexing of the correct answer and explanations so students cannot memorize fixed letter positions.
+- **Confirmed Decision 3 (Brief Holistic Prompt Format)**: The default prompt format is optimized into a laser-focused, brief holistic specification with strict LaTeX rules (exact `$...$` inline math, isolated `[ equation ]` display formulas, bold thematic headers without numbered steps, and distractor plausibility rules).
 
 ---
 
 ## 1. Overview & Core Concept
 
-### What It Does
-1. **Instant Google Sign-In to Home**: When an existing user signs in with Google, Firebase Auth identifies their existing profile in Firestore (`/users/{uid}`). The modal closes instantly, triggers a welcoming toast, and switches `activeTab` to `'home'`.
-2. **Streamlined 1-Click First-Time Setup**: If a user is connecting to Google for the first time, instead of being trapped in a complex multi-field questionnaire, they are presented with a streamlined 1-click profile confirmation with sensible defaults:
-   - Name populated from Google account
-   - Default Grade 12 & Natural Science (customizable with quick spinner/chips)
-   - One-tap **"Confirm & Go to Home"** button.
-   - Upon click, the profile is saved to Firestore, marked as registered (`isRegistered: true`), the modal closes, and the Home dashboard opens immediately.
-3. **No Unwanted Re-Prompts**: Prevent the registration modal from lingering or re-appearing on reload once Google authentication is established.
-4. **Shared Link Preservation**: Respects incoming exam links by routing directly into practice mode for the intended exam.
+### What It Delivers
+
+1. **Holistic & Brief AI Prompt Engine**:
+   - Re-architects the prompt generator in `ProfessorModal.tsx` to produce concise yet thorough prompts that guide any AI (ChatGPT, Claude, Gemini, DeepSeek) to generate pristine multiple-choice questions without preamble or formatting errors.
+   - Built-in curriculum standards: grade levels (7–12, Freshman, University), subjects (Physics, Math, Chemistry, Biology, Social Sciences), topic specifications, time limits, and calibrated difficulty tiers.
+   - Enforces balanced answer keys ($A, B, C, D$) to eliminate letter bias.
+
+2. **Server-Side In-App AI Question Generator**:
+   - Implements a dedicated full-stack Express endpoint (`POST /api/gemini/generate-questions`) using the `@google/genai` TypeScript SDK and `gemini-3.8-flash` with JSON schema enforcement.
+   - Users can generate 5–20 questions in seconds without leaving the app.
+   - Renders a live visual review deck inside `ProfessorModal.tsx` displaying the generated questions, answer keys, and KaTeX step-by-step solutions with 1-click actions: **"Add to Exam Wizard"** or **"Start Practice Now"**.
+
+3. **Dynamic Practice Option Shuffling**:
+   - In `PracticeModal.tsx`, each question's option choices are dynamically randomized upon starting a practice session.
+   - Correct answer pointers and explanation references are updated accurately to preserve exact grading integrity.
+   - Includes a user-visible "🔀 Shuffled Choices" indicator with an optional toggle in session controls.
+
+4. **Cross-Platform LaTeX Resilience (PC & Phones)**:
+   - Enhances `MathRenderer.tsx` and `latexClipboardService.ts` to flawlessly handle mobile phone touchscreens and desktop viewports:
+     - Handles display brackets `[ formula ]`, inline delimiters `$...$` and `\(...\)`, and display blocks `$$...$$` or `\[...\]`.
+     - Preserves backslashes (`\frac`, `\sqrt`, `\times`, `\cdot`, `\Delta`, `\Omega`, `\theta`, `\pi`).
+     - Auto-wraps long equations in smooth touch-scrolling containers (`overflow-x-auto`) to eliminate mobile layout breaks.
+     - Maintains pristine clipboard copy interception for both phone long-press copy bars and PC keyboard shortcuts.
 
 ---
 
 ## 2. User Experience & Visual Design
 
-### User Flows
-1. **Returning User Google Sign-In Flow**:
-   ```
-   [User clicks "Sign in with Google"]
-                │
-                ▼
-   [Google OAuth Popup Completes]
-                │
-                ▼
-   [Firestore finds existing user / isRegistered = true]
-                │
-                ▼
-   [Close Registration Modal & setActiveTab('home')]
-                │
-                ▼
-   [Toast: "Welcome back, {Name}! Ready to study."]
-   ```
+### User Flows & Interaction Models
 
-2. **First-Time User Google Sign-In Flow**:
-   ```
-   [User clicks "Sign in with Google"]
-                │
-                ▼
-   [Google OAuth Popup Completes]
-                │
-                ▼
-   [New user created in Firebase]
-                │
-                ▼
-   [Step 2 shows Quick 1-Click Confirmation Card]
-   • Google Name pre-filled & avatar shown
-   • Default: Grade 12 • Natural Science
-   • Optional quick school input
-                │
-                ▼
-   [User taps "Confirm & Go to Home"]
-                │
-                ▼
-   [Profile saved to Firestore & Local Storage]
-   [Modal closes & App transitions to Home View]
-   ```
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       AI PROMPT STUDIO (Modal)                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Top Bar: [Sparkles] AI Prompt Studio  ·  📱 Phone LaTeX Mode  ·  [Close X] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Subject Selector: Physics / Math / Chemistry / Biology / Custom            │
+│  Grade Stepper: [-] Grade 12 [+]  ·  Questions: [-] 10 [+]  ·  Time: 20 min │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  [ Tab: Brief Holistic Prompt ]       [ Tab: Direct AI Preview & Generate ] │
+│  ┌─────────────────────────────────┐   ┌─────────────────────────────────┐  │
+│  │ Standardized .TXT Prompt Box    │   │ "Generate 10 Questions with     │  │
+│  │ - Exact LaTeX formatting rules  │   │  Gemini 3.8 Flash"              │  │
+│  │ - Formula bracket isolation     │   │                                 │  │
+│  │ - Distractor balance            │   │ [Live Progress & KaTeX Review]  │  │
+│  └─────────────────────────────────┘   └─────────────────────────────────┘  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Bottom Actions:                                                            │
+│  [Copy Prompt for ChatGPT/Claude]  ·  [✨ Generate In-App with Gemini]       │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                       │
+                                       ▼ (Direct Generation Complete)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Generated Exam Preview Deck:                                               │
+│  • 10 Questions formatted with KaTeX math on PC & Mobile                   │
+│  • Explanations with isolated formulas                                      │
+│  • Buttons: [Add Questions to Exam]  ·  [Start Practice Immediately]        │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-3. **Shared Exam Link Flow**:
-   ```
-   [Student clicks shared link ?id=exam_123]
-                │
-                ▼
-   [Prompt: "Login first to access this exam"]
-                │
-                ▼
-   [User signs in with Google / Email]
-                │
-                ▼
-   [Launch directly into Practice Mode for exam_123]
-   [Upon finishing or exiting practice -> lands on Home]
-   ```
+### Practice Mode Dynamic Shuffling Flow
 
-### Visual & Component Styling
-- **Clean 1-Click Confirmation Card**: Replaces overwhelming nested settings with a focused, celebratory profile card:
-  - Displays user's Google avatar and display name with verified status badge.
-  - Compact level selector (Grade 12 default).
-  - High-contrast primary action button: `Confirm & Go to Home` with right arrow icon (`ArrowRight`).
-- **Smooth Dismissal**: Animate modal exit with clean fade and zoom (`exit={{ opacity: 0, scale: 0.96 }}`) without visual flicker.
-- **Feedback**: Immediate success toast (`Welcome back to Sinahard!` or `Profile saved! Welcome to your Home dashboard`).
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         PRACTICE MODE (Student)                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Timer: 19:42  ·  Batch 1/2  ·  [🔀 Shuffled Options Active]  ·  [Pause]   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Question 1: A vehicle accelerates from $u = 5\text{ m/s}$...              │
+│    A) $60\text{ m}$   (Shuffled from original position B)                   │
+│    B) $30\text{ m}$   (Shuffled from original position D)                   │
+│    C) $120\text{ m}$  (Shuffled from original position A)                   │
+│    D) $50\text{ m}$   (Shuffled from original position C)                   │
+│                                                                             │
+│  [View Explanation] -> Step-by-step KaTeX formula with correct answer check │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Visual & Ergonomic Design Guidelines (60-30-10 Rule)
+- **Palette**: Clean slate canvas (60%), structural card surfaces with hairline dividers (30%), vibrant brand accents (10%) for primary actions.
+- **Mobile First Ergonomics**: Touch targets $\ge 44\text{px}$, sticky bottom CTA buttons on mobile, and horizontal scrollbars with touch inertia for wide math equations.
+- **Anti-Slop Discipline**: No decorative pulsing dots, no fake version tags, unboxed text metadata with `·` separators, and natural title case.
 
 ---
 
 ## 3. Key Product Decisions & Trade-Offs
 
-- **Automatic Dismissal vs. Mandatory Deep Form**:
-  - *Chosen Approach*: Streamlined 1-click confirmation with intelligent defaults.
-  - *Rationale*: Users connecting with Google expect instant entry. Forcing a 6-field questionnaire causes drop-off. Defaults can always be edited anytime from the top bar profile / settings modal.
-- **Handling of Existing vs. New Users in `AuthContext`**:
-  - *Chosen Approach*: Inspect `isRegistered` flag and Firestore document on auth state change. If an existing registered user logs in, `isRegistrationModalOpen` is set to `false`, and `App.tsx` navigates to `'home'`.
-- **Shared Exam Link Continuity**:
-  - *Chosen Approach*: Check `pendingSharedExamId`. If present, launch the shared exam first; if absent, navigate to `'home'`.
+### Decision 1: Server-Side Gemini API via Express (`server.ts`)
+- **Chosen Approach**: Create a dedicated Express entry point `server.ts` with Vite middlewares in development (`"dev": "tsx server.ts"`), hosting `/api/gemini/generate-questions`.
+- **Why**: Strictly adheres to the AI Studio security constitution (no API keys exposed to browser) while enabling fast structured JSON responses using the `@google/genai` TypeScript SDK.
+- **Alternatives Considered**: Direct client-side SDK calls (rejected due to API key leakage and security policy violations).
+
+### Decision 2: Dynamic Option Shuffling with Deterministic Tracking
+- **Chosen Approach**: Shuffle question options at session initialization in `PracticeModal.tsx`, mapping the new choice positions to the original index so that scoring and explanation references remain 100% accurate.
+- **Why**: Prevents students from simply memorizing answer letters (e.g. "Question 3 is B") and forces true conceptual mastery.
+- **Alternatives Considered**: Permanently mutating the exam data in database (rejected: author's original source exam should remain intact; only practice sessions should shuffle).
+
+### Decision 3: Robust Dual-Delimited LaTeX Parsing
+- **Chosen Approach**: Enhance `MathRenderer.tsx` regex tokenizers to support bracketed equations `[ formula ]`, inline `$...$`, inline `\(...\)`, display `$$...$$`, and naked unit strings like `1200\text{ kg}`.
+- **Why**: Mobile AI apps and chat clipboards frequently strip backslashes or convert `\[` to bare `[`. Parsing both standard and phone-simplified formats ensures zero broken math rendering on phones.
 
 ---
 
 ## 4. Technical Architecture & Data Strategy
 
-### System Architecture Flow
 ```
-┌──────────────────────────────────────────────────────────┐
-│                   User Interaction                       │
-│      Google Sign-In Popup  /  Email Auth Submit          │
-└────────────────────────────┬─────────────────────────────┘
-                             │
-                             ▼
-┌──────────────────────────────────────────────────────────┐
-│              AuthContext (Authentication)                │
-│  - signInWithGoogle() / signInWithEmail()                │
-│  - onAuthStateChanged syncs with Firestore /users/{uid}  │
-│  - Sets firebaseUser & user                              │
-│  - Automatically sets isRegistrationModalOpen = false     │
-│    for registered returning users                        │
-└────────────────────────────┬─────────────────────────────┘
-                             │
-                             ▼
-┌──────────────────────────────────────────────────────────┐
-│         UserRegistrationModal (Presentation)             │
-│  - If existing user: calls onSuccess() and onClose()     │
-│  - If new user: shows 1-click confirmation card          │
-│    ("Confirm & Go to Home")                              │
-│  - executeSaveProfile() -> calls onSuccess() & onClose() │
-└────────────────────────────┬─────────────────────────────┘
-                             │
-                             ▼
-┌──────────────────────────────────────────────────────────┐
-│                    App.tsx (Routing)                     │
-│  - onSuccess handler:                                    │
-│      • If pendingSharedExamId -> launch exam             │
-│      • Else -> setActiveTab('home')                      │
-│  - Ensures activeTab switches to 'home' smoothly         │
-└──────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────┐
+│                           Client Browser                              │
+│                                                                       │
+│  ┌──────────────────────┐   ┌───────────────────┐   ┌───────────────┐ │
+│  │  ProfessorModal.tsx  │   │ PracticeModal.tsx │   │ MathRenderer  │ │
+│  │  - Brief Prompt Gen  │   │ - Dynamic Shuffle │   │ - KaTeX Cache │ │
+│  │  - AI Exam Trigger   │   │ - Accurate Score  │   │ - Touch Scroll│ │
+│  └──────────┬───────────┘   └───────────────────┘   └───────────────┘ │
+└─────────────┼─────────────────────────────────────────────────────────┘
+              │ POST /api/gemini/generate-questions
+              ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│                      Express Backend (server.ts)                      │
+│                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │  @google/genai SDK (GoogleGenAI)                                │  │
+│  │  - Model: gemini-3.8-flash                                      │  │
+│  │  - User-Agent: 'aistudio-build'                                 │  │
+│  │  - Response Schema: Type.OBJECT (Exam & Questions)              │  │
+│  │  - Strict LaTeX Formatting System Instructions                  │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                                                                       │
+│  Vite Dev Middlewares + Chapa / Telebirr Payment Proxies               │
+└───────────────────────────────────────────────────────────────────────┘
 ```
 
-### Key Changes by Component
+### Question Data Schema (Enforced by Gemini JSON Schema)
+```typescript
+interface GeneratedQuestion {
+  text: string;           // E.g. "A car of mass $m = 1200\\text{ kg}$ accelerates..."
+  options: string[];      // Array of 4 options with exact LaTeX math
+  correct: number;        // Index of correct option (0, 1, 2, or 3)
+  explanation: string;    // Vertically structured solution with [ formula ] brackets
+}
+```
 
-1. **`src/components/UserRegistrationModal.tsx`**:
-   - In `handleGoogleConnect`:
-     - After successful `signInWithGoogle()`, check if the user is already registered (`isRegistered: true` or has saved role/grade).
-     - If already registered, immediately trigger `onSuccess` and `onClose()` without forcing Step 2.
-     - If brand new user, present a clean 1-click confirmation card with Google details pre-filled and an explicit **"Confirm & Go to Home"** button.
-   - In `handleEmailAuthSubmit`:
-     - If signing in with existing email credentials, automatically trigger `onSuccess` and `onClose()`.
-   - In `executeSaveProfile`:
-     - Once saved, ensure `onSuccess` is called, modal closed, and notification displayed.
+---
 
-2. **`src/App.tsx`**:
-   - In `<UserRegistrationModal>`'s `onSuccess` callback:
-     - Clear `requiresLoginForSharedExam` and `setRequiresLoginForSharedExam(false)`.
-     - If `pendingSharedExamId` is present, call `handleLaunchSharedExam(pendingSharedExamId)`.
-     - Otherwise, call `setActiveTab('home')` to guarantee the user lands on the Home dashboard.
-   - In `onAuthStateChanged` or user state listener: when an existing user is detected as logged in and not accessing a shared link, ensure `activeTab` is set to `'home'` and `closeRegistrationModal()` is triggered.
+## Verification Plan
 
-3. **`src/context/AuthContext.tsx`**:
-   - When `onAuthStateChanged` resolves an existing registered user (`resolvedIsRegistered === true`), ensure `isRegistrationModalOpen` is set to `false` and not re-opened.
-   - Ensure local storage keys (`student_is_registered`, `has_completed_role_onboarding`) are synchronized accurately so page refreshes stay on the Home view.
+### Automated Build & Compilation
+- Run `compile_applet` to verify TypeScript typings across `server.ts`, `ProfessorModal.tsx`, `PracticeModal.tsx`, and `MathRenderer.tsx`.
+- Run `lint_applet` to confirm clean imports and syntax.
+
+### Manual & Interactive Validation
+1. **Prompt Page Generation**: Open AI Prompt Studio, verify brief holistic prompt text, test copy to clipboard on desktop and mobile viewport.
+2. **In-App Gemini Generation**: Trigger "Generate with Gemini", verify loader state, KaTeX rendering in the preview deck, and 1-click addition to exam wizard.
+3. **Practice Option Shuffling**: Launch practice mode, verify options A–D are randomized compared to the original exam order, verify selecting the correct answer scores properly, and verify explanations match the selected choice.
+4. **Mobile & PC LaTeX Verification**: Test formulas on narrow mobile width (375px) and desktop (1440px), checking equation scrolling, KaTeX font crispness, and clipboard copy.

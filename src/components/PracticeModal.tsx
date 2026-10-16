@@ -14,6 +14,7 @@ import {
   X,
   Check,
   CloudOff,
+  Shuffle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Exam, ExamAnswerRecord, ExamResult, Question } from '../types';
@@ -40,6 +41,10 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
   // Exclusively 6-to-1 batch pagination (6 questions per page vertically, Full View default)
   const [batchPage, setBatchPage] = useState(0); // 0-indexed
 
+  // Dynamic answer choices randomizer (shuffles option A, B, C, D order per session)
+  const [shuffleChoices, setShuffleChoices] = useState<boolean>(true);
+  const [sessionQuestions, setSessionQuestions] = useState<Question[]>([]);
+
   // Answers & revealed explanations per-question
   const [userAnswers, setUserAnswers] = useState<(number | null)[]>([]);
   const [revealedQuestions, setRevealedQuestions] = useState<Record<number, boolean>>({});
@@ -57,11 +62,42 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
 
   const BATCH_SIZE = 6;
 
+  // Prepare session questions with optional choice randomization
+  const prepareQuestions = useCallback((sourceExam: Exam, shouldShuffle: boolean): Question[] => {
+    return sourceExam.questions.map((q) => {
+      if (!shouldShuffle || q.options.length <= 1) {
+        return { ...q };
+      }
+      // Pair each option with whether it is the correct answer
+      const paired = q.options.map((opt, idx) => ({
+        text: opt,
+        isCorrect: idx === q.correct,
+      }));
+
+      // Fisher-Yates shuffle
+      for (let i = paired.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [paired[i], paired[j]] = [paired[j], paired[i]];
+      }
+
+      const shuffledOptions = paired.map((p) => p.text);
+      const newCorrectIndex = paired.findIndex((p) => p.isCorrect);
+
+      return {
+        ...q,
+        options: shuffledOptions,
+        correct: newCorrectIndex >= 0 ? newCorrectIndex : 0,
+      };
+    });
+  }, []);
+
   // Initialize practice session
   useEffect(() => {
     if (isOpen && exam) {
       setBatchPage(0);
-      setUserAnswers(new Array(exam.questions.length).fill(null));
+      const prepared = prepareQuestions(exam, shuffleChoices);
+      setSessionQuestions(prepared);
+      setUserAnswers(new Array(prepared.length).fill(null));
       setRevealedQuestions({});
       setEverRevealedQuestions({});
       setTimeLeft(exam.timeLimit * 60);
@@ -71,7 +107,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
         scrollContainerRef.current.scrollTop = 0;
       }
     }
-  }, [isOpen, exam]);
+  }, [isOpen, exam, shuffleChoices, prepareQuestions]);
 
   // Timer countdown
   useEffect(() => {
@@ -154,10 +190,10 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
   };
 
   // 6-to-1 mode navigation (exclusively batches of 6 questions)
-  const totalBatchPages = exam ? Math.ceil(exam.questions.length / BATCH_SIZE) : 0;
+  const totalBatchPages = sessionQuestions.length > 0 ? Math.ceil(sessionQuestions.length / BATCH_SIZE) : 0;
 
   const handleNextBatch = () => {
-    if (!exam) return;
+    if (sessionQuestions.length === 0) return;
     if (batchPage < totalBatchPages - 1) {
       setBatchPage((prev) => prev + 1);
       if (scrollContainerRef.current) {
@@ -190,12 +226,12 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
     }, 60);
   };
 
-  // Final submission and grading
+  // Final submission and grading (using sessionQuestions for accurate shuffled option checking)
   const handleFinalSubmit = useCallback(() => {
-    if (!exam) return;
+    if (!exam || sessionQuestions.length === 0) return;
 
     let correctCount = 0;
-    const answerRecords: ExamAnswerRecord[] = exam.questions.map((q, i) => {
+    const answerRecords: ExamAnswerRecord[] = sessionQuestions.map((q, i) => {
       const selectedIndex = userAnswers[i];
       const isCorrect = selectedIndex === q.correct;
       if (isCorrect) correctCount++;
@@ -212,7 +248,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
       };
     });
 
-    const totalQuestions = exam.questions.length;
+    const totalQuestions = sessionQuestions.length;
     const percentage = Math.round((correctCount / totalQuestions) * 100);
     const timeSpent = exam.timeLimit * 60 - timeLeft;
 
@@ -246,11 +282,19 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
     setShowSubmitConfirm(false);
     onClose();
     onSubmitResult(result);
-  }, [exam, userAnswers, timeLeft, notifyExamCompleted, onClose, onSubmitResult]);
+  }, [exam, sessionQuestions, userAnswers, timeLeft, notifyExamCompleted, onClose, onSubmitResult]);
 
   const handleAutoSubmit = useCallback(() => {
     handleFinalSubmit();
   }, [handleFinalSubmit]);
+
+  const isAnyAnswered = userAnswers.some((ans) => ans !== null && ans !== undefined);
+
+  const handleToggleShuffle = () => {
+    if (isPaused || isAnyAnswered || !exam) return;
+    const nextShuffle = !shuffleChoices;
+    setShuffleChoices(nextShuffle);
+  };
 
   if (!isOpen || !exam) return null;
 
@@ -261,12 +305,12 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
   };
 
   const answeredCount = userAnswers.filter((a) => a !== null).length;
-  const progressPct = ((answeredCount) / exam.questions.length) * 100;
+  const progressPct = sessionQuestions.length > 0 ? (answeredCount / sessionQuestions.length) * 100 : 0;
 
   // Batch slicing for 6-to-1 mode
   const batchStartIdx = batchPage * BATCH_SIZE;
-  const batchEndIdx = Math.min(batchStartIdx + BATCH_SIZE, exam.questions.length);
-  const currentBatchQuestions = exam.questions.slice(batchStartIdx, batchEndIdx);
+  const batchEndIdx = Math.min(batchStartIdx + BATCH_SIZE, sessionQuestions.length);
+  const currentBatchQuestions = sessionQuestions.slice(batchStartIdx, batchEndIdx);
 
   // Helper component to render a single Question Card (used in both 1-to-1 and 6-to-1)
   const renderQuestionCard = (q: Question, qIndex: number) => {
@@ -288,7 +332,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               {qIndex + 1}
             </span>
             <span className="text-xs font-bold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
-              Question {qIndex + 1} of {exam.questions.length}
+              Question {qIndex + 1} of {sessionQuestions.length}
             </span>
           </div>
         </div>
@@ -464,8 +508,31 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
               )}
             </div>
 
-            {/* Right Controls: Timer & Close Button */}
-            <div className="flex items-center gap-2.5">
+            {/* Right Controls: Shuffle Toggle, Timer & Close Button */}
+            <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+              {/* Dynamic Choice Shuffling Toggle */}
+              <button
+                type="button"
+                onClick={handleToggleShuffle}
+                disabled={isAnyAnswered}
+                title={
+                  isAnyAnswered
+                    ? 'Choice order locked once answers are recorded for this session'
+                    : 'Toggle dynamic answer randomizer for this practice session'
+                }
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer border select-none shadow-xs ${
+                  isAnyAnswered
+                    ? 'opacity-60 cursor-not-allowed bg-zinc-100 dark:bg-[#0f1d33] border-zinc-200 dark:border-white/10 text-zinc-500'
+                    : shuffleChoices
+                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                    : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-[#0f1d33] dark:hover:bg-[#132238] text-zinc-700 dark:text-zinc-200 border-zinc-200/80 dark:border-white/10'
+                }`}
+              >
+                <Shuffle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{shuffleChoices ? 'Random Choices' : 'Original Order'}</span>
+                <span className="sm:hidden">{shuffleChoices ? 'Random' : 'Original'}</span>
+              </button>
+
               {/* Interactive Timer Button */}
               <button
                 type="button"
@@ -524,7 +591,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             {/* Answered Counter */}
             <div className="flex items-center gap-3 shrink-0">
               <span className="text-xs">
-                Answered: <strong className="text-zinc-900 dark:text-white">{answeredCount}</strong> / {exam.questions.length}
+                Answered: <strong className="text-zinc-900 dark:text-white">{answeredCount}</strong> / {sessionQuestions.length}
               </span>
             </div>
           </div>
@@ -534,7 +601,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
             <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mr-1 shrink-0">
               Jump:
             </span>
-            {exam.questions.map((_, idx) => {
+            {sessionQuestions.map((_, idx) => {
               const isAns = userAnswers[idx] !== null && userAnswers[idx] !== undefined;
               const isExpl = !!revealedQuestions[idx];
               const isInCurrentBatch = idx >= batchStartIdx && idx < batchEndIdx;
@@ -650,7 +717,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({
       <ConfirmationDialog
         isOpen={showSubmitConfirm}
         title="Submit Practice Exam?"
-        message={`You have answered ${answeredCount} of ${exam.questions.length} questions. Are you ready to submit and calculate your final score?`}
+        message={`You have answered ${answeredCount} of ${sessionQuestions.length} questions. Are you ready to submit and calculate your final score?`}
         confirmText="Submit Exam"
         cancelText="Review Questions"
         onConfirm={handleFinalSubmit}

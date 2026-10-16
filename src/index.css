@@ -127,8 +127,35 @@
   .katex-display-wrapper {
     flex-direction: column;
     align-items: stretch;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
   .katex-display-wrapper .katex-copy-btn {
     align-self: flex-end;
   }
+}
+
+/* Cross-Platform Phone & PC LaTeX Math Rules */
+.katex-display {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  max-width: 100% !important;
+  padding: 0.25rem 0 !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.katex-rendered {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.katex-rendered .katex {
+  font-size: 1.05em;
+  max-width: 100%;
+}
+
+.katex-display-content {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
