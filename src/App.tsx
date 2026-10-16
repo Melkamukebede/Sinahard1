@@ -1049,7 +1049,12 @@ function MainApp() {
         {/* User Profile Registration Modal */}
         <UserRegistrationModal
           isOpen={isRegistrationModalOpen}
-          onClose={closeRegistrationModal}
+          onClose={() => {
+            closeRegistrationModal();
+            if (!pendingSharedExamId && activeTab !== 'create') {
+              setActiveTab('home');
+            }
+          }}
           sharedExamId={pendingSharedExamId}
           onAccessSharedExam={handleLaunchSharedExam}
           initialStep={registrationInitialStep}
@@ -1058,11 +1063,13 @@ function MainApp() {
             setRequiresLoginForSharedExam(false);
             if (pendingSharedExamId) {
               handleLaunchSharedExam(pendingSharedExamId);
+            } else {
+              setActiveTab('home');
             }
             if (registeredProfile.role === 'teacher') {
               showToast(`Registered successfully as Teacher for ${registeredProfile.school || 'your school'}!`);
             } else {
-              showToast(`Registered successfully as Grade ${registeredProfile.grade || '12'} student!`);
+              showToast(`Welcome! Successfully signed in.`);
             }
           }}
         />

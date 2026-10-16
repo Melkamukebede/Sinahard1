@@ -30,7 +30,8 @@ import { useAuth } from '../context/AuthContext';
 import { AppUser, UserRole } from '../types';
 import { AppCoin } from './AppCoin';
 import { getUserCoins } from '../services/coinService';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export interface UserRegistrationModalProps {
   isOpen: boolean;
@@ -379,15 +380,69 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
     const success = await signInWithGoogle();
     if (success) {
       const currentUser = auth.currentUser;
-      if (currentUser?.displayName) {
-        if (!displayName || displayName === 'Student') {
-          setDisplayName(currentUser.displayName);
+      if (currentUser) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          const isAdmin = currentUser.email?.toLowerCase().trim() === 'melkamukebede11@gmail.com';
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data?.isRegistered || isAdmin || data?.role === 'admin') {
+              // Existing registered user: automatically close modal and launch to Home (or shared exam)!
+              localStorage.setItem('student_is_registered', 'true');
+              localStorage.setItem('has_completed_role_onboarding', 'true');
+              if (onSuccess) {
+                onSuccess({
+                  uid: currentUser.uid,
+                  email: currentUser.email,
+                  displayName: data?.displayName || currentUser.displayName,
+                  role: data?.role || (isAdmin ? 'admin' : 'student'),
+                  grade: data?.grade || '12',
+                  stream: data?.stream || 'Natural Science',
+                  school: data?.school || data?.schoolName || '',
+                  isRegistered: true,
+                });
+              }
+              if (sharedExamId && onAccessSharedExam) {
+                onAccessSharedExam(sharedExamId);
+              }
+              onClose();
+              return true;
+            }
+          } else if (isAdmin) {
+            localStorage.setItem('student_is_registered', 'true');
+            localStorage.setItem('has_completed_role_onboarding', 'true');
+            if (onSuccess) {
+              onSuccess({
+                uid: currentUser.uid,
+                email: currentUser.email,
+                displayName: currentUser.displayName || 'Administrator',
+                role: 'admin',
+                grade: '12',
+                stream: 'Natural Science',
+                school: '',
+                isRegistered: true,
+              });
+            }
+            if (sharedExamId && onAccessSharedExam) {
+              onAccessSharedExam(sharedExamId);
+            }
+            onClose();
+            return true;
+          }
+        } catch (fetchErr) {
+          console.warn('Could not check existing user record on Google connect:', fetchErr);
         }
-        if (!teacherName || teacherName === 'Teacher') {
-          setTeacherName(currentUser.displayName);
+
+        if (currentUser.displayName) {
+          if (!displayName || displayName === 'Student') {
+            setDisplayName(currentUser.displayName);
+          }
+          if (!teacherName || teacherName === 'Teacher') {
+            setTeacherName(currentUser.displayName);
+          }
         }
       }
-      // Step 2 is shown when linked
+      // For first-time Google sign-ins: advance to Step 2 for quick 1-click confirmation & Home launch
       setCurrentStep(2);
     }
     return success;
@@ -442,6 +497,59 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
       }
       const res = await signInWithEmail(emailInput, passwordInput);
       if (res.success) {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+            const isAdmin = currentUser.email?.toLowerCase().trim() === 'melkamukebede11@gmail.com';
+            if (userDoc.exists()) {
+              const data = userDoc.data();
+              if (data?.isRegistered || isAdmin || data?.role === 'admin') {
+                localStorage.setItem('student_is_registered', 'true');
+                localStorage.setItem('has_completed_role_onboarding', 'true');
+                if (onSuccess) {
+                  onSuccess({
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    displayName: data?.displayName || currentUser.displayName,
+                    role: data?.role || (isAdmin ? 'admin' : 'student'),
+                    grade: data?.grade || '12',
+                    stream: data?.stream || 'Natural Science',
+                    school: data?.school || data?.schoolName || '',
+                    isRegistered: true,
+                  });
+                }
+                if (sharedExamId && onAccessSharedExam) {
+                  onAccessSharedExam(sharedExamId);
+                }
+                onClose();
+                return;
+              }
+            } else if (isAdmin) {
+              localStorage.setItem('student_is_registered', 'true');
+              localStorage.setItem('has_completed_role_onboarding', 'true');
+              if (onSuccess) {
+                onSuccess({
+                  uid: currentUser.uid,
+                  email: currentUser.email,
+                  displayName: currentUser.displayName || 'Administrator',
+                  role: 'admin',
+                  grade: '12',
+                  stream: 'Natural Science',
+                  school: '',
+                  isRegistered: true,
+                });
+              }
+              if (sharedExamId && onAccessSharedExam) {
+                onAccessSharedExam(sharedExamId);
+              }
+              onClose();
+              return;
+            }
+          } catch (fetchErr) {
+            console.warn('Could not check existing user record on email sign-in:', fetchErr);
+          }
+        }
         // Move to Page 2
         setCurrentStep(2);
       } else {
@@ -468,6 +576,7 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
     setIsSubmitting(true);
     try {
       await updateStudentProfile(profileData);
+      localStorage.setItem('student_is_registered', 'true');
       localStorage.setItem('has_completed_role_onboarding', 'true');
       
       // Initialize free coin locally for instant access
@@ -489,7 +598,7 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
       setTimeout(() => {
         setSavedSuccess(false);
         onClose();
-      }, 650);
+      }, 400);
     } catch (err) {
       console.error('Registration failed:', err);
       setFormError('Failed to save profile. Please try again.');
@@ -502,35 +611,21 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
     e.preventDefault();
     setFormError(null);
 
-    if (selectedRole === 'student') {
-      if (!displayName.trim()) {
-        setFormError('Please enter your full name.');
-        return;
-      }
-      if (!schoolName.trim()) {
-        setFormError('Please enter your school name.');
-        return;
-      }
-    } else if (selectedRole === 'teacher') {
-      if (!teacherName.trim()) {
-        setFormError('Please enter your teacher name.');
-        return;
-      }
-      if (!schoolName.trim()) {
-        setFormError('Please enter your school name.');
-        return;
-      }
-    }
+    const currentUser = auth.currentUser;
+    const resolvedName = selectedRole === 'teacher'
+      ? (teacherName.trim() || currentUser?.displayName || 'Teacher')
+      : (displayName.trim() || currentUser?.displayName || 'Student');
+    const resolvedSchool = schoolName.trim() || (selectedRole === 'teacher' ? 'High School' : 'General Secondary School');
 
     const finalRole: UserRole = isUserEmailAdmin ? 'admin' : selectedRole;
     const profileData: Partial<AppUser> = {
       role: finalRole,
-      displayName: selectedRole === 'teacher' ? teacherName.trim() : displayName.trim(),
+      displayName: resolvedName,
       grade,
       stream,
-      school: schoolName.trim(),
-      schoolName: schoolName.trim(),
-      teacherName: selectedRole === 'teacher' ? teacherName.trim() : undefined,
+      school: resolvedSchool,
+      schoolName: resolvedSchool,
+      teacherName: selectedRole === 'teacher' ? resolvedName : undefined,
       teachingSubject: selectedRole === 'teacher' ? teachingSubject : undefined,
       isVerifiedTeacher: isUserEmailAdmin ? true : Boolean(user?.isVerifiedTeacher),
       region,
@@ -1317,7 +1412,8 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
                     ) : (
                       <>
                         <Sparkles className="w-3.5 h-3.5 text-white dark:text-zinc-950" />
-                        <span>Save Profile &amp; Finish</span>
+                        <span>Confirm &amp; Go to Home</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-white dark:text-zinc-950 ml-0.5" />
                       </>
                     )}
                   </button>

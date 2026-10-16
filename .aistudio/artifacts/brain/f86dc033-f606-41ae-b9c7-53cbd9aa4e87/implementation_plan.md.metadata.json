@@ -1,0 +1,6 @@
+{
+  "summary": "Implementation plan to automatically launch to the Home page after a user signs in or registers with Google or email, including a streamlined 1-click confirmation for first-time sign-ins and direct Practice Mode launch for shared links.",
+  "updatedAt": "2026-10-16T08:06:53.383452922Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

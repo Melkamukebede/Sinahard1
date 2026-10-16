@@ -230,8 +230,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               createdAt: new Date().toISOString(),
             });
             // If new user and not yet fully registered, open registration modal
-            if (!localRegistered) {
+            if (!localRegistered && !isEmailAdmin) {
               setIsRegistrationModalOpen(true);
+            } else {
+              setIsRegistrationModalOpen(false);
             }
           } else {
             const data = userSnap.data();
@@ -248,7 +250,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const resolvedRegion = data?.region || savedRegion;
             const resolvedTargetYear = data?.targetExamYear || savedTargetYear;
             const resolvedPhone = data?.phoneNumber || savedPhone;
-            const resolvedIsRegistered = Boolean(data?.isRegistered || localRegistered);
+            const resolvedIsRegistered = Boolean(data?.isRegistered || localRegistered || isEmailAdmin);
 
             localStorage.setItem(LOCAL_USER_ROLE_KEY, resolvedRole);
             localStorage.setItem(LOCAL_STUDENT_GRADE_KEY, String(resolvedGrade));
@@ -262,7 +264,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (resolvedRegion) localStorage.setItem(LOCAL_STUDENT_REGION_KEY, resolvedRegion);
             if (resolvedTargetYear) localStorage.setItem(LOCAL_STUDENT_TARGET_YEAR_KEY, String(resolvedTargetYear));
             if (resolvedPhone) localStorage.setItem(LOCAL_STUDENT_PHONE_KEY, resolvedPhone);
-            if (resolvedIsRegistered) localStorage.setItem(LOCAL_STUDENT_IS_REGISTERED_KEY, 'true');
+            if (resolvedIsRegistered) {
+              localStorage.setItem(LOCAL_STUDENT_IS_REGISTERED_KEY, 'true');
+              localStorage.setItem('has_completed_role_onboarding', 'true');
+            }
 
             const isVerifiedTeacher = (isEmailAdmin || resolvedRole === 'admin')
               ? true
@@ -295,9 +300,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
             setUser(appUser);
 
-            // If user has not completed registration, show registration prompt
-            if (!resolvedIsRegistered) {
+            // If user has not completed registration, show registration prompt; otherwise guarantee modal is closed
+            if (!resolvedIsRegistered && !isEmailAdmin) {
               setIsRegistrationModalOpen(true);
+            } else {
+              setIsRegistrationModalOpen(false);
             }
           }
         } catch (err) {
