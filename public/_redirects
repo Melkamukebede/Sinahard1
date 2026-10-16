@@ -1,1 +1,6 @@
-/*    /index.html   200
+# Cloudflare Pages Redirects configuration
+# Direct API routes to Cloudflare Pages Functions without SPA index.html rewrite
+/api/*    /api/:splat    200
+
+# Client-side SPA routing fallback
+/*        /index.html    200

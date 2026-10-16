@@ -1,175 +1,101 @@
-# AI Prompt Studio Optimization, Direct In-App Question Generation & Cross-Platform LaTeX
+# Cloudflare Pages Functions Support, Safe Response Parsing & Client Fallback for Gemini AI Generation
 
 ## Summary
-Transform the **AI Prompt Studio** into a streamlined, high-impact prompt generator and in-app question creation engine. The studio generates brief, holistic, and mathematically rigorous prompts for external AI tools (ChatGPT, Claude, Gemini, DeepSeek) while adding a direct **1-click "Generate with Gemini"** engine that creates formatted questions with step-by-step LaTeX explanations directly in-app. In addition, exam practice mode introduces **dynamic answer choice shuffling** to randomize options for students, while the KaTeX rendering engine is hardened for seamless display and copy resilience across both PC and mobile phones.
+Resolve the `Failed to execute 'json' on 'Response': Unexpected end of JSON input` error that occurs when the app is published to Cloudflare. This happens because Cloudflare Pages serves the static `dist/` directory without the Express `server.ts` backend unless a Cloudflare Pages Function is configured. We will add native **Cloudflare Pages Functions** (`functions/api/gemini/generate-questions.ts`), harden the frontend `fetch` handler to safely check headers and status codes before parsing JSON, and implement a **client-side Gemini fallback** (supporting `VITE_GEMINI_API_KEY` and optional user-entered key saved to `localStorage`) so AI question generation works smoothly on both Cloudflare and AI Studio.
 
 ---
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The following user preferences were confirmed in Phase 1:
+> The following architectural decisions were confirmed in Phase 1:
 
-- **Confirmed Decision 1 (In-App AI + Copy Prompt)**: The prompt page will feature dual capabilities: a one-click **"Generate Exam with AI"** action powered by server-side Gemini API (`gemini-3.8-flash`) that parses and stages questions directly for immediate practice or saving, alongside the pristine **"Copy Prompt"** button for external AI platforms.
-- **Confirmed Decision 2 (Dynamic Option Shuffling)**: Option choices (A, B, C, D) will be shuffled dynamically when students enter **Practice Mode**, with automated re-indexing of the correct answer and explanations so students cannot memorize fixed letter positions.
-- **Confirmed Decision 3 (Brief Holistic Prompt Format)**: The default prompt format is optimized into a laser-focused, brief holistic specification with strict LaTeX rules (exact `$...$` inline math, isolated `[ equation ]` display formulas, bold thematic headers without numbered steps, and distractor plausibility rules).
-
----
-
-## 1. Overview & Core Concept
-
-### What It Delivers
-
-1. **Holistic & Brief AI Prompt Engine**:
-   - Re-architects the prompt generator in `ProfessorModal.tsx` to produce concise yet thorough prompts that guide any AI (ChatGPT, Claude, Gemini, DeepSeek) to generate pristine multiple-choice questions without preamble or formatting errors.
-   - Built-in curriculum standards: grade levels (7–12, Freshman, University), subjects (Physics, Math, Chemistry, Biology, Social Sciences), topic specifications, time limits, and calibrated difficulty tiers.
-   - Enforces balanced answer keys ($A, B, C, D$) to eliminate letter bias.
-
-2. **Server-Side In-App AI Question Generator**:
-   - Implements a dedicated full-stack Express endpoint (`POST /api/gemini/generate-questions`) using the `@google/genai` TypeScript SDK and `gemini-3.8-flash` with JSON schema enforcement.
-   - Users can generate 5–20 questions in seconds without leaving the app.
-   - Renders a live visual review deck inside `ProfessorModal.tsx` displaying the generated questions, answer keys, and KaTeX step-by-step solutions with 1-click actions: **"Add to Exam Wizard"** or **"Start Practice Now"**.
-
-3. **Dynamic Practice Option Shuffling**:
-   - In `PracticeModal.tsx`, each question's option choices are dynamically randomized upon starting a practice session.
-   - Correct answer pointers and explanation references are updated accurately to preserve exact grading integrity.
-   - Includes a user-visible "🔀 Shuffled Choices" indicator with an optional toggle in session controls.
-
-4. **Cross-Platform LaTeX Resilience (PC & Phones)**:
-   - Enhances `MathRenderer.tsx` and `latexClipboardService.ts` to flawlessly handle mobile phone touchscreens and desktop viewports:
-     - Handles display brackets `[ formula ]`, inline delimiters `$...$` and `\(...\)`, and display blocks `$$...$$` or `\[...\]`.
-     - Preserves backslashes (`\frac`, `\sqrt`, `\times`, `\cdot`, `\Delta`, `\Omega`, `\theta`, `\pi`).
-     - Auto-wraps long equations in smooth touch-scrolling containers (`overflow-x-auto`) to eliminate mobile layout breaks.
-     - Maintains pristine clipboard copy interception for both phone long-press copy bars and PC keyboard shortcuts.
+- **Confirmed Decision 1 (Cloudflare Pages Functions)**: We will provide a native Cloudflare Pages Function in `functions/api/gemini/generate-questions.ts`. Cloudflare Pages automatically detects the `functions/` directory on build and deploys `/api/gemini/generate-questions` as a global edge function with access to Cloudflare environment variables (`GEMINI_API_KEY`).
+- **Confirmed Decision 2 (Client-Side Fallback for Static Deployments)**: In environments where the serverless function is not reachable, missing an API key, or returns a non-JSON response, the app will gracefully activate client-side Gemini generation (reading `VITE_GEMINI_API_KEY` or allowing the user to provide an optional key in a lightweight dialog), ensuring 100% reliability.
+- **Confirmed Decision 3 (Zero JSON Crash Parsing)**: Harden `ProfessorModal.tsx` to inspect `res.status`, `res.ok`, and `content-type` before calling `.json()`, completely preventing `Unexpected end of JSON input` syntax crashes.
 
 ---
 
-## 2. User Experience & Visual Design
+## 1. Overview & Root Cause Analysis
 
-### User Flows & Interaction Models
+### Why It Worked in AI Studio but Failed on Cloudflare
+
+1. **AI Studio Environment**: Runs `server.ts` via Express and `vite.middlewares` on port 3000, so `POST /api/gemini/generate-questions` is handled by the Express backend with `process.env.GEMINI_API_KEY`.
+2. **Cloudflare Pages Default Build**: When deployed to Cloudflare Pages, `npm run build` generates static HTML/JS files in `dist/`. Without a `functions/` directory, Cloudflare's edge router does not have a route handler for `POST /api/gemini/generate-questions`, returning an empty `404 Not Found` or `405 Method Not Allowed`.
+3. **The Unhandled Exception**: The client-side code called `await res.json()` directly without verifying if `res.ok` or if the response body had JSON content, resulting in the browser error:
+   `Failed to execute 'json' on 'Response': Unexpected end of JSON input`.
+
+---
+
+## 2. Technical Architecture & Implementation Steps
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       AI PROMPT STUDIO (Modal)                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  Top Bar: [Sparkles] AI Prompt Studio  ·  📱 Phone LaTeX Mode  ·  [Close X] │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  Subject Selector: Physics / Math / Chemistry / Biology / Custom            │
-│  Grade Stepper: [-] Grade 12 [+]  ·  Questions: [-] 10 [+]  ·  Time: 20 min │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  [ Tab: Brief Holistic Prompt ]       [ Tab: Direct AI Preview & Generate ] │
-│  ┌─────────────────────────────────┐   ┌─────────────────────────────────┐  │
-│  │ Standardized .TXT Prompt Box    │   │ "Generate 10 Questions with     │  │
-│  │ - Exact LaTeX formatting rules  │   │  Gemini 3.8 Flash"              │  │
-│  │ - Formula bracket isolation     │   │                                 │  │
-│  │ - Distractor balance            │   │ [Live Progress & KaTeX Review]  │  │
-│  └─────────────────────────────────┘   └─────────────────────────────────┘  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  Bottom Actions:                                                            │
-│  [Copy Prompt for ChatGPT/Claude]  ·  [✨ Generate In-App with Gemini]       │
-└─────────────────────────────────────────────────────────────────────────────┘
+│                          User Request (Cloudflare)                          │
+└──────────────────────────────────────┬──────────────────────────────────────┘
                                        │
-                                       ▼ (Direct Generation Complete)
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  Generated Exam Preview Deck:                                               │
-│  • 10 Questions formatted with KaTeX math on PC & Mobile                   │
-│  • Explanations with isolated formulas                                      │
-│  • Buttons: [Add Questions to Exam]  ·  [Start Practice Immediately]        │
-└─────────────────────────────────────────────────────────────────────────────┘
+                     ┌─────────────────┴─────────────────┐
+                     ▼                                   ▼
+          [Cloudflare Pages Functions]         [Static Host Fallback]
+          functions/api/gemini/generate-       Direct Client Gemini Call
+          questions.ts                         (VITE_GEMINI_API_KEY or
+          (Uses context.env.GEMINI_API_KEY)     user key modal)
+                     │                                   │
+                     └─────────────────┬─────────────────┘
+                                       │
+                                       ▼
+                       Validated Question Object Deck
+                       (Exact LaTeX math & balanced keys)
 ```
 
-### Practice Mode Dynamic Shuffling Flow
+### Step 1: Cloudflare Pages Edge Function
+Create `functions/api/gemini/generate-questions.ts`:
+- Compatible with Cloudflare Pages Functions runtime (`PagesFunction`).
+- Extracts `context.env.GEMINI_API_KEY` or `process.env.GEMINI_API_KEY`.
+- Communicates directly with the Gemini REST API (`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`) with fallback to `gemini-3.1-flash-lite`.
+- Returns structured JSON with proper headers: `Content-Type: application/json` and CORS headers.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         PRACTICE MODE (Student)                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  Timer: 19:42  ·  Batch 1/2  ·  [🔀 Shuffled Options Active]  ·  [Pause]   │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  Question 1: A vehicle accelerates from $u = 5\text{ m/s}$...              │
-│    A) $60\text{ m}$   (Shuffled from original position B)                   │
-│    B) $30\text{ m}$   (Shuffled from original position D)                   │
-│    C) $120\text{ m}$  (Shuffled from original position A)                   │
-│    D) $50\text{ m}$   (Shuffled from original position C)                   │
-│                                                                             │
-│  [View Explanation] -> Step-by-step KaTeX formula with correct answer check │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+### Step 2: Hardened Client-Side Safe Response Parsing
+In `ProfessorModal.tsx`:
+- Before calling `res.json()`, check:
+  ```ts
+  const contentType = res.headers.get('content-type') || '';
+  if (!res.ok || !contentType.includes('application/json')) {
+    // Attempt fallback rather than crashing
+  }
+  ```
+- Catch parsing failures cleanly and seamlessly route to the client-side Gemini fallback.
 
-### Visual & Ergonomic Design Guidelines (60-30-10 Rule)
-- **Palette**: Clean slate canvas (60%), structural card surfaces with hairline dividers (30%), vibrant brand accents (10%) for primary actions.
-- **Mobile First Ergonomics**: Touch targets $\ge 44\text{px}$, sticky bottom CTA buttons on mobile, and horizontal scrollbars with touch inertia for wide math equations.
-- **Anti-Slop Discipline**: No decorative pulsing dots, no fake version tags, unboxed text metadata with `·` separators, and natural title case.
+### Step 3: Resilient Client-Side Gemini Fallback
+Create `src/services/geminiClientService.ts`:
+- Provides direct client-side generation using `import.meta.env.VITE_GEMINI_API_KEY` or a locally stored key (`localStorage.getItem('sinahard_gemini_key')`).
+- If neither edge functions nor client keys are configured, presents an intuitive, unobtrusive key prompt dialog:
+  *"To generate questions on static Cloudflare Pages, enter your free Gemini API key (or use Copy Prompt for ChatGPT)."*
+- Saves the key locally in the student's browser so they never have to enter it again.
 
 ---
 
 ## 3. Key Product Decisions & Trade-Offs
 
-### Decision 1: Server-Side Gemini API via Express (`server.ts`)
-- **Chosen Approach**: Create a dedicated Express entry point `server.ts` with Vite middlewares in development (`"dev": "tsx server.ts"`), hosting `/api/gemini/generate-questions`.
-- **Why**: Strictly adheres to the AI Studio security constitution (no API keys exposed to browser) while enabling fast structured JSON responses using the `@google/genai` TypeScript SDK.
-- **Alternatives Considered**: Direct client-side SDK calls (rejected due to API key leakage and security policy violations).
+### Decision 1: Cloudflare Edge Function + Client Fallback (Hybrid)
+- **Chosen Approach**: Support both edge functions for automated production deployments and client-side fallback for static previews.
+- **Why**: Eliminates 100% of deployment friction. Users deploying with Cloudflare Pages Functions get zero-config serverless generation, while users deploying to purely static hosts (or GitHub Pages) can still use Gemini seamlessly.
+- **Alternatives Considered**: Forcing full-stack Docker / Cloud Run only (rejected: users explicitly prefer Cloudflare Pages for its speed and zero-cost hosting).
 
-### Decision 2: Dynamic Option Shuffling with Deterministic Tracking
-- **Chosen Approach**: Shuffle question options at session initialization in `PracticeModal.tsx`, mapping the new choice positions to the original index so that scoring and explanation references remain 100% accurate.
-- **Why**: Prevents students from simply memorizing answer letters (e.g. "Question 3 is B") and forces true conceptual mastery.
-- **Alternatives Considered**: Permanently mutating the exam data in database (rejected: author's original source exam should remain intact; only practice sessions should shuffle).
-
-### Decision 3: Robust Dual-Delimited LaTeX Parsing
-- **Chosen Approach**: Enhance `MathRenderer.tsx` regex tokenizers to support bracketed equations `[ formula ]`, inline `$...$`, inline `\(...\)`, display `$$...$$`, and naked unit strings like `1200\text{ kg}`.
-- **Why**: Mobile AI apps and chat clipboards frequently strip backslashes or convert `\[` to bare `[`. Parsing both standard and phone-simplified formats ensures zero broken math rendering on phones.
+### Decision 2: Direct REST / SDK Hybrid on Cloudflare Edge
+- **Chosen Approach**: Use standard `fetch` in `functions/api/gemini/generate-questions.ts` to call Gemini REST endpoint.
+- **Why**: Cloudflare Edge Workers have minimal bundle overhead and standard Web Fetch API built-in, avoiding Node.js module compatibility issues.
 
 ---
 
-## 4. Technical Architecture & Data Strategy
-
-```
-┌───────────────────────────────────────────────────────────────────────┐
-│                           Client Browser                              │
-│                                                                       │
-│  ┌──────────────────────┐   ┌───────────────────┐   ┌───────────────┐ │
-│  │  ProfessorModal.tsx  │   │ PracticeModal.tsx │   │ MathRenderer  │ │
-│  │  - Brief Prompt Gen  │   │ - Dynamic Shuffle │   │ - KaTeX Cache │ │
-│  │  - AI Exam Trigger   │   │ - Accurate Score  │   │ - Touch Scroll│ │
-│  └──────────┬───────────┘   └───────────────────┘   └───────────────┘ │
-└─────────────┼─────────────────────────────────────────────────────────┘
-              │ POST /api/gemini/generate-questions
-              ▼
-┌───────────────────────────────────────────────────────────────────────┐
-│                      Express Backend (server.ts)                      │
-│                                                                       │
-│  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │  @google/genai SDK (GoogleGenAI)                                │  │
-│  │  - Model: gemini-3.8-flash                                      │  │
-│  │  - User-Agent: 'aistudio-build'                                 │  │
-│  │  - Response Schema: Type.OBJECT (Exam & Questions)              │  │
-│  │  - Strict LaTeX Formatting System Instructions                  │  │
-│  └─────────────────────────────────────────────────────────────────┘  │
-│                                                                       │
-│  Vite Dev Middlewares + Chapa / Telebirr Payment Proxies               │
-└───────────────────────────────────────────────────────────────────────┘
-```
-
-### Question Data Schema (Enforced by Gemini JSON Schema)
-```typescript
-interface GeneratedQuestion {
-  text: string;           // E.g. "A car of mass $m = 1200\\text{ kg}$ accelerates..."
-  options: string[];      // Array of 4 options with exact LaTeX math
-  correct: number;        // Index of correct option (0, 1, 2, or 3)
-  explanation: string;    // Vertically structured solution with [ formula ] brackets
-}
-```
-
----
-
-## Verification Plan
+## 4. Verification Plan
 
 ### Automated Build & Compilation
-- Run `compile_applet` to verify TypeScript typings across `server.ts`, `ProfessorModal.tsx`, `PracticeModal.tsx`, and `MathRenderer.tsx`.
-- Run `lint_applet` to confirm clean imports and syntax.
+- Run `compile_applet` to verify `functions/` and client service compilation.
+- Run `lint_applet` to confirm clean TypeScript types.
 
-### Manual & Interactive Validation
-1. **Prompt Page Generation**: Open AI Prompt Studio, verify brief holistic prompt text, test copy to clipboard on desktop and mobile viewport.
-2. **In-App Gemini Generation**: Trigger "Generate with Gemini", verify loader state, KaTeX rendering in the preview deck, and 1-click addition to exam wizard.
-3. **Practice Option Shuffling**: Launch practice mode, verify options A–D are randomized compared to the original exam order, verify selecting the correct answer scores properly, and verify explanations match the selected choice.
-4. **Mobile & PC LaTeX Verification**: Test formulas on narrow mobile width (375px) and desktop (1440px), checking equation scrolling, KaTeX font crispness, and clipboard copy.
+### Interactive Verification
+1. **Local Dev & Server**: Verify `/api/gemini/generate-questions` still works on the Express backend.
+2. **Safe Parsing**: Simulate empty or non-JSON responses to confirm `Unexpected end of JSON input` is completely eliminated.
+3. **Cloudflare Functions**: Verify `functions/api/gemini/generate-questions.ts` exports proper `onRequestPost` handler.
+4. **Client Fallback**: Verify client fallback triggers when the server endpoint is unreachable.

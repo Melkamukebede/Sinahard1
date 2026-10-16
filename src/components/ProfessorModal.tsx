@@ -19,10 +19,23 @@ import {
   RefreshCw,
   Layers,
   BookOpen,
+  Key,
+  ExternalLink,
+  Trash2,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { isMobileUserDevice } from '../services/latexClipboardService';
 import { MathRenderer } from './MathRenderer';
 import { Question, Exam } from '../types';
+import {
+  generateExamQuestions,
+  getUserGeminiApiKey,
+  saveUserGeminiApiKey,
+  clearUserGeminiApiKey,
+  hasUserGeminiApiKey,
+} from '../services/geminiClientService';
 
 interface ProfessorModalProps {
   isOpen: boolean;
@@ -84,6 +97,11 @@ export const ProfessorModal: React.FC<ProfessorModalProps> = ({
   const [aiError, setAiError] = useState<string | null>(null);
   const [generatedQuestions, setGeneratedQuestions] = useState<Question[]>([]);
   const [generatedTitle, setGeneratedTitle] = useState<string>('');
+
+  // Client-side Gemini API key configuration (for Cloudflare Pages / Static Hosting)
+  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(false);
+  const [apiKeyInput, setApiKeyInput] = useState<string>(() => getUserGeminiApiKey());
+  const [apiKeySuccessMsg, setApiKeySuccessMsg] = useState<string | null>(null);
 
   const triggerRegeneration = () => {
     setIsRegenerating(true);
@@ -495,34 +513,37 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
     }
   };
 
-  // Direct In-App Generation with Gemini
+  // Direct In-App Generation with Gemini (Supports Express backend, Cloudflare Pages functions, and Client fallback)
   const handleGenerateWithGemini = async () => {
     setIsGeneratingAi(true);
     setAiError(null);
+    setApiKeySuccessMsg(null);
     try {
-      const res = await fetch('/api/gemini/generate-questions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subject,
-          grade,
-          topic: topics || 'Standard Curriculum',
-          totalQuestions,
-          difficulty,
-          subjectType,
-          timeLimit,
-          customPrompt: generatedPrompt,
-        }),
+      const result = await generateExamQuestions({
+        subject,
+        grade,
+        topic: topics || 'Standard Curriculum',
+        totalQuestions,
+        difficulty,
+        subjectType,
+        timeLimit,
+        customPrompt: generatedPrompt,
       });
 
-      const data = await res.json();
-      if (data.status === 'success' && Array.isArray(data.questions) && data.questions.length > 0) {
-        setGeneratedQuestions(data.questions);
-        setGeneratedTitle(data.title || `${subject} Grade ${grade} Exam`);
+      if (result.status === 'success' && Array.isArray(result.questions) && result.questions.length > 0) {
+        setGeneratedQuestions(result.questions);
+        setGeneratedTitle(result.title || `${subject} Grade ${grade} Exam`);
         setActiveView('generate');
+        setShowApiKeyInput(false);
+      } else if (result.status === 'needs_key') {
+        setShowApiKeyInput(true);
+        setAiError(
+          result.message ||
+            'Enter your free Gemini API key below to generate questions directly in your browser on Cloudflare Pages.'
+        );
       } else {
         setAiError(
-          data.message ||
+          result.message ||
             'Gemini generation is temporarily unavailable. You can click Copy Prompt to generate with ChatGPT or Gemini web.'
         );
       }
@@ -532,6 +553,20 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
     } finally {
       setIsGeneratingAi(false);
     }
+  };
+
+  const handleSaveApiKey = () => {
+    if (!apiKeyInput.trim()) return;
+    saveUserGeminiApiKey(apiKeyInput.trim());
+    setApiKeySuccessMsg('API key saved! You can now generate directly.');
+    setTimeout(() => setApiKeySuccessMsg(null), 4000);
+  };
+
+  const handleClearApiKey = () => {
+    clearUserGeminiApiKey();
+    setApiKeyInput('');
+    setApiKeySuccessMsg('API key removed from browser storage.');
+    setTimeout(() => setApiKeySuccessMsg(null), 3000);
   };
 
   // Launch direct practice mode with the generated questions
@@ -607,6 +642,22 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
                 >
                   <Smartphone className="w-3 h-3" />
                   <span>{optimizeForPhone ? 'Phone LaTeX: Active' : 'Phone LaTeX: Off'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowApiKeyInput((prev) => !prev)}
+                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                    hasUserGeminiApiKey()
+                      ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30'
+                      : showApiKeyInput
+                      ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-transparent'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:text-zinc-800 dark:hover:text-zinc-200'
+                  }`}
+                  title="Configure Gemini API Key for client-side generation (Cloudflare/Static)"
+                >
+                  <Key className="w-3 h-3" />
+                  <span>{hasUserGeminiApiKey() ? 'API Key: Set' : 'API Key'}</span>
                 </button>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -886,15 +937,124 @@ Ribosomes synthesize proteins, the Golgi modifies macromolecules, and the ER fac
             </div>
           </div>
 
+          {/* Client-Side Gemini API Key Card (for Cloudflare Pages / Static Hosting) */}
+          {showApiKeyInput && (
+            <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-950 dark:text-blue-100 space-y-3 animate-in fade-in duration-150">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Key className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xs text-blue-950 dark:text-blue-100 flex items-center gap-2">
+                      <span>Client-Side Gemini API Key</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-600/20 text-blue-700 dark:text-blue-300 font-bold uppercase tracking-wider">
+                        Cloudflare Ready
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-blue-800/80 dark:text-blue-200/80 mt-0.5">
+                      Directly generates verified exams in your browser on Cloudflare Pages without needing a server.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowApiKeyInput(false)}
+                  className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 p-1 rounded-lg cursor-pointer"
+                  title="Close API Key panel"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="password"
+                    value={apiKeyInput}
+                    onChange={(e) => setApiKeyInput(e.target.value)}
+                    placeholder="Enter your Gemini API Key (e.g. AIzaSy...)"
+                    className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-[#070e1a] border border-blue-300 dark:border-blue-500/40 text-xs font-mono text-zinc-900 dark:text-white focus:outline-hidden focus:border-blue-600 shadow-2xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleSaveApiKey();
+                      handleGenerateWithGemini();
+                    }}
+                    disabled={!apiKeyInput.trim() || isGeneratingAi}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 transition active:scale-98 shrink-0"
+                  >
+                    {isGeneratingAi ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5" />
+                    )}
+                    <span>Save & Generate</span>
+                  </button>
+                  {hasUserGeminiApiKey() && (
+                    <button
+                      type="button"
+                      onClick={handleClearApiKey}
+                      className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 transition cursor-pointer shrink-0"
+                      title="Clear stored key"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {apiKeySuccessMsg && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{apiKeySuccessMsg}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-[11px] text-blue-900/70 dark:text-blue-200/70 pt-1 flex-wrap gap-2">
+                  <span>Saved only in your browser local storage. Never shared.</span>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      <span>Get Free API Key</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* AI Generation Error Banner */}
           {aiError && (
             <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-200 flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <div className="flex-1 text-xs space-y-1">
+              <div className="flex-1 text-xs space-y-2">
                 <p className="font-semibold">{aiError}</p>
-                <p className="opacity-90">
-                  You can use the <strong>Copy Prompt</strong> button below to generate instantly in ChatGPT, Claude, DeepSeek, or Gemini web!
-                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {!showApiKeyInput && (
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKeyInput(true)}
+                      className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <Key className="w-3 h-3" />
+                      <span>Enter Gemini API Key</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="px-3 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-950 font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Copy Prompt for External AI</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}

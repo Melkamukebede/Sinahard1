@@ -140,20 +140,26 @@ Subject Type: ${isMath ? 'Mathematical / Calculation-based' : 'Conceptual / Theo
       },
     };
 
-    let response;
-    try {
-      response = await aiClient.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: userPromptContent,
-        config: generateConfig,
-      });
-    } catch (primaryErr: any) {
-      console.warn('Primary model gemini-3.8-flash unavailable, trying gemini-3.1-flash-lite fallback...', primaryErr?.message);
-      response = await aiClient.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
-        contents: userPromptContent,
-        config: generateConfig,
-      });
+    const modelsToTry = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+    let response: any = null;
+    let lastErr: any = null;
+
+    for (const model of modelsToTry) {
+      try {
+        response = await aiClient.models.generateContent({
+          model,
+          contents: userPromptContent,
+          config: generateConfig,
+        });
+        if (response) break;
+      } catch (err: any) {
+        lastErr = err;
+        console.warn(`Model ${model} unavailable, trying fallback...`, err?.message);
+      }
+    }
+
+    if (!response) {
+      throw lastErr || new Error('All Gemini model endpoints failed');
     }
 
     const responseText = response?.text || '{}';
