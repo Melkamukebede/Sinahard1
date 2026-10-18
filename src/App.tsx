@@ -177,6 +177,8 @@ function MainApp() {
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState<PageTab>('home');
+  const [adminUrlTab, setAdminUrlTab] = useState<'teachers' | 'payments' | 'notifications' | undefined>(undefined);
+  const [adminUrlVerifyId, setAdminUrlVerifyId] = useState<string | null>(null);
   const [exams, setExams] = useState<Exam[]>(INITIAL_SAMPLE_EXAMS);
   const [officialExams, setOfficialExams] = useState<Exam[]>(getCachedOfficialExams());
   const [results, setResults] = useState<ExamResult[]>([]);
@@ -426,6 +428,19 @@ function MainApp() {
         }
       });
       window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    // Handle admin 1-click verification links from automated email alerts (?admin_tab=...&verify_id=...)
+    const adminTabParam = params.get('admin_tab') as 'teachers' | 'payments' | 'notifications' | null;
+    const verifyIdParam = params.get('verify_id');
+    if (adminTabParam || verifyIdParam) {
+      const resolvedTab: 'teachers' | 'payments' | 'notifications' =
+        adminTabParam || (verifyIdParam?.startsWith('teacher') ? 'teachers' : 'payments');
+      setAdminUrlTab(resolvedTab);
+      if (verifyIdParam) {
+        setAdminUrlVerifyId(verifyIdParam);
+      }
+      setActiveTab('admin-subs');
     }
   }, [user]);
 
@@ -921,6 +936,8 @@ function MainApp() {
               user={user}
               subscriptions={allSubscriptions}
               onClose={() => setActiveTab('home')}
+              initialTab={adminUrlTab}
+              initialVerifyId={adminUrlVerifyId}
             />
           </Suspense>
         )}

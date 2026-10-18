@@ -1,101 +1,160 @@
-# Cloudflare Pages Functions Support, Safe Response Parsing & Client Fallback for Gemini AI Generation
+# Automated Email Notifications for Student Payments & Teacher Registrations
 
 ## Summary
-Resolve the `Failed to execute 'json' on 'Response': Unexpected end of JSON input` error that occurs when the app is published to Cloudflare. This happens because Cloudflare Pages serves the static `dist/` directory without the Express `server.ts` backend unless a Cloudflare Pages Function is configured. We will add native **Cloudflare Pages Functions** (`functions/api/gemini/generate-questions.ts`), harden the frontend `fetch` handler to safely check headers and status codes before parsing JSON, and implement a **client-side Gemini fallback** (supporting `VITE_GEMINI_API_KEY` and optional user-entered key saved to `localStorage`) so AI question generation works smoothly on both Cloudflare and AI Studio.
+Implement automated email notifications delivered to `melkamukebede11@gmail.com` (with configurable in-app admin settings) whenever a student submits a payment or a new teacher registers. Each notification email delivers full transactional details, student/teacher context, and a 1-click verification link directly targeting the item inside the Admin Verification Panel. The solution supports full-stack Express development, automated Cloudflare Pages Functions, and client-side fallback.
 
 ---
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The following architectural decisions were confirmed in Phase 1:
+> The following decisions were confirmed by the user in Phase 1:
 
-- **Confirmed Decision 1 (Cloudflare Pages Functions)**: We will provide a native Cloudflare Pages Function in `functions/api/gemini/generate-questions.ts`. Cloudflare Pages automatically detects the `functions/` directory on build and deploys `/api/gemini/generate-questions` as a global edge function with access to Cloudflare environment variables (`GEMINI_API_KEY`).
-- **Confirmed Decision 2 (Client-Side Fallback for Static Deployments)**: In environments where the serverless function is not reachable, missing an API key, or returns a non-JSON response, the app will gracefully activate client-side Gemini generation (reading `VITE_GEMINI_API_KEY` or allowing the user to provide an optional key in a lightweight dialog), ensuring 100% reliability.
-- **Confirmed Decision 3 (Zero JSON Crash Parsing)**: Harden `ProfessorModal.tsx` to inspect `res.status`, `res.ok`, and `content-type` before calling `.json()`, completely preventing `Unexpected end of JSON input` syntax crashes.
-
----
-
-## 1. Overview & Root Cause Analysis
-
-### Why It Worked in AI Studio but Failed on Cloudflare
-
-1. **AI Studio Environment**: Runs `server.ts` via Express and `vite.middlewares` on port 3000, so `POST /api/gemini/generate-questions` is handled by the Express backend with `process.env.GEMINI_API_KEY`.
-2. **Cloudflare Pages Default Build**: When deployed to Cloudflare Pages, `npm run build` generates static HTML/JS files in `dist/`. Without a `functions/` directory, Cloudflare's edge router does not have a route handler for `POST /api/gemini/generate-questions`, returning an empty `404 Not Found` or `405 Method Not Allowed`.
-3. **The Unhandled Exception**: The client-side code called `await res.json()` directly without verifying if `res.ok` or if the response body had JSON content, resulting in the browser error:
-   `Failed to execute 'json' on 'Response': Unexpected end of JSON input`.
+- **Confirmed Decision 1 (Recipient)**: Notifications will be sent to `melkamukebede11@gmail.com` by default, with an in-app Admin Notification Settings tab in the Admin Panel to update the recipient email or toggle payment/teacher alerts.
+- **Confirmed Decision 2 (Email Architecture)**: Automated email service supported across both Node.js Express (`server.ts`) and Cloudflare Pages Functions (`/functions/api/notify-admin.ts`), with resilient client fallback and simulated logging if an external email key is not configured.
+- **Confirmed Decision 3 (Notification Content)**: Rich HTML and plain-text emails providing complete student/teacher metadata, amounts, payment reference numbers, and a direct 1-click deep link to open and verify inside the Admin Panel.
 
 ---
 
-## 2. Technical Architecture & Implementation Steps
+## 1. Overview & Core Concept
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          User Request (Cloudflare)                          │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │
-                     ┌─────────────────┴─────────────────┐
-                     ▼                                   ▼
-          [Cloudflare Pages Functions]         [Static Host Fallback]
-          functions/api/gemini/generate-       Direct Client Gemini Call
-          questions.ts                         (VITE_GEMINI_API_KEY or
-          (Uses context.env.GEMINI_API_KEY)     user key modal)
-                     │                                   │
-                     └─────────────────┬─────────────────┘
-                                       │
-                                       ▼
-                       Validated Question Object Deck
-                       (Exact LaTeX math & balanced keys)
-```
+- **What It Does**: Whenever a student initiates/completes a subscription payment (via Telebirr, Chapa, CBE, or manual receipt upload) or an educator registers with the Teacher role, the system immediately pushes an alert email to the admin. The email contains all relevant details and an action button to open the application with the exact pending record highlighted for instantaneous 1-click approval or rejection.
+- **Target Audience**: App administrator (`melkamukebede11@gmail.com`) overseeing Ethiopian secondary school curriculum access, teacher authorizations, and premium student subscriptions.
+- **Key Value**: Eliminates manual checking of the admin dashboard; guarantees instant response time for pending payments and teacher onboarding, directly unblocking students preparing for national exams.
 
-### Step 1: Cloudflare Pages Edge Function
-Create `functions/api/gemini/generate-questions.ts`:
-- Compatible with Cloudflare Pages Functions runtime (`PagesFunction`).
-- Extracts `context.env.GEMINI_API_KEY` or `process.env.GEMINI_API_KEY`.
-- Communicates directly with the Gemini REST API (`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`) with fallback to `gemini-3.1-flash-lite`.
-- Returns structured JSON with proper headers: `Content-Type: application/json` and CORS headers.
+---
 
-### Step 2: Hardened Client-Side Safe Response Parsing
-In `ProfessorModal.tsx`:
-- Before calling `res.json()`, check:
-  ```ts
-  const contentType = res.headers.get('content-type') || '';
-  if (!res.ok || !contentType.includes('application/json')) {
-    // Attempt fallback rather than crashing
-  }
-  ```
-- Catch parsing failures cleanly and seamlessly route to the client-side Gemini fallback.
+## 2. User Experience & Visual Design
 
-### Step 3: Resilient Client-Side Gemini Fallback
-Create `src/services/geminiClientService.ts`:
-- Provides direct client-side generation using `import.meta.env.VITE_GEMINI_API_KEY` or a locally stored key (`localStorage.getItem('sinahard_gemini_key')`).
-- If neither edge functions nor client keys are configured, presents an intuitive, unobtrusive key prompt dialog:
-  *"To generate questions on static Cloudflare Pages, enter your free Gemini API key (or use Copy Prompt for ChatGPT)."*
-- Saves the key locally in the student's browser so they never have to enter it again.
+### A. Key User Flows
+
+1. **Student Payment Flow**:
+   - Student selects a subscription pass (Starter, Monthly, Semester, Annual).
+   - Student submits payment via Telebirr, Chapa, or CBE bank transfer proof.
+   - App stores the pending record in Firestore `subscriptions` and fires an automated alert to `/api/notify-admin`.
+   - Admin receives an email titled: `🔔 Action Required: Verify Student Payment (Student Name - Amount ETB)`.
+   - Admin clicks **"Verify Payment in Admin Panel"** in the email, which deep-links directly into the Admin Subscriptions tab with the pending transaction highlighted.
+   - Admin clicks **"Verify & Activate"** in 1 click; the student's status updates immediately via real-time Firestore listeners.
+
+2. **Teacher Registration Flow**:
+   - An educator signs up and fills out their teacher profile (Name, School, Teaching Subject, Phone, Region).
+   - Upon submission, app flags `role: 'teacher'` with `isVerifiedTeacher: false`.
+   - Automated notification dispatches to the admin: `🔔 Action Required: Verify New Teacher Registration (Teacher Name - School)`.
+   - Admin clicks **"Review & Verify Teacher"** in the email, landing on the Admin Teachers verification list.
+   - Admin clicks **"Approve Teacher"**, unlocking class exam publishing permissions for that teacher.
+
+3. **Admin Settings & Test Notification Panel**:
+   - Located inside `AdminSubscriptionsView`: a dedicated **"Notification Alerts"** tab or header control.
+   - Allows changing the alert email address (stored in Firestore / local cache).
+   - Checkboxes to toggle:
+     - `Email on Student Payment Submission` (Default: ON)
+     - `Email on Teacher Registration` (Default: ON)
+   - **"Send Test Notification Email"** button: Sends a real test email with live loading and success feedback so the admin can verify their inbox settings immediately.
+
+### B. Visual Identity & Design Discipline
+
+- **Admin Tab Navigation**: Clean segmented control styling (`Teachers`, `Payments`, and `Email Alerts`).
+- **Deep-Link Highlight**: When the admin arrives from an email link with query parameters (e.g. `?admin_tab=payments&verify_id=sub_123` or `?admin_tab=teachers&verify_id=uid_456`), the targeted card pulses smoothly with a soft blue highlight (`ring-2 ring-blue-500/40`), automatically scrolls into view, and displays a prominent **"Approve / Verify Now"** button.
+- **Email Design**: Clean, modern email template with high legibility, mobile-responsive layout, tabular financial metadata, and a high-contrast primary CTA button (`#0f172a` background with white text).
 
 ---
 
 ## 3. Key Product Decisions & Trade-Offs
 
-### Decision 1: Cloudflare Edge Function + Client Fallback (Hybrid)
-- **Chosen Approach**: Support both edge functions for automated production deployments and client-side fallback for static previews.
-- **Why**: Eliminates 100% of deployment friction. Users deploying with Cloudflare Pages Functions get zero-config serverless generation, while users deploying to purely static hosts (or GitHub Pages) can still use Gemini seamlessly.
-- **Alternatives Considered**: Forcing full-stack Docker / Cloud Run only (rejected: users explicitly prefer Cloudflare Pages for its speed and zero-cost hosting).
-
-### Decision 2: Direct REST / SDK Hybrid on Cloudflare Edge
-- **Chosen Approach**: Use standard `fetch` in `functions/api/gemini/generate-questions.ts` to call Gemini REST endpoint.
-- **Why**: Cloudflare Edge Workers have minimal bundle overhead and standard Web Fetch API built-in, avoiding Node.js module compatibility issues.
+- **Decision 1: Dual-Environment Dispatch (Cloudflare Pages + Express)**
+  - *Chosen Approach*: Implement `POST /api/notify-admin` in `server.ts` for AI Studio/Express and `/functions/api/notify-admin.ts` for Cloudflare Pages.
+  - *Why*: Ensures zero configuration breakage whether running in AI Studio dev, full-stack server deployment, or Cloudflare Pages static/edge hosting.
+- **Decision 2: Resilient Email Transport with Fallback**
+  - *Chosen Approach*: The dispatch endpoint supports standard transactional email providers (Resend / SendGrid / SMTP / Webhook) via environment variables (`ADMIN_NOTIFICATION_EMAIL`, `EMAIL_API_KEY` / `RESEND_API_KEY`), with automated console/audit logging and in-app admin alert fallback if external email credentials are not yet configured in production hosting.
+  - *Why*: Prevents student payment or teacher registration flows from ever failing or hanging if email services encounter network blips or missing API keys.
+- **Decision 3: Non-Blocking Async Notification**
+  - *Chosen Approach*: Fire-and-forget background execution from the client (`createSubscriptionRecord` and `UserRegistrationModal`) so student payments and teacher profile saves complete with zero UI latency.
 
 ---
 
-## 4. Verification Plan
+## 4. Technical Architecture & Data Strategy
 
-### Automated Build & Compilation
-- Run `compile_applet` to verify `functions/` and client service compilation.
-- Run `lint_applet` to confirm clean TypeScript types.
+### System Architecture Diagram
 
-### Interactive Verification
-1. **Local Dev & Server**: Verify `/api/gemini/generate-questions` still works on the Express backend.
-2. **Safe Parsing**: Simulate empty or non-JSON responses to confirm `Unexpected end of JSON input` is completely eliminated.
-3. **Cloudflare Functions**: Verify `functions/api/gemini/generate-questions.ts` exports proper `onRequestPost` handler.
-4. **Client Fallback**: Verify client fallback triggers when the server endpoint is unreachable.
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                          Student / Teacher Client                       │
+│  - Payment Submission (SubscriptionModal)                             │
+│  - Teacher Registration (UserRegistrationModal)                        │
+└──────────────────┬─────────────────────────────────┬───────────────────┘
+                   │ 1. Save to DB                   │ 2. Trigger Email Alert
+                   ▼                                 ▼
+┌──────────────────────────────────────┐  ┌──────────────────────────────┐
+│          Firestore Database          │  │ adminNotificationService     │
+│  - collections:                      │  │  - sendPaymentNotification() │
+│     • subscriptions                  │  │  - sendTeacherNotification() │
+│     • users (role: teacher)          │  │  - sendTestNotification()    │
+│     • admin_settings/notifications   │  └──────────────┬───────────────┘
+└──────────────────┬───────────────────┘                 │
+                   │ Real-time Sync                      │ POST /api/notify-admin
+                   ▼                                     ▼
+┌──────────────────────────────────────┐  ┌──────────────────────────────┐
+│       Admin Verification Panel       │  │ API Endpoint                 │
+│  - Teachers Check & Verification     │  │  - Express: server.ts        │
+│  - Subscriptions Approval Panel      │  │  - Cloudflare: /functions/   │
+│  - Notification Email Settings       │  └──────────────┬───────────────┘
+│  - 1-Click Verification Deep-Links   │                 │ Sends Email
+└──────────────────▲───────────────────┘                 ▼
+                   │                      ┌──────────────────────────────┐
+                   │ Link in Email        │ melkamukebede11@gmail.com     │
+                   └──────────────────────┤ - Student Payment Details    │
+                                          │ - Teacher Registration Info  │
+                                          │ - 1-Click "Verify" Button    │
+                                          └──────────────────────────────┘
+```
+
+### Data Model & Endpoints
+
+1. **Firestore Collections**:
+   - `subscriptions/{subId}`: Student payment records with `paymentStatus: 'pending' | 'verified' | 'rejected'`, `amount`, `paymentMethod`, `transactionReference`, `userEmail`, `userName`.
+   - `users/{uid}`: Teacher records with `role: 'teacher'`, `isVerifiedTeacher: boolean`, `schoolName`, `teachingSubject`, `phoneNumber`.
+   - `admin_settings/notifications`: Admin alert configurations:
+     ```typescript
+     interface AdminNotificationSettings {
+       recipientEmail: string; // default: 'melkamukebede11@gmail.com'
+       notifyOnStudentPayment: boolean; // default: true
+       notifyOnTeacherRegistration: boolean; // default: true
+       updatedAt?: string;
+     }
+     ```
+
+2. **Endpoints**:
+   - `POST /api/notify-admin`:
+     - Payload:
+       ```typescript
+       interface NotifyAdminPayload {
+         type: 'student_payment' | 'teacher_registration' | 'test';
+         recipientEmail?: string;
+         data: {
+           studentName?: string;
+           studentEmail?: string;
+           studentPhone?: string;
+           planName?: string;
+           amount?: number;
+           paymentMethod?: string;
+           transactionReference?: string;
+           subscriptionId?: string;
+           teacherName?: string;
+           teacherEmail?: string;
+           teacherPhone?: string;
+           schoolName?: string;
+           teachingSubject?: string;
+           teacherUid?: string;
+           verifyUrl: string;
+         };
+       }
+       ```
+
+3. **Components to Update**:
+   - `src/services/adminNotificationService.ts`: Central notification dispatcher with client-side error handling, storage of admin email preference, and deep-link generation.
+   - `server.ts`: Handle `POST /api/notify-admin` with HTML email rendering and delivery.
+   - `/functions/api/notify-admin.ts`: Cloudflare Pages Function counterpart for edge deployment.
+   - `src/components/SubscriptionModal.tsx`: Call `sendPaymentNotification()` upon student payment submission.
+   - `src/components/UserRegistrationModal.tsx`: Call `sendTeacherNotification()` upon new teacher profile submission.
+   - `src/components/AdminSubscriptionsView.tsx`: Add Email Alert Settings tab, test email sender, and query parameter deep-link verification auto-highlighting.
+   - `src/App.tsx`: Parse incoming URL verification parameters (`?admin=verify&...`) and navigate directly to the target record in the Admin Panel.

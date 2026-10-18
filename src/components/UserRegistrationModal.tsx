@@ -632,10 +632,26 @@ export const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
       targetExamYear,
       phoneNumber: phoneNumber.trim(),
       isRegistered: true,
-      registeredAt: user?.registeredAt || new Date().toISOString(),
     };
 
     await executeSaveProfile(profileData);
+
+    // If a new educator registers as teacher, push email notification to admin to review & verify
+    if (finalRole === 'teacher' && !profileData.isVerifiedTeacher) {
+      import('../services/adminNotificationService')
+        .then(({ sendTeacherNotification }) => {
+          sendTeacherNotification({
+            teacherUid: currentUser?.uid || user?.uid || 'teacher_' + Date.now(),
+            teacherName: resolvedName,
+            teacherEmail: currentUser?.email || user?.email || 'No email',
+            teacherPhone: phoneNumber.trim() || undefined,
+            schoolName: resolvedSchool,
+            teachingSubject: teachingSubject || 'General Curriculum',
+            region: region || 'Ethiopia',
+          }).catch((err) => console.warn('[Notification] Teacher alert warning:', err));
+        })
+        .catch((err) => console.warn('[Notification] Could not load notification service:', err));
+    }
   };
 
   if (!isOpen) return null;

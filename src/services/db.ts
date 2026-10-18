@@ -1027,6 +1027,26 @@ export async function createSubscriptionRecord(
     }
   }
 
+  // Push notification alert email to admin if payment is pending
+  if (fullSub.paymentStatus === 'pending') {
+    import('./adminNotificationService')
+      .then(({ sendPaymentNotification }) => {
+        const plan = ETHIOPIAN_SUBSCRIPTION_PLANS.find((p) => p.id === fullSub.planDuration);
+        sendPaymentNotification({
+          subscriptionId: fullSub.id,
+          studentName: fullSub.userName || user?.displayName || 'Student',
+          studentEmail: fullSub.userEmail || user?.email || 'No email',
+          studentPhone: user?.phoneNumber,
+          planName: plan?.name || fullSub.planDuration,
+          amount: fullSub.amountETB,
+          paymentMethod: fullSub.paymentMethod.toUpperCase(),
+          transactionReference: fullSub.transactionReference,
+          bankName: fullSub.paymentMethod,
+        }).catch((err) => console.warn('[Notification] Payment alert warning:', err));
+      })
+      .catch((err) => console.warn('[Notification] Could not load notification service:', err));
+  }
+
   return fullSub;
 }
 

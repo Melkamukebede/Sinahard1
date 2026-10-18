@@ -119,5 +119,18 @@ service cloud.firestore {
       );
       allow delete: if isAdmin();
     }
+
+    // Admin Notifications Archive
+    // Authenticated users can write notification audit events; only admin can view/manage
+    match /admin_notifications/{notificationId} {
+      allow create: if isSignedIn();
+      allow get, list, update, delete: if isAdmin();
+    }
+
+    // Admin Settings (e.g. notifications recipient & alert toggles)
+    match /admin_settings/{settingId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
   }
 }

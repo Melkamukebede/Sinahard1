@@ -151,6 +151,35 @@
         "notes": { "type": "string", "maxLength": 500 }
       },
       "required": ["id", "userId", "planDuration", "amountETB", "paymentMethod", "transactionReference", "paymentStatus", "createdAt"]
+    },
+    "AdminNotification": {
+      "title": "AdminNotification",
+      "description": "Archived administrative email notification log for student payments and teacher registrations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["student_payment", "teacher_registration", "test"] },
+        "recipientEmail": { "type": "string", "maxLength": 256 },
+        "subject": { "type": "string", "maxLength": 256 },
+        "details": { "type": "object" },
+        "actionUrl": { "type": "string", "maxLength": 512 },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "clientTimestamp": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["type", "recipientEmail", "subject"]
+    },
+    "AdminSettings": {
+      "title": "AdminSettings",
+      "description": "Administrator alert email destination and notification preferences",
+      "type": "object",
+      "properties": {
+        "recipientEmail": { "type": "string", "maxLength": 256 },
+        "notifyOnStudentPayment": { "type": "boolean" },
+        "notifyOnTeacherRegistration": { "type": "boolean" },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["recipientEmail"]
     }
   },
   "firestore": {
@@ -181,6 +210,14 @@
     "/subscriptions/{subscriptionId}": {
       "schema": "Subscription",
       "description": "Premium student subscription and payment transaction logs"
+    },
+    "/admin_notifications/{notificationId}": {
+      "schema": "AdminNotification",
+      "description": "Administrative alert log and audit history"
+    },
+    "/admin_settings/{settingId}": {
+      "schema": "AdminSettings",
+      "description": "Configurable administrator notification email recipient and delivery toggles"
     }
   }
 }

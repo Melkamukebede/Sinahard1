@@ -19,6 +19,12 @@ import {
   GraduationCap,
   Users,
   CreditCard,
+  BellRing,
+  Send,
+  Loader2,
+  ExternalLink,
+  Settings,
+  Sparkles,
 } from 'lucide-react';
 import { AppUser, UserSubscription } from '../types';
 import {
@@ -28,12 +34,25 @@ import {
   verifyTeacherInDb,
   RegisteredTeacherRecord,
 } from '../services/db';
+import {
+  getAdminNotificationSettings,
+  saveAdminNotificationSettings,
+  sendTestNotification,
+  AdminNotificationSettings,
+  DEFAULT_ADMIN_EMAIL,
+} from '../services/adminNotificationService';
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
+
+export type AdminViewTab = 'teachers' | 'payments' | 'notifications';
 
 interface AdminSubscriptionsViewProps {
   user: AppUser | null;
   subscriptions: UserSubscription[];
   onRefresh?: () => void;
   onClose?: () => void;
+  initialTab?: AdminViewTab;
+  initialVerifyId?: string | null;
 }
 
 export const AdminSubscriptionsView: React.FC<AdminSubscriptionsViewProps> = ({
@@ -41,9 +60,11 @@ export const AdminSubscriptionsView: React.FC<AdminSubscriptionsViewProps> = ({
   subscriptions,
   onRefresh,
   onClose,
+  initialTab,
+  initialVerifyId,
 }) => {
-  // Top-level Navigation: 'teachers' (Check Panel) | 'payments' (Subscriptions)
-  const [activeAdminTab, setActiveAdminTab] = useState<'teachers' | 'payments'>('teachers');
+  // Top-level Navigation: 'teachers' (Check Panel) | 'payments' (Subscriptions) | 'notifications' (Email Alerts)
+  const [activeAdminTab, setActiveAdminTab] = useState<AdminViewTab>(initialTab || 'teachers');
 
   // Teacher Verification State
   const [teachers, setTeachers] = useState<RegisteredTeacherRecord[]>([]);
@@ -56,6 +77,71 @@ export const AdminSubscriptionsView: React.FC<AdminSubscriptionsViewProps> = ({
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'verified' | 'rejected'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // Deep-link targeted item highlighting
+  const [highlightedId, setHighlightedId] = useState<string | null>(initialVerifyId || null);
+
+  // Email Notification Settings State
+  const [adminEmailInput, setAdminEmailInput] = useState<string>(DEFAULT_ADMIN_EMAIL);
+  const [notifyPayments, setNotifyPayments] = useState<boolean>(true);
+  const [notifyTeachers, setNotifyTeachers] = useState<boolean>(true);
+  const [isSavingSettings, setIsSavingSettings] = useState<boolean>(false);
+  const [settingsNotice, setSettingsNotice] = useState<string | null>(null);
+
+  // Live Test Email State
+  const [isSendingTest, setIsSendingTest] = useState<boolean>(false);
+  const [testResultMsg, setTestResultMsg] = useState<{ success: boolean; text: string } | null>(null);
+
+  // Real-time alert archive from Firestore admin_notifications collection
+  const [alertArchive, setAlertArchive] = useState<any[]>([]);
+
+  // Load notification settings on mount
+  useEffect(() => {
+    getAdminNotificationSettings().then((settings) => {
+      setAdminEmailInput(settings.recipientEmail || DEFAULT_ADMIN_EMAIL);
+      setNotifyPayments(settings.notifyOnStudentPayment);
+      setNotifyTeachers(settings.notifyOnTeacherRegistration);
+    });
+  }, []);
+
+  // Listen in real-time to Firestore admin_notifications
+  useEffect(() => {
+    try {
+      const q = query(collection(db, 'admin_notifications'), orderBy('createdAt', 'desc'), limit(25));
+      const unsub = onSnapshot(
+        q,
+        (snap) => {
+          const items: any[] = [];
+          snap.forEach((docSnap) => {
+            items.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          setAlertArchive(items);
+        },
+        (err) => {
+          console.warn('Admin notifications listener:', err);
+        }
+      );
+      return () => unsub();
+    } catch {
+      return () => {};
+    }
+  }, []);
+
+  // Handle URL parameter deep link navigation & auto-scroll
+  useEffect(() => {
+    if (initialTab) {
+      setActiveAdminTab(initialTab);
+    }
+    if (initialVerifyId) {
+      setHighlightedId(initialVerifyId);
+      setTimeout(() => {
+        const el = document.getElementById(`verify-item-${initialVerifyId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 400);
+    }
+  }, [initialTab, initialVerifyId]);
 
   // Subscribe in real-time to registered teachers from Firestore
   useEffect(() => {
@@ -146,6 +232,43 @@ export const AdminSubscriptionsView: React.FC<AdminSubscriptionsViewProps> = ({
       await rejectSubscriptionInDb(sub.id, reason, user);
     } finally {
       setActionLoadingId(null);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setIsSavingSettings(true);
+    setSettingsNotice(null);
+    try {
+      await saveAdminNotificationSettings({
+        recipientEmail: adminEmailInput.trim() || DEFAULT_ADMIN_EMAIL,
+        notifyOnStudentPayment: notifyPayments,
+        notifyOnTeacherRegistration: notifyTeachers,
+      });
+      setSettingsNotice('Notification settings saved successfully!');
+      setTimeout(() => setSettingsNotice(null), 3500);
+    } catch {
+      setSettingsNotice('Failed to save settings.');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    setIsSendingTest(true);
+    setTestResultMsg(null);
+    try {
+      const res = await sendTestNotification(adminEmailInput.trim() || DEFAULT_ADMIN_EMAIL);
+      setTestResultMsg({
+        success: res.success,
+        text: res.message || (res.success ? `Test alert sent to ${adminEmailInput}!` : 'Failed to send test alert.'),
+      });
+    } catch (err: unknown) {
+      setTestResultMsg({
+        success: false,
+        text: err instanceof Error ? err.message : 'Error sending test email.',
+      });
+    } finally {
+      setIsSendingTest(false);
     }
   };
 
@@ -241,6 +364,28 @@ export const AdminSubscriptionsView: React.FC<AdminSubscriptionsViewProps> = ({
                   : 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950'
               }`}>
                 {pendingPaymentsCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveAdminTab('notifications')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition cursor-pointer active:scale-98 ${
+              activeAdminTab === 'notifications'
+                ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-xs'
+                : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+            }`}
+          >
+            <BellRing className={`w-4 h-4 ${activeAdminTab === 'notifications' ? 'text-white dark:text-zinc-950' : 'text-zinc-600 dark:text-zinc-400'}`} />
+            <span>Email Alerts &amp; Settings</span>
+            {alertArchive.length > 0 && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                activeAdminTab === 'notifications'
+                  ? 'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-white'
+                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200'
+              }`}>
+                {alertArchive.length}
               </span>
             )}
           </button>
@@ -378,10 +523,16 @@ export const AdminSubscriptionsView: React.FC<AdminSubscriptionsViewProps> = ({
             <div className="space-y-3">
               {filteredTeachers.map((t) => {
                 const isLoading = actionLoadingTeacherId === t.uid || actionLoadingTeacherId === t.id;
+                const isHighlighted = highlightedId === t.uid || highlightedId === t.id;
                 return (
                   <div
                     key={t.id || t.uid}
-                    className="p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition hover:border-zinc-400 dark:hover:border-zinc-700"
+                    id={`verify-item-${t.uid || t.id}`}
+                    className={`p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[#070e1a]/95 border shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition ${
+                      isHighlighted
+                        ? 'border-blue-500 ring-4 ring-blue-500/25 bg-blue-50/20 dark:bg-blue-950/20'
+                        : 'border-zinc-200/90 dark:border-white/10 hover:border-zinc-400 dark:hover:border-zinc-700'
+                    }`}
                   >
                     <div className="space-y-2 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -532,11 +683,17 @@ export const AdminSubscriptionsView: React.FC<AdminSubscriptionsViewProps> = ({
                 const isPending = sub.paymentStatus === 'pending';
                 const isVerified = sub.paymentStatus === 'verified';
                 const isLoading = actionLoadingId === sub.id;
+                const isHighlighted = highlightedId === sub.id || highlightedId === sub.transactionReference;
 
                 return (
                   <div
                     key={sub.id || sub.transactionReference}
-                    className="p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition hover:border-zinc-400 dark:hover:border-zinc-700"
+                    id={`verify-item-${sub.id}`}
+                    className={`p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[#070e1a]/95 border shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition ${
+                      isHighlighted
+                        ? 'border-blue-500 ring-4 ring-blue-500/25 bg-blue-50/20 dark:bg-blue-950/20'
+                        : 'border-zinc-200/90 dark:border-white/10 hover:border-zinc-400 dark:hover:border-zinc-700'
+                    }`}
                   >
                     <div className="space-y-1.5 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -593,6 +750,202 @@ export const AdminSubscriptionsView: React.FC<AdminSubscriptionsViewProps> = ({
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          4. TAB 3: EMAIL NOTIFICATION ALERTS & SETTINGS
+      ───────────────────────────────────────────────────────────── */}
+      {activeAdminTab === 'notifications' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Main Configuration Card */}
+          <div className="p-6 sm:p-8 rounded-[32px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-5">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold font-['Outfit',sans-serif] text-zinc-950 dark:text-white">
+                    Automated Verification Alerts
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Push instant emails to your inbox whenever students submit payments or teachers register.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSendTestEmail}
+                  disabled={isSendingTest || !adminEmailInput.trim()}
+                  className="px-4 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition disabled:opacity-50"
+                  title="Dispatch a real verification test alert"
+                >
+                  {isSendingTest ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  )}
+                  <span>Send Test Email</span>
+                </button>
+              </div>
+            </div>
+
+            {testResultMsg && (
+              <div
+                className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2.5 ${
+                  testResultMsg.success
+                    ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
+                    : 'bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-200'
+                }`}
+              >
+                {testResultMsg.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                )}
+                <span>{testResultMsg.text}</span>
+              </div>
+            )}
+
+            {settingsNotice && (
+              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>{settingsNotice}</span>
+              </div>
+            )}
+
+            {/* Email Address & Alert Toggles Form */}
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 block mb-1.5">
+                  Admin Notification Email
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2.5">
+                  <div className="relative flex-1">
+                    <Mail className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="email"
+                      value={adminEmailInput}
+                      onChange={(e) => setAdminEmailInput(e.target.value)}
+                      placeholder="e.g. melkamukebede11@gmail.com"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-semibold text-zinc-950 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/40"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveSettings}
+                    disabled={isSavingSettings || !adminEmailInput.trim()}
+                    className="px-5 py-2.5 rounded-2xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-bold text-xs sm:text-sm cursor-pointer shadow-xs hover:opacity-90 active:scale-95 disabled:opacity-50 transition"
+                  >
+                    {isSavingSettings ? 'Saving...' : 'Save Recipient'}
+                  </button>
+                </div>
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  Alert emails will be dispatched to this address with full student &amp; teacher verification details and 1-click approve links.
+                </p>
+              </div>
+
+              {/* Alert Category Toggles */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div
+                  onClick={() => setNotifyPayments((p) => !p)}
+                  className={`p-4 rounded-2xl border transition cursor-pointer select-none flex items-start gap-3 ${
+                    notifyPayments
+                      ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-500/40 text-blue-950 dark:text-blue-100'
+                      : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={notifyPayments}
+                    onChange={() => {}}
+                    className="mt-0.5 rounded text-blue-600 focus:ring-0"
+                  />
+                  <div>
+                    <div className="text-xs font-bold">Student Payment Submissions</div>
+                    <p className="text-[11px] opacity-80 mt-0.5">
+                      Sends immediate email on Telebirr, Chapa, CBE, or Bank transfer requests with 1-click verification link.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setNotifyTeachers((p) => !p)}
+                  className={`p-4 rounded-2xl border transition cursor-pointer select-none flex items-start gap-3 ${
+                    notifyTeachers
+                      ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-500/40 text-blue-950 dark:text-blue-100'
+                      : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={notifyTeachers}
+                    onChange={() => {}}
+                    className="mt-0.5 rounded text-blue-600 focus:ring-0"
+                  />
+                  <div>
+                    <div className="text-xs font-bold">Teacher Registrations</div>
+                    <p className="text-[11px] opacity-80 mt-0.5">
+                      Sends immediate email whenever an educator registers with school name &amp; subject requiring approval.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Alert History / Audit Log */}
+          <div className="p-6 sm:p-8 rounded-[32px] bg-white dark:bg-[#070e1a]/95 border border-zinc-200/90 dark:border-white/10 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-sm text-zinc-950 dark:text-white font-['Outfit',sans-serif]">
+                  Recent Push Notification History ({alertArchive.length})
+                </h4>
+                <p className="text-xs text-zinc-500">
+                  Archived alerts recorded for student payments and teacher registrations.
+                </p>
+              </div>
+            </div>
+
+            {alertArchive.length === 0 ? (
+              <div className="py-8 text-center text-xs text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                No notification alerts recorded yet. They will appear here automatically when payments or teachers register.
+              </div>
+            ) : (
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {alertArchive.map((alert) => (
+                  <div key={alert.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-xs text-zinc-900 dark:text-white">
+                          {alert.subject}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 font-semibold uppercase text-zinc-600 dark:text-zinc-400">
+                          {alert.type}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500">
+                        Recipient: <strong className="font-mono text-zinc-700 dark:text-zinc-300">{alert.recipientEmail}</strong> &bull; {alert.clientTimestamp ? new Date(alert.clientTimestamp).toLocaleString() : 'Recent'}
+                      </p>
+                    </div>
+
+                    {alert.actionUrl && (
+                      <a
+                        href={alert.actionUrl}
+                        className="px-3 py-1 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-xs font-semibold text-zinc-900 dark:text-white inline-flex items-center gap-1.5 self-start sm:self-center shrink-0 transition"
+                      >
+                        <span>View Item</span>
+                        <ExternalLink className="w-3 h-3 text-zinc-500" />
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
