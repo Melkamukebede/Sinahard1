@@ -35,6 +35,7 @@ interface ManualViewProps {
 export const ManualView: React.FC<ManualViewProps> = ({
   onNavigate,
   onOpenPasteModal,
+  onOpenProfessorModal,
 }) => {
   // Expand/collapse for Math & Science formulas section
   const [isMathExpanded, setIsMathExpanded] = useState<boolean>(false);
@@ -195,8 +196,37 @@ OUTPUT RULES (PHONE-OPTIMIZED EXACT LATEX):
             <span>Adding Questions</span>
           </div>
           <h2 className="text-base sm:text-lg font-bold font-['Outfit',sans-serif] text-zinc-900 dark:text-white mt-1">
-            You can add questions in this app in three ways:
+            Exam Question Creation &amp; AI Pipelines
           </h2>
+        </div>
+
+        {/* Featured: Create with Agent - 3-Node Autonomous Loop */}
+        <div className="relative z-10 p-5 rounded-[26px] bg-zinc-100/90 dark:bg-[#0c182b] border border-zinc-200 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                Create with Agent
+              </span>
+              <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400">
+                LangGraph Multi-Agent Loop &bull; KaTeX STEM &bull; SQLite Export
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-zinc-950 dark:text-white font-['Outfit',sans-serif]">
+              Autonomous 3-Agent AI Pipeline (Curator &rarr; Author &rarr; Adversarial Critic)
+            </h3>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 max-w-2xl leading-relaxed">
+              Agent A reads curriculum syllabus &bull; Agent B drafts KaTeX-formatted STEM problems &bull; Agent C audits zero hallucinations before saving to Cloud Firestore and exporting portable offline SQLite database files.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenProfessorModal}
+            className="px-5 py-2.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-98 transition shrink-0"
+          >
+            <Sparkles className="w-4 h-4 text-emerald-500" />
+            <span>Create with Agent</span>
+          </button>
         </div>
 
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-3.5">

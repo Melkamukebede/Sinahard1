@@ -1199,3 +1199,56 @@ export async function rejectSubscriptionInDb(
   }
 }
 
+/**
+ * Save an ExamMaster Pro verified exam with questions directly into Firestore cloud database
+ */
+export async function saveExamToFirestore(
+  exam: Partial<Exam>,
+  user?: AppUser | null
+): Promise<string> {
+  const examId = exam.id || `exam_${Date.now()}`;
+  const now = new Date().toISOString();
+
+  const fullExam: Exam = {
+    id: examId,
+    title: exam.title || exam.name || 'ExamMaster Pro Exam',
+    name: exam.title || exam.name || 'ExamMaster Pro Exam',
+    category: 'created',
+    createdType: 'teacher',
+    subject: exam.subject || 'General Science',
+    grade: exam.grade || '12',
+    topic: exam.topic || 'General Topic',
+    school: exam.school || user?.schoolName || 'National Examination',
+    teacherName: exam.teacherName || user?.displayName || 'Educator',
+    timeLimit: exam.timeLimit || 20,
+    questions: Array.isArray(exam.questions) ? exam.questions : [],
+    questionCount: Array.isArray(exam.questions) ? exam.questions.length : 0,
+    sourceType: 'user_created',
+    createdAt: exam.createdAt || now,
+    updatedAt: now,
+    userId: user?.uid || 'guest',
+    authorEmail: user?.email || '',
+    isPublic: true,
+    isUploadedToCloud: true,
+  };
+
+  try {
+    const docRef = doc(db, 'exams', examId);
+    await setDoc(docRef, fullExam);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `exams/${examId}`);
+  }
+
+  // Also update local cache so it appears instantly across the app
+  const local = getLocalExams();
+  const existingIdx = local.findIndex((e) => e.id === examId);
+  if (existingIdx >= 0) {
+    local[existingIdx] = fullExam;
+  } else {
+    local.unshift(fullExam);
+  }
+  saveLocalExams(local);
+
+  return examId;
+}
+

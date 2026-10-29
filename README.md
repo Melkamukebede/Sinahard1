@@ -71,16 +71,47 @@
 - Automated email alerts delivered to administrators via Resend/SendGrid or Cloudflare edge runtime whenever a payment is made or an educator registers.
 - **1-Click Deep Links**: Admin verification buttons jump straight to the targeted student or teacher record with smooth auto-scroll and blue highlight.
 
+### 6. Create with Agent: LangGraph Multi-Agent AI Pipeline (ExamMaster Pro)
+- **Autonomous 3-Agent State Graph**:
+  - **Agent A (Curriculum & Syllabus Curator)**: Reads national curriculum unit objectives, defines cognitive difficulty, and extracts assessment competencies.
+  - **Agent B (STEM & KaTeX Problem Author)**: Synthesizes multi-step scenarios with phone-wrapped KaTeX formulas and 4 plausible choices.
+  - **Agent C (Adversarial Critic & Auditor)**: Blind-solves each candidate question, verifies KaTeX bracket pairing, tests for zero hallucinations, and scores quality (0–100). Iterates through a reflection loop until quality passes $\ge 85\%$.
+- **Dual Cloud Firestore + Offline SQLite Export**:
+  - Compiles verified questions into `.sqlite` binary databases via WebAssembly (`sql.js`) for zero-connectivity school labs, while simultaneously committing to cloud Firestore.
+
+### 7. Deterministic Regex Question Normalization Engine
+- Instantly ingests unstructured question text from Ethiopian Telegram channels (`@neaea_exam`), past exam PDFs, and textbook transcripts.
+- Multi-pass regex state machine isolates question text, options A–D, correct answer keys (`Answer:\s*([A-D])`), and step-by-step explanations, auto-wrapping equations in mobile-safe KaTeX brackets.
+
+### 8. Multi-Channel Exam Sharing & School Multi-Tenancy
+- **Deep-Linked URLs**: Serialized exam codes and Base64-compressed URLs allow teachers to share practice tests over Telegram and SMS.
+- **School Isolation**: Role-based access ensures exams created by teachers are automatically routed to enrolled students of their specific high school.
+- **1-Click Admin Verification**: Pushes payment and teacher registration alerts to `melkamukebede11@gmail.com` with one-touch verification deep links.
+
+---
+
+## 📊 Ethiopian Competitive Analysis
+
+| Dimension | SinaHard (ExamMaster Pro) | Kuraz Exam App | Fetena.net | Telegram Exam Channels |
+|---|---|---|---|---|
+| **AI Generation** | **3-Node LangGraph Loop** (Curator ➔ Author ➔ Critic) | Static bundle only | Static bundle only | ❌ None |
+| **Math Formula Quality** | **Full KaTeX MathRenderer** (Zero-overflow mobile brackets) | Blurry JPG images | Raw ASCII text (`sqrt(x)`) | Broken plain text |
+| **Unstructured Text Import** | **Deterministic Regex Engine** (PDF, Telegram paste) | ❌ Unsupported | ❌ Unsupported | ❌ Unsupported |
+| **Offline Resilience** | **Wasm SQLite (`sql.js`)** + PWA Service Worker | Basic local cache | Requires active internet | Requires Telegram data |
+| **Hallucination Control** | **Adversarial Self-Correction** (Score $\ge 85$) | Manual review (prone to error) | Manual review (prone to error) | ❌ None |
+| **Fintech Localization** | **Telebirr & Chapa** + 1-Click Verification | Manual bank screenshots | Subscription paywall | ❌ None |
+
 ---
 
 ## 🛠️ Technology Stack
 
 | Layer | Technologies |
 |---|---|
-| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS v4, Lucide Icons, KaTeX, Canvas Confetti |
-| **Backend** | Node.js, Express, TSX, Cloudflare Pages Functions (Edge Workers) |
-| **Database & Auth** | Google Firebase (Firestore Database, Firebase Authentication) |
-| **Artificial Intelligence** | Google Gemini API (`@google/genai`) |
+| **Frontend** | React 19, TypeScript 5.8, Vite, Tailwind CSS v4, Lucide Icons, KaTeX, Canvas Confetti |
+| **Agent Orchestration** | `@langchain/langgraph`, `@langchain/core` (LangGraph.js Cyclical State Graph) |
+| **Backend & Edge** | Node.js, Express, TSX, Cloudflare Pages Functions (Edge Workers) |
+| **Database & Offline Engine** | Google Firebase (Firestore Database, Firebase Authentication), `sql.js` (WebAssembly SQLite) |
+| **Artificial Intelligence** | Google Gemini API (`@google/genai` with `gemini-3.8-flash`) |
 | **Payments** | Telebirr Developer API (Ethio Telecom), Chapa Gateway |
 | **Deployment** | Google Cloud Run / Cloudflare Pages / PWA |
 
@@ -126,8 +157,13 @@
 
 ---
 
+## 📑 Project Proposal & Architecture Defense
+For the complete 10-page technical defense and capstone evaluation document, see `project_proposal_and_architecture.md` in the project artifacts directory.
+
+---
+
 ## 👥 Contributors & Acknowledgements
 
-- **Developer:** Melkamu Kebede ([melkamukebede11@gmail.com](mailto:melkamukebede11@gmail.com))
-- **Project:** Final Graduation Capstone Project
-- Built with dedication for the students and teachers of Ethiopia 🇪🇹.
+- **Lead Engineer & Architect:** Melkamu Kebede ([melkamukebede11@gmail.com](mailto:melkamukebede11@gmail.com))
+- **Project:** Final Graduation Capstone Project & National Competition Defense
+- Built with dedication for the students, educators, and schools of Ethiopia 🇪🇹.

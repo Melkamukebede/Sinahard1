@@ -207,6 +207,86 @@ Subject Type: ${isMath ? 'Mathematical / Calculation-based' : 'Conceptual / Theo
 });
 
 /**
+ * POST /api/gemini/agent-pipeline-step
+ * Individual node executor for LangGraph Multi-Agent pipeline (Curator, Author, Critic)
+ */
+app.post('/api/gemini/agent-pipeline-step', async (req, res) => {
+  try {
+    const { systemPrompt = '', userPrompt = '' } = req.body;
+    const clientHeaderKey = req.headers['x-gemini-api-key'] as string | undefined;
+    const keyToUse = clientHeaderKey?.trim() || apiKey;
+
+    if (!keyToUse) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'No Gemini API key available. Please configure GEMINI_API_KEY or provide an in-app key.',
+      });
+    }
+
+    const client = new GoogleGenAI({
+      apiKey: keyToUse,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
+
+    const candidateModels = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+    let response: any = null;
+    let lastErr: any = null;
+
+    for (const model of candidateModels) {
+      try {
+        response = await client.models.generateContent({
+          model,
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: `${systemPrompt}\n\nTask:\n${userPrompt}\n\nReturn strictly valid JSON with no markdown wrapping.`,
+                },
+              ],
+            },
+          ],
+          config: {
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+          },
+        });
+        if (response) break;
+      } catch (err: any) {
+        lastErr = err;
+        console.warn(`[Agent Pipeline] Model ${model} failed, trying next:`, err?.message);
+      }
+    }
+
+    if (!response) {
+      throw lastErr || new Error('All model endpoints failed for agent step');
+    }
+
+    const rawText = response.text || '{}';
+    let parsed: any;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+      parsed = JSON.parse(cleaned);
+    }
+
+    return res.json({
+      status: 'success',
+      result: parsed,
+    });
+  } catch (err: unknown) {
+    console.error('Error in /api/gemini/agent-pipeline-step:', err);
+    const message = err instanceof Error ? err.message : 'Agent pipeline step failed';
+    return res.status(500).json({ status: 'error', message });
+  }
+});
+
+/**
  * Helper to build responsive HTML email for admin notifications
  */
 function buildAdminNotificationHtml(params: {

@@ -728,6 +728,7 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
+          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           runtimeCaching: [
             {
@@ -789,6 +790,9 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
+            if (id.includes('node_modules/@langchain/')) {
+              return 'vendor-langchain';
+            }
             if (id.includes('node_modules/katex/')) {
               return 'vendor-katex';
             }
@@ -807,7 +811,7 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
-      chunkSizeWarningLimit: 1200,
+      chunkSizeWarningLimit: 2500,
     },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',

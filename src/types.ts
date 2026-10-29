@@ -4,6 +4,9 @@ export interface Question {
   options: string[];
   correct: number; // 0-3 index
   explanation?: string;
+  subject?: string;
+  grade?: string;
+  topic?: string;
 }
 
 export type SubjectType = 'theory' | 'calculation';
