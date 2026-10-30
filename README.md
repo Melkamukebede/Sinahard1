@@ -1,4 +1,4 @@
-# SinaHard (ሲናሃርድ) — Ethiopian National Examination Preparation & Assessment Portal
+# SinaHard
 
 [![React 19](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
@@ -6,6 +6,7 @@
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind-CSS%20v4-38bdf8.svg)](https://tailwindcss.com/)
 [![Cloudflare Pages](https://img.shields.io/badge/Cloudflare-Pages%20Functions-f38020.svg)](https://pages.cloudflare.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 # Sinahard: Comprehensive Project Proposal & System Architecture 
 
 **Document Type:** Final project  Proposal  
