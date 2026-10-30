@@ -23,11 +23,11 @@ Teachers lack a streamlined workflow to seamlessly generate high-quality assessm
 
 #### Single-Agent Hallucinations: Most existing educational platforms rely on a single AI agent for question generation. This frequently leads to hallucinations—such as flawed mathematical logic, incorrect answer keys, or out-of-syllabus content—making them highly unreliable for rigorous academic preparation.
 
-### The Sinahard Solution:
-Sinahard is purposefully built to solve these exact issues perfectly. It transforms raw AI generation into a beautiful, interactive, and timed testing platform. By utilizing an advanced multi-agent system, it eliminates hallucinations, allowing educators to create assessments with absolute confidence and empowering students to seamlessly share, practice, and compete in real-time.
+### The Sinahard Advantage:
+**Sinahard** is purposefully built to solve these exact issues perfectly. It transforms raw AI generation into a beautiful, interactive, and timed testing platform. By utilizing an advanced multi-agent system, it eliminates hallucinations, allowing educators to create assessments with absolute confidence and empowering students to seamlessly share, practice, and compete in real-time.
 
 ### 3. The Sinahard Solution
-**Sinahard (ExamMaster Pro)** solves this triple challenge through three breakthrough innovations:
+**Sinahard** solves this triple challenge through three breakthrough innovations:
 1. **Autonomous LangGraph Multi-Agent Pipeline:** Replaces unreliable single-turn AI prompts with a 3-agent state graph loop (**Agent A: Syllabus Curator**, **Agent B: KaTeX STEM Author**, and **Agent C: Adversarial Critic**) that executes blind cross-validation and self-reflection to guarantee zero hallucinations and balanced answer keys before publishing.
 2. **Deterministic Regex Normalization Engine:** Instantly converts messy, unstructured text from Ethiopian Telegram channels, past exam PDFs, and textbook transcripts into structured, KaTeX-compliant exams in milliseconds.
 3. **Dual-Layer Resilience (Cloud Firestore + WebAssembly SQLite):** Supports real-time cloud multi-tenancy for schools while enabling students to compile and download standalone `.sqlite` relational databases running completely offline via WebAssembly (`sql.js`).
@@ -54,7 +54,7 @@ Sinahard is purposefully built to solve these exact issues perfectly. It transfo
 One of Sinahard’s most powerful technical features is its **Deterministic Regex Question Parsing Engine** (`src/components/QuestionTextEditorModal.tsx` and `src/services/db.ts`). 
 
 ### The Problem with Telegram & PDF Exam Pastes
-In Ethiopia, over 95% of past national exam questions circulate in Telegram channels (`@neaea_exam`, `@ethio_matric`) as messy text dumps:
+In Ethiopia, over 95% of past national exam questions circulate in Telegram channels (`@neaea_exam`, `@ethio_matric`) and hardcoded once when create platiform, as messy text dumps:
 ```text
 1. A car starts from rest and accelerates at 2m/s^2 for 5s. What is its final velocity?
 A) 5 m/s B) 10 m/s C) 15 m/s D) 20 m/s
