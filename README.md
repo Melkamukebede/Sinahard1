@@ -1,4 +1,4 @@
-# # Sinahard: Comprehensive Project Proposal & System Architecture 
+# Sinahard: Comprehensive Project Proposal & System Architecture 
 
 [![React 19](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
