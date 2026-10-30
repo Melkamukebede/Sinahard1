@@ -1,5 +1,0 @@
-{
-  "summary":  "Comprehensive Competition-Grade Project Proposal and Architecture  Document for Sinahard. Covers problem significance (Ethiopian matriculation crisis), technical stack rationale (React 19, TS, LangGraph.js, Gemini 3.8 Flash, Firestore, wasm SQLite, Telebirr/Chapa), deep regex parsing mechanics with code snippets, URL/PWA sharing mechanisms, 3-agent autonomous LangGraph pipeline with code explanation, multi-tenant school-student isolation, SQLite wasm export mechanics, and Ethiopian competitive analysis exposing limitations of Kuraz, Fetena.net, and Telegram channels.",
-  "updatedAt":  "2026-10-29T20:13:53.854916121Z",
-  "userFacing":  true
-}
