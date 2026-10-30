@@ -12,13 +12,13 @@
 ### 1. The Gap in Current AI Assessment Tools
 While general-purpose AI models (such as Claude, Gemini, and DeepSeek) have revolutionized learning, they fall short of providing a complete, production-ready assessment environment. The primary limitations include:
 
-####Static, Non-Interactive Outputs:
+###Static, Non-Interactive Outputs:
 When students prompt standard AI chatbots for practice questions, the result is flat, unstructured text. They lack a beautiful, interactive user interface, timer functionalities, and the high-stakes feel of a real exam environment.
 
-####Absence of Collaborative & Competitive Practice:
+###Absence of Collaborative & Competitive Practice:
 Learning is social. Current AI chats do not allow a student to instantly convert a generated exam into a shareable, timed session to practice and compete with friends simultaneously.
 
-####Friction in Educator Distribution:
+###Friction in Educator Distribution:
 Teachers lack a streamlined workflow to seamlessly generate high-quality assessments and instantly deploy them to their students in a standardized, interactive format.
 
 Single-Agent Hallucinations: Most existing educational platforms rely on a single AI agent for question generation. This frequently leads to hallucinations—such as flawed mathematical logic, incorrect answer keys, or out-of-syllabus content—making them highly unreliable for rigorous academic preparation.
