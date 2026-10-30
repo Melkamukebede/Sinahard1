@@ -1,6 +1,3 @@
 {
-  "summary":  "Implementation plan for restructuring the AI prompt interface to 'Create with Agent' with system theme colors, removing legacy AI generation, and generating a competition-grade project proposal and architectural defense artifact covering regex parsing, multi-agent workflows, school-based student sharing, offline SQLite compilation, and Ethiopian competitive analysis.",
-  "updatedAt":  "2026-10-29T20:03:55.073223405Z",
-  "requestFeedback":  true,
-  "userFacing":  true
+  
 }
