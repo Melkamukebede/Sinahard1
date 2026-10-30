@@ -1,7 +1,7 @@
 # Sinahard: Comprehensive Project Proposal & System Architecture 
 
 **Document Type:** Final project  Proposal  
-**Project Title:** Sinahard — Autonomous Multi-Agent Exam Engineering & Resilient Offline Assessment Platform
+**Project Title:** Sinahard — Autonomous Multi-Agent Exam Engineering & Resilient Offline Assessment Platform                                                                               
 **Target Beneficiaries:** General students from any level (Grades 1-8, 10, 12 Matriculation, University Freshman), STEM Educators, and Regional Schools  
 **Primary Evaluator / Admin Contact:** `melkamukebede11@gmail.com`  
 **Deployment Infrastructure:** Vite + React 19 SPA, Cloudflare Pages Edge Functions, Express Backend, Google Cloud Run, Firebase Firestore, WebAssembly SQLite (`sql.js`)  
